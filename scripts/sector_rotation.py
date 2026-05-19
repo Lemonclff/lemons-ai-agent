@@ -112,7 +112,8 @@ def fetch_sector_data(period: str = "6mo") -> pd.DataFrame:
 def compute_returns(data: pd.DataFrame) -> pd.DataFrame:
     """Compute percentage returns for each lookback period."""
     closes = pd.DataFrame()
-    for ticker in [s["ticker"] for s in SECTOR_ETFS.values()]:
+    all_tickers = [s["ticker"] for s in SECTOR_ETFS.values()] + list(BENCHMARKS.keys())
+    for ticker in all_tickers:
         if (ticker, "Close") in data.columns:
             closes[ticker] = data[(ticker, "Close")]
         elif "Close" in data.columns and ticker in data["Close"].columns:
@@ -214,17 +215,22 @@ def rank_sectors(
         ret_med   = returns.get(f"{ticker}_medium", pd.Series([np.nan])).iloc[0]
         ret_long  = returns.get(f"{ticker}_long", pd.Series([np.nan])).iloc[0]
 
+        # Compute excess return (sector - SPY) for better ranking
+        spy_short = returns.get("SPY_short", pd.Series([np.nan])).iloc[0]
+
+        excess_short = ret_short - spy_short if pd.notna(ret_short) and pd.notna(spy_short) else np.nan
+
         rs_short  = rs.get(f"{ticker}_RS_short", pd.Series([np.nan])).iloc[0]
         momentum  = rs.get(f"{ticker}_momentum", pd.Series([np.nan])).iloc[0]
         vol_surge = vol.get(f"{ticker}_vol_surge", pd.Series([np.nan])).iloc[0]
 
-        # Composite score: weighted blend
-        # 40% short-term RS, 25% momentum, 20% medium return, 15% vol signal
+        # Composite score: weighted blend using excess return
+        # 40% excess return (sector - SPY), 25% momentum, 20% medium return, 15% vol signal
         composite = 0
         weights_applied = 0
 
-        if pd.notna(rs_short):
-            composite += rs_short * 0.40
+        if pd.notna(excess_short):
+            composite += excess_short * 0.40  # Excess return in percentage points
             weights_applied += 0.40
         if pd.notna(momentum):
             composite += momentum * 0.25
@@ -233,7 +239,7 @@ def rank_sectors(
             composite += (ret_med / 100) * 0.20  # Normalize
             weights_applied += 0.20
         if pd.notna(vol_surge):
-            # Volume bonus: above 1.5x adds signal
+            # Volume bonus: above threshold adds signal
             vol_signal = min(vol_surge / VOLUME_SURGE_THRESHOLD, 1.0) * 0.15
             composite += vol_signal
             weights_applied += 0.15
@@ -247,6 +253,7 @@ def rank_sectors(
             "return_1w": round(ret_short, 2) if pd.notna(ret_short) else None,
             "return_1m": round(ret_med, 2) if pd.notna(ret_med) else None,
             "return_3m": round(ret_long, 2) if pd.notna(ret_long) else None,
+            "excess_1w": round(excess_short, 2) if pd.notna(excess_short) else None,
             "rs_1w": round(rs_short, 3) if pd.notna(rs_short) else None,
             "momentum": round(momentum, 3) if pd.notna(momentum) else None,
             "volume_ratio": round(vol_surge, 2) if pd.notna(vol_surge) else None,
@@ -331,22 +338,22 @@ def print_report(
     print(f"{'='*70}\n")
 
     # Sector Rankings
-    print(f"{'Rank':<5} {'Sector':<28} {'1W%':>7} {'1M%':>7} {'3M%':>7} {'RS(1W)':>7} {'Score':>7} {'Vol':>6}")
-    print(f"{'-'*5} {'-'*28} {'-'*7} {'-'*7} {'-'*7} {'-'*7} {'-'*7} {'-'*6}")
+    print(f"{'Rank':<5} {'Sector':<28} {'1W%':>7} {'1M%':>7} {'3M%':>7} {'Excess%':>8} {'Score':>7} {'Vol':>6}")
+    print(f"{'-'*5} {'-'*28} {'-'*7} {'-'*7} {'-'*7} {'-'*8} {'-'*7} {'-'*6}")
 
     for i, s in enumerate(sectors, 1):
         rank_icon = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f" {i}."
         ret_1w = f"{s['return_1w']:+.1f}%" if s["return_1w"] is not None else "   N/A"
         ret_1m = f"{s['return_1m']:+.1f}%" if s["return_1m"] is not None else "   N/A"
         ret_3m = f"{s['return_3m']:+.1f}%" if s["return_3m"] is not None else "   N/A"
-        rs_val = f"{s['rs_1w']:.2f}" if s["rs_1w"] is not None else "  N/A"
+        exc_val = f"{s['excess_1w']:+.1f}%" if s.get('excess_1w') is not None else "    N/A"
         score  = f"{s['composite_score']:.3f}"
         vol    = f"{s['volume_ratio']}x" if s["volume_ratio"] else " N/A"
         vol_flag = " ⚡" if s["volume_alert"] else ""
 
         print(
             f"{rank_icon:<5} {s['sector']:<28} {ret_1w:>7} {ret_1m:>7} "
-            f"{ret_3m:>7} {rs_val:>7} {score:>7} {vol:>6}{vol_flag}"
+            f"{ret_3m:>7} {exc_val:>8} {score:>7} {vol:>6}{vol_flag}"
         )
 
     # Flow Signals
