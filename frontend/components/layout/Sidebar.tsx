@@ -13,6 +13,8 @@ import {
   Sun,
   Moon,
   Terminal,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +28,8 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Schedule & Automation", href: "/schedule", icon: Clock },
+  { label: "Options & Volatility", href: "/options-volatility", icon: TrendingUp, badge: "New" },
+  { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },
   { label: "Observability", href: "/observability", icon: Activity, badge: "Langfuse" },
 ];
 
