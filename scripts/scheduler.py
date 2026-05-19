@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NexusQuant — Cron Scheduler Entry Point
+Lemon's AI Agent — Cron Scheduler Entry Point
 ========================================
 
 This script is designed to be called by the system cron daemon.
@@ -15,13 +15,13 @@ Installation:
 Crontab entries (runs from project root):
     # Pre-market: 30 minutes before US market open (9:30 AM ET)
     # ET 9:00 AM = HKT 21:00 (summer) / HKT 22:00 (winter)
-    30 21 * * 1-5 cd /path/to/nexusquant && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1
-    30 22 * * 1-5 cd /path/to/nexusquant && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1  # winter fallback
+    30 21 * * 1-5 cd /path/to/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1
+    30 22 * * 1-5 cd /path/to/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1  # winter fallback
 
     # Post-market: 30 minutes after US market close (4:00 PM ET)
     # ET 4:30 PM = HKT 04:30 (next day summer) / HKT 05:30 (next day winter)
-    30 4 * * 1-5 cd /path/to/nexusquant && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1
-    30 5 * * 1-5 cd /path/to/nexusquant && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1  # winter fallback
+    30 4 * * 1-5 cd /path/to/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1
+    30 5 * * 1-5 cd /path/to/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1  # winter fallback
 
     Note: Both lines can coexist — the script checks if US markets are actually
     open/have closed before running. It will exit gracefully if called at the

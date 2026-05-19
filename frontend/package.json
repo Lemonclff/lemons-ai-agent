@@ -1,8 +1,8 @@
 {
-  "name": "nexusquant",
+  "name": "lemons-ai-agent",
   "version": "1.0.0",
   "private": true,
-  "description": "AI-driven US stock quantitative analysis & LLM observability dashboard",
+  "description": "Lemon's AI Agent — US stock quant and LLM observability dashboard",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

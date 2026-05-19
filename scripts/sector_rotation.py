@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NexusQuant — US Sector Rotation & Institutional Flow Analysis
+Lemon's AI Agent — US Sector Rotation & Institutional Flow Analysis
 ===============================================================
 
 This script fetches real-time and historical data for 11 GICS Level 1
@@ -333,7 +333,7 @@ def print_report(
     label = "PRE-MARKET" if session == "pre" else "POST-MARKET"
 
     print(f"\n{'='*70}")
-    print(f"  {emoji} NexusQuant — US Sector Rotation Analysis [{label}]")
+    print(f"  {emoji} Lemon's AI Agent — US Sector Rotation Analysis [{label}]")
     print(f"  Generated: {timestamp}")
     print(f"{'='*70}\n")
 
@@ -410,7 +410,7 @@ def save_report(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="NexusQuant — US Sector Rotation Analysis"
+        description="Lemon's AI Agent — US Sector Rotation Analysis"
     )
     parser.add_argument(
         "--session",

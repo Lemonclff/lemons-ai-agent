@@ -4,7 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NexusQuant — AI-Driven Quant Dashboard",
+  title: "Lemon's AI Agent — US Stock Quant & LLM Observability Dashboard",
   description:
     "US stock quantitative analysis, sector rotation monitoring, and LLM observability powered by Langfuse.",
 };

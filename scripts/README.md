@@ -1,4 +1,4 @@
-# NexusQuant — Analysis Scripts
+# Lemon's AI Agent — Analysis Scripts
 
 ## Overview
 
@@ -33,12 +33,12 @@ Add these to your crontab (`crontab -e`):
 
 ```cron
 # Pre-market analysis (summer: 21:30 HKT, winter: 22:30 HKT)
-30 21 * * 1-5 cd /home/lemon/nexusquant && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1
-30 22 * * 1-5 cd /home/lemon/nexusquant && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1
+30 21 * * 1-5 cd /home/lemon/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1
+30 22 * * 1-5 cd /home/lemon/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py pre >> logs/scheduler.log 2>&1
 
 # Post-market analysis (summer next day: 04:30 HKT, winter: 05:30 HKT)
-30 4 * * 1-5 cd /home/lemon/nexusquant && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1
-30 5 * * 1-5 cd /home/lemon/nexusquant && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1
+30 4 * * 1-5 cd /home/lemon/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1
+30 5 * * 1-5 cd /home/lemon/lemons-ai-agent && scripts/.venv/bin/python scripts/scheduler.py post >> logs/scheduler.log 2>&1
 ```
 
 ## Output

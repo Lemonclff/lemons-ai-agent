@@ -67,7 +67,7 @@ export function Sidebar() {
           <Terminal size={16} className="text-white" />
         </div>
         {!collapsed && (
-          <span className="text-lg font-bold gradient-text">NexusQuant</span>
+          <span className="text-lg font-bold gradient-text">Lemon's AI Agent</span>
         )}
       </div>
 

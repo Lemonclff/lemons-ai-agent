@@ -75,7 +75,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
           Welcome to{" "}
-          <span className="gradient-text">NexusQuant</span>
+          <span className="gradient-text">Lemon's AI Agent</span>
         </h1>
         <p className="mt-2 text-[var(--color-text-secondary)]">
           AI-driven US stock quant dashboard — monitor markets, automate

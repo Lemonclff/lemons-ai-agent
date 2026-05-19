@@ -1,8 +1,8 @@
-# NexusQuant 🔮
+# Lemon's AI Agent 🔮
 
 **AI-Driven US Stock Quantitative Analysis & LLM Observability Dashboard**
 
-NexusQuant is a modern, extensible web dashboard that combines automated market analysis with real-time AI model monitoring. Built with Next.js 14, Tailwind CSS, and Python.
+Lemon's AI Agent is a modern, extensible web dashboard that combines automated market analysis with real-time AI model monitoring. Built with Next.js 14, Tailwind CSS, and Python.
 
 ---
 
@@ -52,8 +52,8 @@ NexusQuant is a modern, extensible web dashboard that combines automated market 
 ### 1. Clone & Install
 
 ```bash
-git clone <your-repo-url> nexusquant
-cd nexusquant
+git clone <your-repo-url> lemons-ai-agent
+cd lemons-ai-agent
 
 # Frontend
 cd frontend
@@ -94,7 +94,7 @@ python sector_rotation.py --session pre --dry-run
 ## Project Structure
 
 ```
-nexusquant/
+lemons-ai-agent/
 ├── frontend/                    # Next.js application
 │   ├── app/
 │   │   ├── layout.tsx           # Root layout (sidebar + dark mode)

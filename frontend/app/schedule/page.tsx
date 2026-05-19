@@ -243,7 +243,7 @@ function SetupGuide() {
     },
     {
       title: "2. Add Cron Job (Linux/WSL)",
-      cmd: 'crontab -e\n# Add these lines:\n30 21 * * 1-5 cd /home/lemon/nexusquant && .venv/bin/python scripts/sector_rotation.py --session pre >> logs/pre_market.log 2>&1\n0 5 * * 1-5 cd /home/lemon/nexusquant && .venv/bin/python scripts/sector_rotation.py --session post >> logs/post_market.log 2>&1',
+      cmd: 'crontab -e\n# Add these lines:\n30 21 * * 1-5 cd /home/lemon/lemons-ai-agent && .venv/bin/python scripts/sector_rotation.py --session pre >> logs/pre_market.log 2>&1\n0 5 * * 1-5 cd /home/lemon/lemons-ai-agent && .venv/bin/python scripts/sector_rotation.py --session post >> logs/post_market.log 2>&1',
     },
     {
       title: "3. Verify Cron is Running",
