@@ -16,8 +16,6 @@ import {
   Plus,
   X,
   Download,
-  Clock,
-  Trash2,
   CheckCircle2,
   Filter,
   Timer,
@@ -80,8 +78,64 @@ function saveWatchlist(tickers: string[]) {
 }
 
 /* ============================================================================
-   Mock Data
+   Deterministic Pseudo-Random Number Generator (Mulberry32)
+   
+   Why: Math.random() produces different values on every call — causing
+   auto-refresh to show wildly different prices for the same ticker.
+   
+   Mulberry32 takes a 32-bit integer seed and produces a deterministic
+   sequence. Same seed → same sequence. We derive the seed from the ticker
+   symbol + a session seed (changes only on page load, not on auto-refresh).
    ============================================================================ */
+
+function mulberry32(seed: number): () => number {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Hash a string to a 32-bit integer (FNV-1a) */
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Generate a session seed that changes on full page reload (F5)
+ * but stays stable across auto-refresh cycles.
+ * Uses Date.now() floored to the nearest hour, XOR'd with a random offset.
+ */
+let SESSION_SEED = (Math.floor(Date.now() / 3600000) ^ (Math.random() * 0xffffffff)) >>> 0;
+
+/* ============================================================================
+   Realistic Base Prices (approximate as of mid-2025)
+   ============================================================================ */
+
+const BASE_PRICES: Record<string, number> = {
+  TSLA:  180,  NVDA:  940,  AMD:   155,  AAPL:  190,
+  MSTR: 1450,  COIN:  235,  SMCI:  810,  PLTR:   25,
+  ARM:   132,  AVGO: 1345,  MSFT:  430,  GOOGL: 175,
+  META:  505,  AMZN:  195,  NFLX:  680,  INTC:   31,
+  QCOM:  175,  MU:    130,  SNOW:  155,  CRM:   280,
+  UBER:   72,  SQ:     75,  RBLX:   42,  SNAP:   14,
+  DDOG:  125,  CRWD:  345,  PANW:  185,  ZS:    195,
+  NET:    95,  SHOP:   68,  RIVN:   11,  LCID:    3,
+  SOFI:    8,  AFRM:   48,  HOOD:   42,  GME:    28,
+  AMC:     5,  SPY:   565,  QQQ:   490,  IWM:   215,
+};
+
+const BASE_IV: Record<string, number> = {
+  TSLA: 55, NVDA: 60, AMD: 52, AAPL: 28, MSTR: 82, COIN: 78,
+  SMCI: 70, PLTR: 65, ARM: 50, AVGO: 35,
+};
 
 const TICKER_NAMES: Record<string, string> = {
   TSLA: "Tesla", NVDA: "NVIDIA", AMD: "AMD", AAPL: "Apple",
@@ -90,30 +144,61 @@ const TICKER_NAMES: Record<string, string> = {
   MSFT: "Microsoft", GOOGL: "Alphabet", META: "Meta",
   AMZN: "Amazon", NFLX: "Netflix", INTC: "Intel",
   QCOM: "Qualcomm", MU: "Micron", SNOW: "Snowflake",
+  CRM: "Salesforce", UBER: "Uber", SQ: "Block",
+  RBLX: "Roblox", SNAP: "Snap", DDOG: "Datadog",
+  CRWD: "CrowdStrike", PANW: "Palo Alto Networks",
+  ZS: "Zscaler", NET: "Cloudflare", SHOP: "Shopify",
+  RIVN: "Rivian", LCID: "Lucid", SOFI: "SoFi",
+  AFRM: "Affirm", HOOD: "Robinhood", GME: "GameStop",
+  AMC: "AMC Entertainment", SPY: "S&P 500 ETF",
+  QQQ: "Nasdaq-100 ETF", IWM: "Russell 2000 ETF",
 };
 
 function generateDataForTicker(ticker: string): OptionsSnapshot {
-  const price = 50 + Math.random() * 1400;
-  const iv = 25 + Math.random() * 80;
-  const hv = 20 + Math.random() * 55;
+  // Deterministic seed: ticker hash XOR session seed
+  const seed = (hashStr(ticker) ^ SESSION_SEED) >>> 0;
+  const rng = mulberry32(seed);
+
+  // Price: base ± 5% drift, regenerated per session
+  const basePrice = BASE_PRICES[ticker] ?? (50 + rng() * 500);
+  const drift = (rng() - 0.5) * 0.10; // ±5%
+  const price = basePrice * (1 + drift);
+
+  // IV: base ± 15% with slight randomization
+  const baseIV = BASE_IV[ticker] ?? (30 + rng() * 30);
+  const iv = baseIV * (0.85 + rng() * 0.30);
+
+  // HV: generally lower than IV, 60-95% of IV
+  const hv = iv * (0.60 + rng() * 0.35);
+
+  // PCR: centered around 1.0 with ticker-specific skew
+  const pcrBase = ticker === "MSTR" || ticker === "COIN" ? 1.4 : 0.9;
+  const pcr = pcrBase * (0.6 + rng() * 1.0);
+
   const spread = iv - hv;
-  const pcr = 0.3 + Math.random() * 2.5;
   const unusual = spread > 28 || pcr > 1.8;
+  const chg = (rng() - 0.45) * 8; // Slight positive bias
+
+  // Volume scales with price and IV
+  const volBase = Math.floor(200000 + rng() * 600000);
+  const callVol = Math.floor(volBase * (rng() * 0.4 + 0.3));
+  const putVol = Math.floor(volBase * (rng() * 0.4 + 0.2));
+
   return {
     ticker,
     name: TICKER_NAMES[ticker] || ticker,
     price: Math.round(price * 100) / 100,
-    change_pct: Math.round((Math.random() * 10 - 4) * 100) / 100,
+    change_pct: Math.round(chg * 100) / 100,
     implied_volatility: Math.round(iv * 100) / 100,
     historical_volatility: Math.round(hv * 100) / 100,
     iv_hv_spread: Math.round(spread * 100) / 100,
     put_call_ratio: Math.round(pcr * 100) / 100,
-    call_volume: Math.floor(Math.random() * 500000) + 10000,
-    put_volume: Math.floor(Math.random() * 300000) + 5000,
-    total_volume: Math.floor(Math.random() * 800000) + 20000,
+    call_volume: callVol,
+    put_volume: putVol,
+    total_volume: callVol + putVol,
     unusual_activity: unusual,
     ai_alert: unusual
-      ? `⚠️ ${ticker} IV 異常：spread=${spread.toFixed(1)}%，PCR=${pcr.toFixed(2)}。${spread > 35 ? "極端擴張，考慮 Long Straddle。" : "顯著偏離，監控財報催化劑。"}`
+      ? `⚠️ ${ticker} IV anomaly: spread=${spread.toFixed(1)}%, PCR=${pcr.toFixed(2)}. ${spread > 35 ? "Extreme expansion — consider Long Straddle for vol capture." : "Elevated skew — monitor earnings catalyst or macro event."}`
       : undefined,
     last_updated: new Date().toISOString(),
   };
