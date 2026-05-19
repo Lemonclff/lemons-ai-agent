@@ -109,11 +109,22 @@ function hashStr(s: string): number {
 }
 
 /**
- * Generate a session seed that changes on full page reload (F5)
- * but stays stable across auto-refresh cycles.
- * Uses Date.now() floored to the nearest hour, XOR'd with a random offset.
+ * Session seed — stored in sessionStorage to survive HMR (Hot Module Reload).
+ * sessionStorage is scoped to the tab: cleared on tab close / F5 reload.
+ * This means:
+ *   - Auto-refresh (60s timer): same seed → same prices ✓
+ *   - HMR (code edit in dev): same seed → same prices ✓
+ *   - F5 (full reload): new seed → new slight drift ✓ (simulates market change)
+ *   - New tab: new seed ✓
  */
-let SESSION_SEED = (Math.floor(Date.now() / 3600000) ^ (Math.random() * 0xffffffff)) >>> 0;
+function getSessionSeed(): number {
+  if (typeof window === "undefined") return 42; // SSR fallback
+  const stored = sessionStorage.getItem("lemons_options_seed");
+  if (stored) return parseInt(stored, 10);
+  const seed = (Math.floor(Date.now() / 3600000) ^ (Math.random() * 0xffffffff)) >>> 0;
+  sessionStorage.setItem("lemons_options_seed", String(seed));
+  return seed;
+}
 
 /* ============================================================================
    Realistic Base Prices (approximate as of mid-2025)
@@ -135,6 +146,12 @@ const BASE_PRICES: Record<string, number> = {
 const BASE_IV: Record<string, number> = {
   TSLA: 55, NVDA: 60, AMD: 52, AAPL: 28, MSTR: 82, COIN: 78,
   SMCI: 70, PLTR: 65, ARM: 50, AVGO: 35,
+  MSFT: 30, GOOGL: 32, META: 38, AMZN: 33, NFLX: 45,
+  INTC: 42, QCOM: 38, MU: 48, SNOW: 58, CRM: 35,
+  UBER: 40, SQ: 52, RBLX: 60, SNAP: 65, DDOG: 48,
+  CRWD: 50, PANW: 38, ZS: 45, NET: 50, SHOP: 55,
+  RIVN: 75, LCID: 80, SOFI: 55, AFRM: 70, HOOD: 58,
+  GME: 95, AMC: 90, SPY: 16, QQQ: 22, IWM: 22,
 };
 
 const TICKER_NAMES: Record<string, string> = {
@@ -155,8 +172,8 @@ const TICKER_NAMES: Record<string, string> = {
 };
 
 function generateDataForTicker(ticker: string): OptionsSnapshot {
-  // Deterministic seed: ticker hash XOR session seed
-  const seed = (hashStr(ticker) ^ SESSION_SEED) >>> 0;
+  // Deterministic seed: ticker hash XOR session seed (from sessionStorage)
+  const seed = (hashStr(ticker) ^ getSessionSeed()) >>> 0;
   const rng = mulberry32(seed);
 
   // Price: base ± 5% drift, regenerated per session
