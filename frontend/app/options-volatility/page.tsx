@@ -439,6 +439,8 @@ export default function OptionsVolatilityPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
 
+  const [dataSource, setDataSource] = useState<"loading" | "live" | "mock">("loading");
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- Init: load watchlist from localStorage ---
@@ -446,16 +448,46 @@ export default function OptionsVolatilityPage() {
     setWatchlist(loadWatchlist());
   }, []);
 
-  // --- Fetch data when watchlist changes ---
-  const fetchData = useCallback(() => {
+  // --- Fetch data from API (live yfinance) ---
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const tickers = loadWatchlist();
-    // In production: POST /api/options with body { tickers }
-    setTimeout(() => {
+    if (tickers.length === 0) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tickers }),
+      });
+      const json = await res.json();
+      const raw = (json.data || []) as OptionsSnapshot[];
+
+      // Enrich with names from local lookup
+      const enriched = raw.map((d) => ({
+        ...d,
+        name: TICKER_NAMES[d.ticker] || d.name || d.ticker,
+        total_volume: d.total_volume || (d.call_volume || 0) + (d.put_volume || 0),
+        ai_alert: d.unusual_activity
+          ? `⚠️ ${d.ticker} IV anomaly: spread=${(d.iv_hv_spread ?? 0).toFixed(1)}%, PCR=${(d.put_call_ratio ?? 0).toFixed(2)}. ${(d.iv_hv_spread ?? 0) > 35 ? "Extreme expansion — consider Long Straddle for vol capture." : "Elevated skew — monitor earnings catalyst or macro event."}`
+          : undefined,
+      }));
+
+      setData(enriched);
+      setDataSource(json._source === "yfinance" || json._source === "cache" ? "live" : "mock");
+    } catch (err) {
+      console.error("Options fetch failed:", err);
+      // Fallback to deterministic mock
       setData(generateMockData(tickers));
+      setDataSource("mock");
+    } finally {
       setLoading(false);
       setCountdown(REFRESH_INTERVAL);
-    }, 400);
+    }
   }, []);
 
   useEffect(() => {
@@ -589,6 +621,18 @@ export default function OptionsVolatilityPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {dataSource === "live" && (
+            <Badge variant="success" size="md">
+              <CheckCircle2 size={12} />
+              Live · yfinance
+            </Badge>
+          )}
+          {dataSource === "mock" && (
+            <Badge variant="warning" size="md">
+              <AlertTriangle size={12} />
+              Mock · API unavailable
+            </Badge>
+          )}
           {unusualCount > 0 && (
             <Badge variant="danger" size="md">
               <AlertTriangle size={12} />
