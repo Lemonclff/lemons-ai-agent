@@ -48,6 +48,11 @@ interface AnalysisResult {
   message?: string;
 }
 
+interface HeatmapItem {
+  symbol: string; name: string; name_zh?: string;
+  price: number; change_pct: number; change_display: string;
+}
+
 /* ========================================================================
    Helpers
    ======================================================================== */
@@ -155,6 +160,9 @@ export default function AIAnalysisPage() {
   const [sentimentLoading, setSentimentLoading] = useState(true);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [radarPaused, setRadarPaused] = useState(false);
+  const [heatmapType, setHeatmapType] = useState("crypto");
+  const [heatmapData, setHeatmapData] = useState<HeatmapItem[]>([]);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [calendar, setCalendar] = useState<CalendarEvent[]>([]);
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [selectedTicker, setSelectedTicker] = useState("");
@@ -165,13 +173,23 @@ export default function AIAnalysisPage() {
     trend: true, scores: true, details: true, reasons: true, indicators: false,
   });
 
-  // ── Init ──
+  // Fetch sentiment + radar + heatmap on mount
   useEffect(() => {
     setWatchlist(loadWl());
     setCalendar(generateCalendar());
     fetch("/api/sentiment").then(r => r.json()).then(d => { setSentiment(d); setSentimentLoading(false); }).catch(() => setSentimentLoading(false));
     fetch("/api/radar").then(r => r.json()).then((d: Opportunity[]) => { if (Array.isArray(d)) setOpportunities(d); }).catch(() => {});
+    fetchHeatmap("crypto");
   }, []);
+
+  const fetchHeatmap = (type: string) => {
+    setHeatmapLoading(true);
+    fetch(`/api/heatmap?type=${type}`)
+      .then(r => r.json())
+      .then((d: HeatmapItem[]) => { if (Array.isArray(d)) setHeatmapData(d); })
+      .catch(() => {})
+      .finally(() => setHeatmapLoading(false));
+  };
 
   // ── Analyze ──
   const analyze = useCallback(async (t: string) => {
@@ -317,28 +335,101 @@ export default function AIAnalysisPage() {
       {/* ═══════════════════════ MAIN THREE-COLUMN ═══════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_220px] gap-4">
 
-        {/* ── LEFT: Heatmap + Calendar ── */}
+        {/* ── LEFT: Heatmap + Watchlist + Calendar ── */}
         <div className="space-y-3 order-2 lg:order-1">
-          {/* Watchlist (replaces heatmap for simplicity) */}
+          {/* Market Heatmap (mirrors QuantDinger) */}
+          <Card className="p-3">
+            <div className="flex items-center gap-1 mb-2">
+              {[
+                { key: "crypto", label: "加密貨幣" },
+                { key: "commodities", label: "大宗商品" },
+                { key: "forex", label: "外匯" },
+              ].map(tab => (
+                <button key={tab.key}
+                  onClick={() => { setHeatmapType(tab.key); fetchHeatmap(tab.key); }}
+                  className={cn(
+                    "px-2 py-1 text-[10px] rounded font-medium transition-colors",
+                    heatmapType === tab.key
+                      ? "bg-indigo-500/20 text-indigo-400"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                  )}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              {heatmapLoading ? (
+                Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="h-10 rounded bg-[var(--color-surface-elevated)] animate-pulse" />
+                ))
+              ) : heatmapData.length > 0 ? (
+                heatmapData.slice(0, 12).map(item => (
+                  <div key={item.symbol} className={cn(
+                    "px-2 py-1.5 rounded text-xs",
+                    item.change_pct > 0 ? "bg-emerald-500/5" :
+                    item.change_pct < 0 ? "bg-red-500/5" : "bg-[var(--color-surface-elevated)]"
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] font-medium text-[var(--color-text-secondary)] truncate">
+                        {item.name_zh || item.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[11px] font-mono font-bold">
+                        ${item.price >= 1000 ? (item.price/1000).toFixed(1)+"K" : item.price.toFixed(2)}
+                      </span>
+                      <span className={cn("text-[10px] font-mono font-bold",
+                        item.change_pct > 0 ? "text-emerald-400" :
+                        item.change_pct < 0 ? "text-red-400" : "text-[var(--color-text-muted)]"
+                      )}>
+                        {item.change_display}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="col-span-2 text-xs text-[var(--color-text-muted)]/50 text-center py-4">暫無數據</p>
+              )}
+            </div>
+          </Card>
+
+          {/* Watchlist */}
           <Card className="p-3">
             <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2 text-[var(--color-text-muted)]">
-              <Star size={12} /> 自選監控
+              <Star size={12} /> 自選股
+              <span className="text-[10px] text-[var(--color-text-muted)]/50 ml-auto">{watchlist.length} 檔</span>
             </h3>
-            <div className="space-y-1">
+            {/* Add ticker input */}
+            <div className="flex gap-1 mb-2">
+              <input
+                type="text" value={selectedTicker}
+                onChange={(e) => setSelectedTicker(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === "Enter") { addToWl(selectedTicker); } }}
+                placeholder="添加代碼..."
+                className="flex-1 px-2 py-1 text-[11px] rounded border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              />
+              <button onClick={() => addToWl(selectedTicker)} disabled={!selectedTicker.trim()}
+                className="px-2 py-1 text-[11px] rounded bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 disabled:opacity-30">
+                +
+              </button>
+            </div>
+            <div className="space-y-0.5 max-h-[180px] overflow-y-auto">
               {watchlist.map(t => (
                 <div key={t} className={cn(
-                  "flex items-center justify-between px-2 py-1.5 rounded text-xs cursor-pointer transition-colors",
+                  "group flex items-center justify-between px-2 py-1 rounded text-xs cursor-pointer transition-colors",
                   selectedTicker === t ? "bg-indigo-500/10 text-indigo-400" : "hover:bg-[var(--color-surface-elevated)]"
-                )} onClick={() => analyze(t)}>
+                )} onClick={() => { setSelectedTicker(t); analyze(t); }}>
                   <span className="font-mono font-medium">{t}</span>
                   <button onClick={(e) => { e.stopPropagation(); removeFromWl(t); }}
-                    className="opacity-0 group-hover:opacity-100 hover:text-red-400">
-                    <X size={12} />
+                    className="opacity-0 group-hover:opacity-100 text-[var(--color-text-muted)] hover:text-red-400 transition-opacity">
+                    <X size={11} />
                   </button>
                 </div>
               ))}
               {watchlist.length === 0 && (
-                <p className="text-xs text-[var(--color-text-muted)]/50 text-center py-2">尚無自選股</p>
+                <p className="text-xs text-[var(--color-text-muted)]/50 text-center py-3">
+                  在上方輸入代碼後按 + 添加
+                </p>
               )}
             </div>
           </Card>
