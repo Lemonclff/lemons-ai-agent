@@ -3,7 +3,7 @@
 import json, sqlite3, sys, os
 from pathlib import Path
 
-DB = Path(os.environ.get("LEMONS_DB", Path(__file__).resolve().parent.parent.parent / "data" / "lemons.db"))
+DB = Path(os.environ.get("LEMONS_DB", "/home/lemon/lemons-ai-agent/data/lemons.db"))
 sql = sys.argv[1] if len(sys.argv) > 1 else "SELECT 'options_volatility_log' as tbl, COUNT(*) as n FROM options_volatility_log UNION ALL SELECT 'macro_economic_events', COUNT(*) FROM macro_economic_events UNION ALL SELECT 'tracked_tickers', COUNT(*) FROM tracked_tickers"
 
 try:

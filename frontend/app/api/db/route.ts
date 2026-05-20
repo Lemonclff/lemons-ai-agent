@@ -6,9 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
-import path from "path";
 
-const SCRIPT = path.resolve(process.cwd(), "..", "scripts", "db_query.py");
+const SCRIPT = "/home/lemon/lemons-ai-agent/scripts/db_query.py";
 
 async function runQuery(sql: string): Promise<unknown> {
   return new Promise((resolve) => {
