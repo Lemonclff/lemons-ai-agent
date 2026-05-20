@@ -558,6 +558,8 @@ export default function OptionsVolatilityPage() {
     setSearchInput("");
     setSearchResult(null);
     setSearchError("");
+    // Trigger immediate fetch for the new ticker
+    setTimeout(() => fetchData(), 100);
   };
 
   // --- Delete ticker ---
@@ -576,20 +578,18 @@ export default function OptionsVolatilityPage() {
       return;
     }
     setSearchInput(upper);
-    setValidating(true);
     setSearchError("");
+    setSearchResult(null);
 
-    // Check against known tickers (production: call yfinance API)
-    await new Promise((r) => setTimeout(r, 300));
-    const knownTickers = Object.keys(TICKER_NAMES);
-    if (knownTickers.includes(upper) || /^[A-Z]{1,5}$/.test(upper)) {
+    // Accept any valid ticker format (1-5 uppercase letters, optional digits)
+    if (/^[A-Z]{1,5}$/.test(upper)) {
       setSearchResult(upper);
-      setSearchError("");
+    } else if (/^[A-Z]{1,5}\.[A-Z]{2}$/.test(upper)) {
+      // Allow exchange suffix e.g. 'VOW.DE'
+      setSearchResult(upper);
     } else {
-      setSearchResult(null);
-      setSearchError("Invalid ticker format");
+      setSearchError("Invalid ticker format (1-5 letters, e.g. MSFT, 9988.HK)");
     }
-    setValidating(false);
   };
 
   // --- Reset watchlist ---
@@ -670,9 +670,9 @@ export default function OptionsVolatilityPage() {
               {unusualCount} Alert{unusualCount > 1 ? "s" : ""}
             </Badge>
           )}
-          <Button variant="secondary" size="sm" onClick={fetchData}>
+          <Button variant="secondary" size="sm" onClick={fetchData} disabled={loading}>
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            Refresh
+            {loading ? "Fetching..." : `Refresh (${countdown}s)`}
           </Button>
           <Button variant="ghost" size="sm" onClick={exportCSV}>
             <Download size={14} />

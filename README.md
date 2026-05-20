@@ -119,6 +119,99 @@ tracked_tickers
 
 ---
 
+## Data Pipeline — Options & Volatility
+
+### How Live Data Flows
+
+```
+Browser                          API Route                     Python Script              External API
+  │                                 │                              │                          │
+  │  POST /api/options              │                              │                          │
+  │  {tickers: ["NVDA","TSLA"]}     │                              │                          │
+  ├────────────────────────────────►│  spawn python process        │                          │
+  │                                 ├─────────────────────────────►│  yfinance stock.options  │
+  │                                 │                              │  + option_chain(expiry)  │
+  │                                 │                              ├─────────────────────────►│
+  │                                 │                              │  returns calls + puts    │
+  │                                 │                              │◄─────────────────────────┤
+  │                                 │                              │                          │
+  │                                 │                              │  Compute IV via straddle  │
+  │                                 │                              │  Compute HV via 20d ret  │
+  │                                 │                              │  Compute IV Rank (1yr)    │
+  │                                 │                              │                          │
+  │                                 │  JSON output                 │                          │
+  │                                 │◄─────────────────────────────┤                          │
+  │  JSON response                  │                              │                          │
+  │◄────────────────────────────────┤                              │                          │
+  │                                 │                              │                          │
+  │  POST /api/db (populate)        │  Insert into PostgreSQL      │                          │
+  ├────────────────────────────────►│  options_volatility_log      │                          │
+```
+
+### Straddle IV Formula (Brenner-Subrahmanyam)
+
+yfinance 的 `impliedVolatility` 欄位對許多 ATM 選擇權返回 0.00001（無效值）。
+因此使用 straddle 溢價近似計算 IV — 這是業界標準的 Brenner-Subrahmanyam 公式：
+
+```
+IV ≈ sqrt(2π / T) × (C + P) / (2 × S)
+
+其中：
+  T  = DTE / 365          (到期天數年化)
+  C  = ATM Call 權利金
+  P  = ATM Put 權利金
+  S  = 標的現價
+  π  = 3.14159...
+```
+
+**實作** (`scripts/options_api.py` 第 190 行)：
+1. 選取 ~30 天到期的選擇權合約（避開週選 IV 趨零問題）
+2. 配對相同履約價的 Call + Put
+3. 過濾無效值（權利金 > $0.01，IV 範圍 5%–300%）
+4. 取中位數，避免極端值拉偏
+
+### Quant Analysis 數據讀取原理
+
+Quant Analysis 頁面從 PostgreSQL 直接讀取真實數據：
+
+```
+/quant-analysis
+    │
+    ▼ GET /api/quant/analyze?ticker=NVDA
+    │
+    ▼ scripts/quant_analyzer.py
+    │
+    ├─ SELECT FROM options_volatility_log WHERE ticker='NVDA'
+    │   → IV, HV, Spread, PCR, Call/Put Vol, IV Rank, UOA Flag
+    │
+    ├─ SELECT FROM stock_price_daily WHERE ticker='NVDA'
+    │   → O/H/L/C/V (用於 RSI, Bollinger Bands, 支撐/壓力)
+    │
+    └─ 計算層：
+        ├─ RSI(14): Wilder's smoothing
+        ├─ Bollinger Bands(20,2): %B = (Close - Lower) / (Upper - Lower)
+        ├─ Support/Resistance: min/max of recent range
+        ├─ IV Regime: extreme_high(>20) / elevated(10-20) / normal / compressed(<-5)
+        ├─ PCR Signal: bullish(<0.6) / bearish(>1.2) / neutral
+        └─ Strategy Engine: Iron Condor / Short Strangle / Long Straddle
+```
+
+### Cron + Telegram 推送
+
+```
+cron job (no_agent mode)
+    │
+    ▼ lemons_pre.sh / lemons_post.sh
+    │
+    ▼ ~/.hermes/scripts/telegram_summary.py
+    │
+    ▼ scripts/sector_rotation.py --session pre|post
+    │
+    ▼ stdout → Hermes Gateway → Telegram
+```
+
+---
+
 ## Admin System
 
 ### Password Reset
