@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 /* ===== Types ===== */
 interface AnalysisResult {
-  status: string; ticker: string; fetched_at: string;
+  status: string; ticker: string; generated_at: string; fetched_at?: string;
   data: { price: number | null; iv: number; hv: number; iv_hv_spread: number; iv_rank: number; pcr: number; call_volume: number; put_volume: number; total_volume: number; unusual_activity: boolean; ai_risk_alert: string; };
   technical: { rsi: number | null; bollinger: { upper: number; middle: number; lower: number; pct_b: number; current: number } | null; support_resistance: { support: number; resistance: number } | null; };
   diagnostics: string[]; iv_regime: string; pcr_signal: string;
@@ -62,7 +62,12 @@ export default function QuantAnalysisPage() {
       if (data.status === "ok") {
         setResults((p) => ({ ...p, [t]: data }));
       } else {
+        // No data in DB — trigger auto live fetch
         setErrors((p) => ({ ...p, [t]: data.message || "無數據" }));
+        // Auto-fetch if no data exists
+        if (data.status === "no_data") {
+          fetchLive(t);
+        }
       }
     } catch {
       setErrors((p) => ({ ...p, [t]: "連線失敗" }));
@@ -237,12 +242,14 @@ export default function QuantAnalysisPage() {
                   </div>
                   {r ? (
                     <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                      IV: {r.data.iv?.toFixed(1)}% · HV: {r.data.hv?.toFixed(1)}% · Spread: {r.data.iv_hv_spread?.toFixed(1)}% · RSI: {r.technical.rsi?.toFixed(1) || "N/A"} · Updated: {new Date(r.fetched_at || r.generated_at).toLocaleTimeString()}
+                      IV: {r.data.iv?.toFixed(1)}% · HV: {r.data.hv?.toFixed(1)}% · Spread: {r.data.iv_hv_spread?.toFixed(1)}% · RSI(14d): {r.technical.rsi?.toFixed(1) || "N/A"} · BB(20d,2σ) · {new Date(r.generated_at).toLocaleTimeString()}
                     </p>
                   ) : load ? (
                     <p className="text-xs text-[var(--color-text-muted)] mt-0.5 flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Loading...</p>
+                  ) : fetch ? (
+                    <p className="text-xs text-amber-400 mt-0.5 flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Fetching live data from yfinance...</p>
                   ) : (
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{err || "No data"}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">No data — click <RefreshCw size={10} className="inline" /> to fetch</p>
                   )}
                 </div>
 
@@ -267,7 +274,7 @@ export default function QuantAnalysisPage() {
                 <div className="px-4 pb-4 space-y-4 border-t border-[var(--color-border)] pt-4">
                   {/* Data Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[["Price", `$${r.data.price?.toFixed(2) || "—"}`], ["IV", `${r.data.iv?.toFixed(1)}%`], ["HV (20d)", `${r.data.hv?.toFixed(1)}%`], ["Spread", `${r.data.iv_hv_spread?.toFixed(1)}%`], ["IV Rank", `${r.data.iv_rank?.toFixed(0)}%`], ["PCR", r.data.pcr?.toFixed(2)], ["RSI(14)", r.technical.rsi?.toFixed(1) || "N/A"], ["%B", r.technical.bollinger ? `${r.technical.bollinger.pct_b}%` : "N/A"]].map(([l, v]) => (
+                    {[["Price", `$${r.data.price?.toFixed(2) || "—"}`], ["IV (straddle)", `${r.data.iv?.toFixed(1)}%`], ["HV (20d)", `${r.data.hv?.toFixed(1)}%`], ["Spread", `${r.data.iv_hv_spread?.toFixed(1)}%`], ["IV Rank (1y)", `${r.data.iv_rank?.toFixed(0)}%`], ["PCR", r.data.pcr?.toFixed(2)], ["RSI (14d close)", r.technical.rsi?.toFixed(1) || "N/A"], ["%B (20d,2σ)", r.technical.bollinger ? `${r.technical.bollinger.pct_b}%` : "N/A"]].map(([l, v]) => (
                       <div key={l} className="px-2 py-1.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
                         <p className="text-[10px] uppercase text-[var(--color-text-muted)]">{l}</p>
                         <p className="text-xs font-mono font-medium">{v}</p>
