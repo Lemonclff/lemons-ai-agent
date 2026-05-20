@@ -97,4 +97,13 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12);
   }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

@@ -14,6 +14,7 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 | **⏰ Schedule & Automation** | Admin-only cron job control — pause/resume/run with real API |
 | **🧠 Quant Analysis** | Multi-ticker volatility diagnostics — IV/HV/PCR/RSI/Bollinger/Strategy Engine |
 | **📈 Options & Volatility** | Search any ticker, live IV/HV spread, Put/Call ratio, auto-refresh |
+| **🤖 AI 資產分析** | AI-powered stock analysis with LLM (DeepSeek/OpenRouter), trading radar, sentiment panel, structured trading plans |
 | **📅 Macro Impact Matrix** | Economic calendar with expected vs. actual values, AI sector flow impact |
 | **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, table usage docs |
 | **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag |
@@ -197,6 +198,150 @@ Quant Analysis 頁面從 PostgreSQL 直接讀取真實數據：
         └─ Strategy Engine: Iron Condor / Short Strangle / Long Straddle
 ```
 
+### AI 資產分析 — 完整 AI 量化分析管道
+
+> **靈感來自 QuantDinger** 的 `ai-asset-analysis` 頁面。整合即時市場數據 + 大型語言模型（LLM），提供結構化的 AI 交易分析報告。
+
+#### 頁面架構
+
+```
+┌─────────────────────────────────────────────────┐
+│ 恐貪 27 │ VIX 17.86 │ DXY 99.32 │ 🔄          │  ← 頂部指數條 (真實 API)
+├─────────────────────────────────────────────────┤
+│ AI 交易機會雷達 (自動輪播，hover 暫停)            │  ← 美股 24h 漲跌掃描
+│ [AAPL +2.3% 看漲] [TSLA -1.5% 看跌] ...         │
+├────────────┬────────────────────┬───────────────┤
+│ 自選監控    │ 搜尋 + AI 分析按鈕  │ AI 模型資訊    │
+│ (localStg) │ [快速選股標籤]      │ 數據來源說明   │
+│            │                    │               │
+│ 財經日曆    │ ┌────────────────┐ │               │
+│ (模板)     │ │ 🔵 BUY 78%    │ │               │
+│            │ │ 摘要 + 理由     │ │               │
+│            │ └────────────────┘ │               │
+│            │ 四維評分 (可收合)    │               │
+│            │ 交易計畫 (進/止損/盈)│               │
+│            │ 趨勢展望 (短/中期)   │               │
+│            │ 詳細分析 (技術/基/情)│               │
+│            │ 理由與風險          │               │
+└────────────┴────────────────────┴───────────────┘
+```
+
+#### 如何呼叫 AI 分析
+
+```
+瀏覽器
+  │  POST /api/ai/analyze  { ticker: "AAPL" }
+  ▼
+Next.js API Route (/api/ai/analyze)
+  │  spawn python process
+  ▼
+scripts/ai_analyzer.py
+  │
+  ├─ ① 資料採集 (yfinance)
+  │   ├─ 即時價格、成交量、52週高低
+  │   ├─ RSI(14), MACD, MA50/200, ATR(14)
+  │   ├─ 布林帶 (20,2), 支撐/阻力
+  │   ├─ 基本面 (PE, 市值, Beta, 股息率)
+  │   └─ 選擇權數據 (IV, HV, PCR) — 從 PostgreSQL
+  │
+  ├─ ② 構建 LLM 提示詞
+  │   ├─ System prompt (繁體中文分析師)
+  │   ├─ 技術指標 → 格式化數據
+  │   └─ 基本面 → 格式化數據
+  │
+  ├─ ③ 呼叫 LLM API
+  │   ├─ DeepSeek (優先) → api.deepseek.com/v1
+  │   ├─ OpenRouter → openrouter.ai/api/v1
+  │   └─ OpenAI → api.openai.com/v1
+  │
+  ├─ ④ 後處理與驗證
+  │   ├─ JSON 解析 + Markdown fence 剝離
+  │   ├─ 價格約束 (±5%)
+  │   ├─ 停損/止盈幾何驗證
+  │   └─ 信心度下限 (BUY/SELL ≥ 60)
+  │
+  └─ ⑤ 輸出 JSON → 前端渲染
+```
+
+#### LLM Provider 自動偵測
+
+在 `.env` 中設定任一 API Key，系統自動偵測優先級：
+
+```bash
+# 優先級：DeepSeek > OpenRouter > OpenAI
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx    # 最優先
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxx    # 備援
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx      # 備援
+LLM_MODEL=deepseek/deepseek-chat        # 可選自訂模型
+```
+
+#### 情緒面板 — 數據來源
+
+| 指標 | API 來源 | 是否需要 Key |
+|------|---------|-------------|
+| 恐懼貪婪指數 | `api.alternative.me/fng/` | ❌ 免費 |
+| VIX 波動率 | yfinance `^VIX` | ❌ 免費 |
+| DXY 美元指數 | yfinance `DX-Y.NYB` | ❌ 免費 |
+| 美債 10Y | yfinance `^TNX` | ❌ 免費 |
+
+```
+GET /api/sentiment
+  → scripts/sentiment_fetcher.py
+    → Parallel: alternative.me + yfinance
+    → 30min 記憶體快取
+```
+
+#### 交易機會雷達 — 掃描邏輯
+
+```
+GET /api/radar
+  → scripts/opportunity_radar.py
+    → yfinance.download(30+ tickers, period="2d")
+    → 計算 24h 漲跌幅
+    → 閾值分類：
+        > +5%  → 超買 (overbought)    → bearish
+        +2~5% → 看漲動能              → bullish
+        ±2%   → 震盪 (consolidation)  → neutral
+        -5~-2% → 看跌動能             → bearish
+        < -5%  → 超賣 (oversold)      → bullish
+    → 按 |change| 降序排列，取前 20
+    → 3min 記憶體快取
+```
+
+#### AI 分析回應 JSON 結構
+
+```json
+{
+  "status": "ok",
+  "ticker": "AAPL",
+  "provider": "deepseek", "model": "deepseek-chat",
+  "analysis": {
+    "decision": "BUY",           // BUY | SELL | HOLD
+    "confidence": 78,            // 0-100
+    "summary": "繁體中文摘要...",
+    "technical_score": 35,       // -100 to +100
+    "fundamental_score": 20,
+    "sentiment_score": -5,
+    "overall_score": 28,
+    "entry_price": 298.50,
+    "stop_loss": 283.00,
+    "take_profit": 328.00,
+    "position_size_pct": 15,
+    "timeframe": "medium",
+    "key_reasons": ["理由1", "理由2", "理由3"],
+    "risks": ["風險1", "風險2"],
+    "technical_analysis": "技術面分析文字",
+    "fundamental_analysis": "基本面分析文字",
+    "sentiment_analysis": "市場情緒分析文字",
+    "trend_outlook": {
+      "short_term": "短期展望", "medium_term": "中期展望"
+    }
+  },
+  "market_data": { /* 原始市場數據 */ },
+  "analysis_time_ms": 4500
+}
+```
+
 ### Cron + Telegram 推送
 
 ```
@@ -305,7 +450,7 @@ Frontend        Next.js 14 (App Router) · React 18 · Tailwind CSS · TypeScrip
 Auth            bcryptjs · HMAC-SHA256 tokens · httpOnly cookies · PG users table
 Database        PostgreSQL · node-postgres (pg) · psycopg2 (Python)
 Analysis        Python 3.12 · yfinance · pandas · numpy · FRED API
-Quant Engine    Straddle IV (Brenner-Subrahmanyam) · RSI(14) · Bollinger(20,2) · S/R
+| **AI Analysis** | DeepSeek / OpenRouter / OpenAI · System Prompt (zh-TW) · RSI/MACD/BB/ATR · Straddle IV
 Scheduling      Hermes cronjob (pre/post market) · Telegram delivery
 Tunnel          Cloudflare Tunnel (trycloudflare.com)
 Icons           Lucide React
@@ -412,6 +557,7 @@ lemons-ai-agent/
 │   │   ├── schedule/page.tsx        # Cron job management (admin-only)
 │   │   ├── options-volatility/      # IV/HV monitor + search custom tickers
 │   │   ├── quant-analysis/          # Multi-ticker quant engine (IV/PCR/RSI/BB)
+│   │   ├── ai-analysis/             # AI-powered LLM analysis (QuantDinger-inspired)
 │   │   ├── macro-impact/            # Economic calendar
 │   │   ├── admin/reset-password/    # Admin password reset
 │   │   ├── data/page.tsx            # Database Explorer (admin-only, CRUD + SQL)
@@ -430,6 +576,10 @@ lemons-ai-agent/
 │   │       ├── quant/
 │   │       │   ├── analyze/route.ts # GET ticker analysis from PG
 │   │       │   └── ensure-prices/   # GET fetch 30d price data from yfinance
+│   │       ├── ai/
+│   │       │   └── analyze/route.ts # POST ticker → LLM analysis (DeepSeek/OpenRouter)
+│   │       ├── sentiment/route.ts   # GET Fear&Greed / VIX / DXY / 10Y
+│   │       ├── radar/route.ts       # GET trading opportunity radar (30+ stocks)
 │   │       ├── cron/route.ts        # GET list / control cron jobs
 │   │       └── macro/route.ts       # Macro calendar proxy
 │   ├── components/
@@ -450,6 +600,10 @@ lemons-ai-agent/
 │   ├── db_query.py                  # Query worker (JSON output)
 │   ├── migrate_to_pg.py             # SQLite → PostgreSQL migration
 │   ├── options_api.py               # Options chain API worker
+│   ├── quant_analyzer.py            # Rule-based quant engine (RSI/BB/PCR/IV)
+│   ├── ai_analyzer.py               # LLM-powered AI analysis (DeepSeek/OpenRouter)
+│   ├── sentiment_fetcher.py         # Fear&Greed / VIX / DXY / 10Y fetcher
+│   ├── opportunity_radar.py         # 30+ stock 24h scanner → trading signals
 │   └── ...
 ├── db/
 │   └── schema.sql                   # PostgreSQL DDL (5 tables)

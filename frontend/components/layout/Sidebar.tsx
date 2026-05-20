@@ -18,6 +18,7 @@ import {
   HardDrive,
   X,
   ShieldCheck,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Schedule & Automation", href: "/schedule", icon: Clock },
+  { label: "AI 資產分析", href: "/ai-analysis", icon: Brain, badge: "LLM" },
   { label: "Quant Analysis", href: "/quant-analysis", icon: TrendingUp, badge: "AI" },
   { label: "Options & Volatility", href: "/options-volatility", icon: TrendingUp, badge: "New" },
   { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },
