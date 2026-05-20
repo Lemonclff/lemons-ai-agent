@@ -35,22 +35,35 @@ DB_PATH = Path(__file__).resolve().parent.parent / "data" / "lemons.db"
 def init_db():
     """Create tables using backend-aware DDL."""
     conn = get_conn()
+    # Re-read DB_TYPE from module to avoid Python import-copy staleness
+    from db_connection import DB_TYPE as actual_type
     ddl = get_ddl()
 
-    # Split on semicolons + newlines to execute each statement
-    for stmt in ddl.split(";"):
-        stmt = stmt.strip()
-        if stmt and not stmt.startswith("--"):
-            try:
-                conn.execute(stmt)
-            except Exception as e:
-                print(f"[WARN] {str(e)[:100]}")
+    # psycopg2 requires cursor; sqlite3 allows conn.execute() directly
+    if actual_type == "postgresql":
+        cur = conn.cursor()
+        for stmt in ddl.split(";"):
+            stmt = stmt.strip()
+            if stmt and not stmt.startswith("--"):
+                try:
+                    cur.execute(stmt)
+                except Exception as e:
+                    print(f"[WARN] {str(e)[:100]}")
+        cur.close()
+    else:
+        for stmt in ddl.split(";"):
+            stmt = stmt.strip()
+            if stmt and not stmt.startswith("--"):
+                try:
+                    conn.execute(stmt)
+                except Exception as e:
+                    print(f"[WARN] {str(e)[:100]}")
 
     conn.commit()
     conn.close()
 
-    print(f"[OK] Database initialized ({DB_TYPE})")
-    if DB_TYPE == "sqlite":
+    print(f"[OK] Database initialized ({actual_type})")
+    if actual_type == "sqlite":
         print(f"     Path: {os.environ.get('DATABASE_URL', DB_PATH)}")
     else:
         print(f"     URL:  {os.environ.get('DATABASE_URL', 'postgresql://...')}")
@@ -152,10 +165,18 @@ def seed_data():
 def query_db(sql: str):
     """Run a read query and print results."""
     conn = get_conn()
-    cur = conn.execute(sql)
-    rows = cur.fetchall()
-    if rows:
+    from db_connection import DB_TYPE as actual_type
+    if actual_type == "postgresql":
+        cur = conn.cursor()
+        cur.execute(sql)
+        rows = cur.fetchall()
         cols = [d[0] for d in cur.description] if cur.description else []
+        cur.close()
+    else:
+        cur = conn.execute(sql)
+        rows = cur.fetchall()
+        cols = [d[0] for d in cur.description] if cur.description else []
+    if rows:
         print(" | ".join(cols))
         print("-" * 60)
         for row in rows:

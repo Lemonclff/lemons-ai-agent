@@ -51,7 +51,7 @@ def export_sqlite():
 
     dump = {"exported_at": datetime.now().isoformat(), "tables": {}}
 
-    for table in ["tracked_tickers", "options_volatility_log", "macro_economic_events"]:
+    for table in ["tracked_tickers", "options_volatility_log", "macro_economic_events", "stock_price_daily", "users"]:
         try:
             rows = conn.execute(f"SELECT * FROM {table}").fetchall()
             cols = [d[0] for d in conn.execute(f"SELECT * FROM {table} LIMIT 0").description]
@@ -68,23 +68,30 @@ def export_sqlite():
 
 def import_to_pg():
     """Import JSON dump into PostgreSQL."""
-    if DB_TYPE != "postgresql":
-        print("[ERROR] DATABASE_URL must be set to a PostgreSQL connection string")
-        print("  export DATABASE_URL=postgresql://user:pass@host:5432/dbname")
-        sys.exit(1)
-
     if not DUMP_FILE.exists():
         print(f"[ERROR] Dump file not found: {DUMP_FILE}")
         print("  Run: python3 scripts/migrate_to_pg.py --export")
         sys.exit(1)
 
-    dump = json.loads(DUMP_FILE.read_text())
-
     from db_connection import get_conn
     conn = get_conn()
+    # Re-read DB_TYPE after get_conn() sets it
+    from db_connection import DB_TYPE as actual_type
+    if actual_type != "postgresql":
+        print("[ERROR] DATABASE_URL must be set to a PostgreSQL connection string")
+        print("  export DATABASE_URL=postgresql://user:***@host:5432/dbname")
+        conn.close()
+        sys.exit(1)
+
+    dump = json.loads(DUMP_FILE.read_text())
+
+    cur = conn.cursor()
 
     # Import order: tracked_tickers first (no FK), then options, then macro
-    for table in ["tracked_tickers", "options_volatility_log", "macro_economic_events"]:
+    # Columns that need boolean conversion from SQLite (0/1) to Python bool
+    BOOL_COLUMNS = {"is_active", "unusual_activity_flag"}
+
+    for table in ["tracked_tickers", "options_volatility_log", "macro_economic_events", "stock_price_daily", "users"]:
         data = dump["tables"].get(table)
         if not data or not data["rows"]:
             print(f"  {table}: no data, skipping")
@@ -98,18 +105,24 @@ def import_to_pg():
         count = 0
         for row in rows:
             vals = [row.get(c) for c in cols]
+            # Convert int boolean columns (SQLite) → Python bool (PostgreSQL)
+            for i, col in enumerate(cols):
+                if col in BOOL_COLUMNS and vals[i] is not None:
+                    vals[i] = bool(vals[i])
             try:
-                conn.execute(
+                cur.execute(
                     f"INSERT INTO {table} ({col_str}) VALUES ({placeholders}) ON CONFLICT DO NOTHING",
                     vals,
                 )
                 count += 1
             except Exception as e:
+                conn.rollback()  # Reset aborted transaction
                 print(f"  [WARN] {table} row {count}: {str(e)[:100]}")
 
         conn.commit()
         print(f"  {table}: {count}/{len(rows)} rows imported")
 
+    cur.close()
     conn.close()
     print(f"\n[OK] Migration complete → PostgreSQL")
 

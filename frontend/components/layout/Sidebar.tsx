@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Clock,
@@ -16,6 +16,8 @@ import {
   TrendingUp,
   Calendar,
   HardDrive,
+  X,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,13 +38,24 @@ const mainNav: NavItem[] = [
 ];
 
 const bottomNav: NavItem[] = [
+  { label: "Admin — Reset Password", href: "/admin/reset-password", icon: ShieldCheck },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [_dark, _setDark] = useState(true);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    onMobileClose();
+  }, [pathname]);
 
   const toggleDark = () => {
     const html = document.documentElement;
@@ -55,11 +68,13 @@ export function Sidebar() {
     _setDark(!isDark);
   };
 
-  return (
+  const sidebarContent = (
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-300",
-        collapsed ? "w-[64px]" : "w-[260px]"
+        collapsed ? "w-[64px]" : "w-[260px]",
+        // Mobile: full-width overlay
+        "max-md:w-[280px] max-md:shadow-2xl"
       )}
     >
       {/* Logo */}
@@ -69,12 +84,19 @@ export function Sidebar() {
           collapsed ? "justify-center" : "gap-3"
         )}
       >
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
           <Terminal size={16} className="text-white" />
         </div>
         {!collapsed && (
           <span className="text-lg font-bold gradient-text">Lemon's AI Agent</span>
         )}
+        {/* Mobile close button */}
+        <button
+          onClick={onMobileClose}
+          className="md:hidden ml-auto p-2 rounded-lg hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -137,16 +159,16 @@ export function Sidebar() {
             collapsed && "justify-center px-0"
           )}
         >
-          <Sun size={20} className="block dark:hidden" />
+          <Sun size={20} className="dark:hidden" />
           <Moon size={20} className="hidden dark:block" />
           {!collapsed && <span>Toggle Theme</span>}
         </button>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle (desktop only) */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 max-md:hidden",
             "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
             collapsed && "justify-center px-0"
           )}
@@ -156,5 +178,23 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+
+  // Desktop: always visible; Mobile: overlay when open
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="max-md:hidden">{sidebarContent}</div>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+            onClick={onMobileClose}
+          />
+          <div className="md:hidden">{sidebarContent}</div>
+        </>
+      )}
+    </>
   );
 }

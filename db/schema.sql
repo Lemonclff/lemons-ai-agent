@@ -86,3 +86,33 @@ INSERT INTO tracked_tickers (ticker, name, sector) VALUES
     ('ARM',   'ARM Holdings',             'Technology'),
     ('AVGO',  'Broadcom Inc.',            'Technology')
 ON CONFLICT (ticker) DO NOTHING;
+
+-- 4. 股票日線價格表 (Daily Price History)
+--    記錄 O/H/L/C/Adj Close/Volume — 支援技術分析與回測
+CREATE TABLE stock_price_daily (
+    id              SERIAL PRIMARY KEY,
+    ticker          VARCHAR(10) NOT NULL,
+    trade_date      DATE NOT NULL,
+    open            DECIMAL(10, 4),
+    high            DECIMAL(10, 4),
+    low             DECIMAL(10, 4),
+    close           DECIMAL(10, 4),
+    adj_close       DECIMAL(10, 4),
+    volume          BIGINT,
+    data_source     VARCHAR(20) DEFAULT 'yfinance',
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_price_ticker_date UNIQUE (ticker, trade_date)
+);
+
+CREATE INDEX idx_price_ticker_date ON stock_price_daily (ticker, trade_date DESC);
+CREATE INDEX idx_price_trade_date  ON stock_price_daily (trade_date DESC);
+
+
+-- 5. 使用者認證表 (User Authentication)
+CREATE TABLE users (
+    id              SERIAL PRIMARY KEY,
+    username        VARCHAR(50) NOT NULL UNIQUE,
+    password_hash   VARCHAR(255) NOT NULL,
+    is_admin        BOOLEAN DEFAULT FALSE,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

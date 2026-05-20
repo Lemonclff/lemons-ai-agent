@@ -55,7 +55,6 @@ def _sqlite_connect(url: str):
 
 def _pg_connect(url: str):
     import psycopg2
-    # Parse URL: postgresql://user:pass@host:port/dbname
     conn = psycopg2.connect(url)
     conn.autocommit = False
     return conn
@@ -162,6 +161,32 @@ def get_ddl() -> str:
         sector      TEXT,
         is_active   {bl} DEFAULT {'1' if DB_TYPE == 'sqlite' else 'TRUE'},
         added_at    TEXT DEFAULT {ts}
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_price_daily (
+        id          {pk},
+        ticker      TEXT NOT NULL,
+        trade_date  TEXT NOT NULL,
+        open        {rl},
+        high        {rl},
+        low         {rl},
+        close       {rl},
+        adj_close   {rl},
+        volume      INTEGER,
+        data_source TEXT DEFAULT 'yfinance',
+        created_at  TEXT DEFAULT {ts},
+        UNIQUE(ticker, trade_date)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_price_ticker_date ON stock_price_daily (ticker, trade_date DESC);
+    CREATE INDEX IF NOT EXISTS idx_price_trade_date  ON stock_price_daily (trade_date DESC);
+
+    CREATE TABLE IF NOT EXISTS users (
+        id              {pk},
+        username        TEXT NOT NULL UNIQUE,
+        password_hash   TEXT NOT NULL,
+        is_admin        {bl} DEFAULT {'0' if DB_TYPE == 'sqlite' else 'FALSE'},
+        created_at      TEXT DEFAULT {ts}
     );
     """
 
