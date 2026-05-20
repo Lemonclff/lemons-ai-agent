@@ -1,6 +1,6 @@
 # Lemon's AI Agent 🔮
 
-**AI-Driven US Stock Quantitative Analysis & LLM Observability Dashboard**
+**AI-Driven US Stock Quantitative Analysis & Volatility Dashboard**
 
 Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 
@@ -10,14 +10,14 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 
 | Module | Description |
 |--------|-------------|
-| **📊 Dashboard** | System overview — active cron jobs, trace counts, token usage, sector coverage |
-| **⏰ Schedule & Automation** | Manage cron jobs for sector rotation analysis. Pre/post-market execution with DST awareness |
-| **📈 Options & Volatility** | IV/HV spread monitor, Put/Call ratio, unusual options activity detection, AI risk alerts |
-| **📅 Macro Impact Matrix** | Economic calendar with expected vs. actual values, AI-generated sector flow impact |
-| **🗄️ Database Explorer** | Browse PostgreSQL tables — options volatility, macro events, stock prices, tracked tickers |
-| **🔍 Observability** | Langfuse integration — trace inspection, token tracking, latency, cost monitoring |
-| **🔐 Auth System** | Username/password registration & login, bcrypt-hashed passwords, HMAC-signed session tokens |
-| **🛡️ Admin Panel** | Password reset for any user, role-based access (is_admin flag), non-admin see access-denied |
+| **📊 Dashboard** | Live system overview — cron job status, DB record counts, connectivity health |
+| **⏰ Schedule & Automation** | Admin-only cron job control — pause/resume/run with real API |
+| **🧠 Quant Analysis** | Multi-ticker volatility diagnostics — IV/HV/PCR/RSI/Bollinger/Strategy Engine |
+| **📈 Options & Volatility** | Search any ticker, live IV/HV spread, Put/Call ratio, auto-refresh |
+| **📅 Macro Impact Matrix** | Economic calendar with expected vs. actual values, AI sector flow impact |
+| **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, table usage docs |
+| **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag |
+| **🛡️ Admin Panel** | Password reset, admin-only pages (Schedule, Database Explorer) |
 
 ---
 
@@ -47,7 +47,8 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 │                          │  │ /api/auth/*           │    │  │
 │                          │  │ /api/db               │    │  │
 │                          │  │ /api/options          │    │  │
-│                          │  │ /api/langfuse/*       │    │  │
+│                          │  │ /api/quant/*          │    │  │
+│                          │  │ /api/cron             │    │  │
 │                          │  └──────┬───────────────┘    │  │
 │                          └─────────┼────────────────────┘  │
 │                                    │                        │
@@ -266,36 +267,47 @@ Sidebar → Admin — Reset Password
 
 ## Cloudflare Tunnel (Public Access)
 
-Your dashboard is accessible from any device via:
+Your dashboard is accessible from any device via Cloudflare Tunnel.
 
-```
-https://<random>.trycloudflare.com
-```
-
-### Setup
+### Current Setup: trycloudflare.com
 
 ```bash
-# One-time install
-curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o ~/.local/bin/cloudflared
-chmod +x ~/.local/bin/cloudflared
-
-# Start tunnel
 ~/.local/bin/cloudflared tunnel --url http://localhost:3000
+# Output: https://<random>.trycloudflare.com
 ```
 
-### Limitations of trycloudflare.com
+| Pro | Con |
+|-----|-----|
+| Zero config, instant | URL changes on every restart |
+| Free forever | No custom domain |
+| Auto HTTPS | No Cloudflare Access (login before tunnel) |
 
-- URL changes on each restart
-- No custom domain support
-- No Cloudflare Access (login before tunnel)
+### DuckDNS — Fixed IP Tracking
 
-### Upgrade Path: Fixed Domain
+DuckDNS domain: `https://lemonffing.duckdns.org` (IP auto-updated every 5 min)
 
-1. Buy a domain (~$10/year on Cloudflare Registrar)
-2. `cloudflared tunnel login`
-3. `cloudflared tunnel create lemons-dashboard`
-4. `cloudflared tunnel route dns lemons-dashboard dashboard.yourdomain.com`
-5. Enable Cloudflare Access for email/PIN-based authentication
+```bash
+# Auto-update script: ~/.hermes/scripts/duckdns_update.sh
+curl -s "https://www.duckdns.org/update?domains=lemonffing&token=xxx"
+```
+
+> Note: DuckDNS tracks your IP but doesn't create an HTTPS tunnel. For web access,
+> continue using cloudflared. DuckDNS is useful for SSH, future server setups, or
+> when combined with port forwarding.
+
+### Upgrade Path: Permanent Fixed Domain ($1/year)
+
+For a truly permanent URL that never changes:
+
+1. Buy a `.xyz` domain on [Cloudflare Registrar](https://dash.cloudflare.com) (~$1/year)
+2. Authenticate cloudflared: `cloudflared tunnel login`
+3. Create named tunnel: `cloudflared tunnel create lemons-dashboard`
+4. Route DNS: `cloudflared tunnel route dns lemons-dashboard dashboard.yourdomain.xyz`
+5. Start: `cloudflared tunnel run lemons-dashboard`
+6. Result: `https://dashboard.yourdomain.xyz` — permanent, never changes
+
+Bonus: With a Cloudflare domain, you also get Cloudflare Access (email/PIN login before
+the tunnel, adding a second layer of authentication).
 
 ---
 
@@ -306,9 +318,9 @@ Frontend        Next.js 14 (App Router) · React 18 · Tailwind CSS · TypeScrip
 Auth            bcryptjs · HMAC-SHA256 tokens · httpOnly cookies · PG users table
 Database        PostgreSQL · node-postgres (pg) · psycopg2 (Python)
 Analysis        Python 3.12 · yfinance · pandas · numpy · FRED API
+Quant Engine    Straddle IV (Brenner-Subrahmanyam) · RSI(14) · Bollinger(20,2) · S/R
 Scheduling      Hermes cronjob (pre/post market) · Telegram delivery
-Monitoring      Langfuse (traces, metrics, cost)
-Tunnel          Cloudflare Tunnel (trycloudflare.com)
+Tunnel          Cloudflare Tunnel (trycloudflare.com) · DuckDNS (IP tracking)
 Icons           Lucide React
 ```
 
@@ -356,8 +368,6 @@ cd frontend
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `ACCESS_PASSWORD` | HMAC signing secret for auth tokens |
-| `LANGFUSE_PUBLIC_KEY` | Langfuse observability |
-| `LANGFUSE_SECRET_KEY` | Langfuse observability |
 | `FRED_API_KEY` | Macro economic data |
 
 ### 3. Initialize Database
@@ -383,6 +393,24 @@ Open http://localhost:3000/register → create account → auto-login
 
 ---
 
+## Database Explorer (Admin Only)
+
+Access at `/data` (requires admin login). Features:
+
+| Feature | Description |
+|---------|-------------|
+| **5 Tables** | `options_volatility_log`, `stock_price_daily`, `macro_economic_events`, `tracked_tickers`, `users` |
+| **Table Usage Docs** | Each table shows which pages/scripts use it |
+| **Inline Edit** | Click ✏️ to edit any row, ✔️ to save |
+| **Delete** | 🗑️ per row with confirmation |
+| **Insert** | New Row button to add records |
+| **CSV Export** | Download current table as CSV |
+| **SQL Console** | Run custom SELECT queries |
+
+Under the hood: `GET /api/db` for reads, `POST /api/db/execute` for INSERT/UPDATE/DELETE (admin-only, blocks DROP/TRUNCATE/ALTER).
+
+---
+
 ## Project Structure
 
 ```
@@ -394,20 +422,29 @@ lemons-ai-agent/
 │   │   ├── globals.css              # Dark theme with CSS variables
 │   │   ├── login/page.tsx           # Login page (username + password)
 │   │   ├── register/page.tsx        # Registration page
-│   │   ├── schedule/page.tsx        # Cron job management
-│   │   ├── options-volatility/      # IV/HV monitor
+│   │   ├── schedule/page.tsx        # Cron job management (admin-only)
+│   │   ├── options-volatility/      # IV/HV monitor + search custom tickers
+│   │   ├── quant-analysis/          # Multi-ticker quant engine (IV/PCR/RSI/BB)
 │   │   ├── macro-impact/            # Economic calendar
-│   │   ├── data/page.tsx            # Database Explorer
-│   │   ├── observability/page.tsx   # Langfuse traces
+│   │   ├── admin/reset-password/    # Admin password reset
+│   │   ├── data/page.tsx            # Database Explorer (admin-only, CRUD + SQL)
 │   │   └── api/
 │   │       ├── auth/
-│   │       │   ├── login/route.ts   # POST /api/auth/login (bcrypt verify)
-│   │       │   ├── register/route.ts # POST /api/auth/register (bcrypt hash)
-│   │       │   └── logout/route.ts  # POST /api/auth/logout (clear cookie)
-│   │       ├── db/route.ts          # Database proxy API
-│   │       ├── options/route.ts     # Options data proxy
-│   │       ├── macro/route.ts       # Macro calendar proxy
-│   │       └── langfuse/            # Langfuse proxy
+│   │       │   ├── login/route.ts   # POST bcrypt verify
+│   │       │   ├── register/route.ts # POST bcrypt hash
+│   │       │   ├── logout/route.ts  # POST clear cookie
+│   │       │   └── me/route.ts      # GET current user + isAdmin
+│   │       ├── admin/reset-password/ # Admin password reset API
+│   │       ├── db/
+│   │       │   ├── route.ts         # GET table data
+│   │       │   ├── execute/route.ts # POST INSERT/UPDATE/DELETE (admin)
+│   │       │   └── populate/route.ts # POST write options data to PG
+│   │       ├── options/route.ts     # POST tickers → yfinance → live IV/HV
+│   │       ├── quant/
+│   │       │   ├── analyze/route.ts # GET ticker analysis from PG
+│   │       │   └── ensure-prices/   # GET fetch 30d price data from yfinance
+│   │       ├── cron/route.ts        # GET list / control cron jobs
+│   │       └── macro/route.ts       # Macro calendar proxy
 │   ├── components/
 │   │   └── layout/
 │   │       ├── LayoutShell.tsx      # Client wrapper: auth vs dashboard layout
