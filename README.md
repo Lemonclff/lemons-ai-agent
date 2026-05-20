@@ -282,19 +282,6 @@ Your dashboard is accessible from any device via Cloudflare Tunnel.
 | Free forever | No custom domain |
 | Auto HTTPS | No Cloudflare Access (login before tunnel) |
 
-### DuckDNS — Fixed IP Tracking
-
-DuckDNS domain: `https://lemonffing.duckdns.org` (IP auto-updated every 5 min)
-
-```bash
-# Auto-update script: ~/.hermes/scripts/duckdns_update.sh
-curl -s "https://www.duckdns.org/update?domains=lemonffing&token=xxx"
-```
-
-> Note: DuckDNS tracks your IP but doesn't create an HTTPS tunnel. For web access,
-> continue using cloudflared. DuckDNS is useful for SSH, future server setups, or
-> when combined with port forwarding.
-
 ### Upgrade Path: Permanent Fixed Domain ($1/year)
 
 For a truly permanent URL that never changes:
@@ -320,7 +307,7 @@ Database        PostgreSQL · node-postgres (pg) · psycopg2 (Python)
 Analysis        Python 3.12 · yfinance · pandas · numpy · FRED API
 Quant Engine    Straddle IV (Brenner-Subrahmanyam) · RSI(14) · Bollinger(20,2) · S/R
 Scheduling      Hermes cronjob (pre/post market) · Telegram delivery
-Tunnel          Cloudflare Tunnel (trycloudflare.com) · DuckDNS (IP tracking)
+Tunnel          Cloudflare Tunnel (trycloudflare.com)
 Icons           Lucide React
 ```
 
