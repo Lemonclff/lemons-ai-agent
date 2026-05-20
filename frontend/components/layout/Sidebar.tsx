@@ -31,6 +31,7 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Schedule & Automation", href: "/schedule", icon: Clock },
+  { label: "Quant Analysis", href: "/quant-analysis", icon: TrendingUp, badge: "AI" },
   { label: "Options & Volatility", href: "/options-volatility", icon: TrendingUp, badge: "New" },
   { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },
   { label: "Database Explorer", href: "/data", icon: HardDrive, badge: "DB" },
