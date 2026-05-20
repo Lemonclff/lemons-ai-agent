@@ -236,8 +236,13 @@ lemons-ai-agent/
 │   ├── sector_rotation.py           # 11-sector ETF RS ranking + flow signals
 │   ├── scheduler.py                 # Cron entry point (DST-aware)
 │   ├── options_volatility.py        # Options chain analysis + LLM prompts
+│   ├── options_api.py               # Options API worker (stdin→stdout JSON, threaded)
 │   ├── macro_economic.py            # FRED economic data + LLM prompts
+│   ├── db_init.py                   # Database initializer (SQLite + PostgreSQL DDL)
+│   ├── db_populate.py               # Insert options/macro data into DB
 │   └── requirements.txt
+├── data/
+│   └── lemons.db                    # SQLite database (local dev)
 ├── db/
 │   └── schema.sql                   # PostgreSQL DDL (3 tables, 7 indexes)
 ├── .gitignore                       # Strict secrets exclusion
@@ -269,6 +274,133 @@ No layout changes needed — the sidebar automatically handles the new entry.
 | Post-Market Rotation | 05:00 HKT Mon-Fri | `lemons_post.sh` | Telegram |
 
 Manage via Hermes: `cronjob list` / `cronjob run <id>` / `cronjob pause <id>`
+
+---
+
+## Database
+
+### Quick Start (SQLite — works now, no setup)
+
+```bash
+# Initialize database with schema
+python3 scripts/db_init.py
+
+# Initialize + seed sample data
+python3 scripts/db_init.py --seed
+
+# Query the database
+python3 scripts/db_init.py --query "SELECT * FROM options_volatility_log ORDER BY trade_date DESC LIMIT 5"
+python3 scripts/db_init.py --query "SELECT event_name, surprise_flag, deviation FROM macro_economic_events"
+
+# Populate with live data from options API
+echo '["NVDA","TSLA","AAPL"]' | scripts/.venv/bin/python scripts/options_api.py | python3 scripts/db_populate.py
+```
+
+Database location: `data/lemons.db` (SQLite, 3 tables, 7 indexes)
+
+### Schema Overview
+
+```
+options_volatility_log          macro_economic_events          tracked_tickers
+├── ticker (TEXT)               ├── event_name (TEXT)          ├── ticker (TEXT, UNIQUE)
+├── trade_date (DATE)           ├── event_time (TIMESTAMP)     ├── name (TEXT)
+├── implied_volatility (REAL)   ├── expected_value (REAL)      ├── sector (TEXT)
+├── historical_volatility (REAL)├── actual_value (REAL)        └── is_active (BOOLEAN)
+├── put_call_ratio (REAL)       ├── previous_value (REAL)
+├── call_volume (INT)           ├── deviation (REAL)           Indexes:
+├── put_volume (INT)            ├── surprise_flag (TEXT)       └── ticker (unique)
+├── iv_hv_spread (REAL)         ├── ai_impact_tech (TEXT)
+├── iv_rank_percentile (REAL)   ├── ai_impact_financial (TEXT)
+├── sparkline_json (TEXT)       ├── ai_impact_broad (TEXT)
+├── unusual_activity_flag (INT) ├── ai_impact_summary (TEXT)
+├── earnings_days_until (INT)   └── created_at (TIMESTAMP)
+├── ai_risk_alert (TEXT)        
+├── data_source (TEXT)          Indexes:
+└── created_at (TIMESTAMP)      ├── event_time DESC
+                                ├── event_name
+    Indexes:                    └── surprise_flag + event_time
+    ├── ticker + trade_date DESC
+    ├── trade_date DESC
+    ├── ticker (unusual only)
+    └── ticker + iv_rank DESC
+```
+
+### PostgreSQL Deployment (Production)
+
+**Step 1: Install PostgreSQL**
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-client
+
+# macOS
+brew install postgresql@16
+
+# Check
+psql --version
+```
+
+**Step 2: Create database and user**
+
+```bash
+sudo -u postgres psql
+```
+
+```sql
+CREATE USER lemons WITH PASSWORD 'your_secure_password';
+CREATE DATABASE lemons_agent OWNER lemons;
+\c lemons_agent
+GRANT ALL ON SCHEMA public TO lemons;
+\q
+```
+
+**Step 3: Run DDL**
+
+```bash
+# From project root
+python3 scripts/db_init.py --postgresql > /tmp/schema_pg.sql
+psql -U lemons -d lemons_agent -f /tmp/schema_pg.sql
+```
+
+**Step 4: Verify**
+
+```sql
+psql -U lemons -d lemons_agent
+
+\dt                          -- list tables
+\d options_volatility_log    -- describe table
+SELECT * FROM tracked_tickers;
+```
+
+**Step 5: Connect from Python**
+
+```bash
+pip install psycopg2-binary
+```
+
+```python
+import psycopg2
+conn = psycopg2.connect(
+    host="localhost",
+    database="lemons_agent",
+    user="lemons",
+    password="your_secure_password"
+)
+```
+
+### Migration: SQLite → PostgreSQL
+
+99% DDL-compatible. Key differences:
+
+| SQLite | PostgreSQL |
+|--------|-----------|
+| `INTEGER PRIMARY KEY AUTOINCREMENT` | `SERIAL PRIMARY KEY` |
+| `TEXT` for dates | `DATE` / `TIMESTAMP WITH TIME ZONE` |
+| `REAL` | `DECIMAL(10, 4)` |
+| `INTEGER` 0/1 for bool | `BOOLEAN` |
+| `datetime('now')` | `CURRENT_TIMESTAMP` |
+
+The `db_init.py --postgresql` flag outputs the correct PostgreSQL DDL automatically.
 
 ---
 
