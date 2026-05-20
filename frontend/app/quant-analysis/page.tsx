@@ -61,13 +61,11 @@ export default function QuantAnalysisPage() {
       const data = await res.json();
       if (data.status === "ok") {
         setResults((p) => ({ ...p, [t]: data }));
+      } else if (data.status === "no_data") {
+        // No data in DB — auto trigger live fetch, don't show error
+        fetchLive(t);
       } else {
-        // No data in DB — trigger auto live fetch
-        setErrors((p) => ({ ...p, [t]: data.message || "無數據" }));
-        // Auto-fetch if no data exists
-        if (data.status === "no_data") {
-          fetchLive(t);
-        }
+        setErrors((p) => ({ ...p, [t]: data.message || "分析失敗" }));
       }
     } catch {
       setErrors((p) => ({ ...p, [t]: "連線失敗" }));
@@ -79,6 +77,7 @@ export default function QuantAnalysisPage() {
   // Fetch live yfinance data → DB → then analyze
   const fetchLive = useCallback(async (t: string) => {
     setFetching((p) => ({ ...p, [t]: true }));
+    setErrors((p) => { const n = { ...p }; delete n[t]; return n; });
     try {
       // Step 1: Fetch live options data via options_api + populate DB
       const fetchRes = await fetch("/api/options", {
@@ -87,18 +86,27 @@ export default function QuantAnalysisPage() {
         body: JSON.stringify({ tickers: [t] }),
       });
       const fetchJson = await fetchRes.json();
-      if (fetchJson._source !== "yfinance") {
+      if (fetchJson._source !== "yfinance" && fetchJson._source !== "cache") {
         setErrors((p) => ({ ...p, [t]: "yfinance 數據擷取失敗" }));
         setFetching((p) => ({ ...p, [t]: false }));
         return;
       }
-      // Also ensure price data exists
-      await fetch(`/api/quant/ensure-prices?ticker=${t}`);
-      // Step 2: Re-analyze from fresh DB data
+      // Step 1b: Persist fetched data into PostgreSQL
+      const rawData = fetchJson.data || [];
+      if (rawData.length > 0) {
+        await fetch("/api/db/populate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rawData),
+        }).catch(() => {});
+      }
+      // Step 2: Ensure price data (non-blocking — analysis still works without it)
+      fetch(`/api/quant/ensure-prices?ticker=${t}`).catch(() => {});
+      // Step 3: Re-analyze from fresh DB data
       await fetchAnalysis(t);
+      setFetching((p) => ({ ...p, [t]: false }));
     } catch {
       setErrors((p) => ({ ...p, [t]: "Fetch 失敗" }));
-    } finally {
       setFetching((p) => ({ ...p, [t]: false }));
     }
   }, [fetchAnalysis]);

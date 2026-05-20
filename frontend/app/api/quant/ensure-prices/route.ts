@@ -8,15 +8,14 @@ export async function GET(req: NextRequest) {
   const ticker = (searchParams.get("ticker") || "").toUpperCase();
   if (!ticker) return NextResponse.json({ error: "ticker required" }, { status: 400 });
 
-  // Fetch 30 days of price data via yfinance and insert into stock_price_daily
   const script = `
-import yfinance as yf, sys, os
+import yfinance as yf, sys, os, json
 sys.path.insert(0, '/home/lemon/lemons-ai-agent/scripts')
 from db_populate import insert_prices
 
 df = yf.download('${ticker}', period='1mo', auto_adjust=False, progress=False)
 if df.empty:
-    print('{"ok":false,"error":"yfinance returned no data"}')
+    print(json.dumps({"ok":false,"error":"yfinance returned no data"}))
     sys.exit(0)
 
 df.columns = [c[0] for c in df.columns]
@@ -32,8 +31,15 @@ for idx, row in df.iterrows():
         'adj_close': float(row.get('Adj Close', row['Close'])),
         'volume': int(row['Volume']),
     })
-insert_prices(rows)
-print('{"ok":true,"rows":' + str(len(rows)) + '}')
+# Redirect db_populate logs to stderr so they don't contaminate stdout JSON
+import contextlib, io
+real_stdout = sys.stdout
+sys.stdout = io.StringIO()
+try:
+    insert_prices(rows)
+finally:
+    sys.stdout = real_stdout
+print(json.dumps({"ok":true,"rows":len(rows)}))
 `;
 
   try {
@@ -47,7 +53,8 @@ print('{"ok":true,"rows":' + str(len(rows)) + '}')
       proc.on("close", () => resolve(out));
       proc.on("error", (e) => reject(e));
     });
-    return NextResponse.json(JSON.parse(result.trim() || '{"ok":false}'));
+    const lastLine = result.trim().split("\n").pop() || '{"ok":false}';
+    return NextResponse.json(JSON.parse(lastLine));
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message });
   }
