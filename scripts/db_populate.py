@@ -20,9 +20,9 @@ from pathlib import Path
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "lemons.db"
 
 
-def insert_options(data: list[dict]):
+def insert_options(data: list[dict], db_path: Path = DB_PATH):
     """Insert options snapshots into options_volatility_log."""
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(db_path))
     today = datetime.now().strftime("%Y-%m-%d")
     count = 0
 
@@ -65,9 +65,9 @@ def insert_options(data: list[dict]):
     print(f"[DB] Inserted/updated {count} ticker(s) for {today}")
 
 
-def insert_macro(event: dict):
+def insert_macro(event: dict, db_path: Path = DB_PATH):
     """Insert a single macro economic event."""
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(db_path))
     conn.execute("""
         INSERT OR REPLACE INTO macro_economic_events
             (event_name, event_time, expected_value, actual_value,
@@ -93,14 +93,28 @@ def insert_macro(event: dict):
 
 
 if __name__ == "__main__":
-    if "--macro" in sys.argv:
-        idx = sys.argv.index("--macro")
-        event = json.loads(sys.argv[idx + 1]) if idx + 1 < len(sys.argv) else {}
-        insert_macro(event)
+    # Parse --db and --macro flags
+    args = sys.argv[1:]
+    db_path = DB_PATH
+    macro_event = None
+
+    i = 0
+    while i < len(args):
+        if args[i] == "--db" and i + 1 < len(args):
+            db_path = Path(args[i + 1])
+            i += 2
+        elif args[i] == "--macro" and i + 1 < len(args):
+            macro_event = json.loads(args[i + 1])
+            i += 2
+        else:
+            i += 1
+
+    if macro_event:
+        insert_macro(macro_event, db_path)
     else:
         raw = sys.stdin.read().strip()
         if raw:
             data = json.loads(raw)
-            insert_options(data)
+            insert_options(data, db_path)
         else:
             print("[DB] No input data (empty stdin)")
