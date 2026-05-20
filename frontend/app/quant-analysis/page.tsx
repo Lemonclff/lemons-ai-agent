@@ -2,110 +2,146 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  TrendingUp,
-  Activity,
-  Shield,
-  AlertTriangle,
-  Target,
-  Copy,
-  Check,
-  Loader2,
-  Search,
-  Zap,
-  BarChart3,
-  ChevronRight,
+  TrendingUp, Activity, Shield, AlertTriangle, Target,
+  Copy, Check, Loader2, Search, Zap, BarChart3, ChevronRight,
+  Plus, RefreshCw, X, Trash2, Clock, Download, CheckCircle2,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/* ===== Types ===== */
 interface AnalysisResult {
-  status: string;
-  ticker: string;
-  data: {
-    price: number | null;
-    iv: number;
-    hv: number;
-    iv_hv_spread: number;
-    iv_rank: number;
-    pcr: number;
-    call_volume: number;
-    put_volume: number;
-    total_volume: number;
-    unusual_activity: boolean;
-    ai_risk_alert: string;
-  };
-  technical: {
-    rsi: number | null;
-    bollinger: { upper: number; middle: number; lower: number; pct_b: number; current: number } | null;
-    support_resistance: { support: number; resistance: number } | null;
-  };
-  diagnostics: string[];
-  iv_regime: string;
-  pcr_signal: string;
+  status: string; ticker: string; fetched_at: string;
+  data: { price: number | null; iv: number; hv: number; iv_hv_spread: number; iv_rank: number; pcr: number; call_volume: number; put_volume: number; total_volume: number; unusual_activity: boolean; ai_risk_alert: string; };
+  technical: { rsi: number | null; bollinger: { upper: number; middle: number; lower: number; pct_b: number; current: number } | null; support_resistance: { support: number; resistance: number } | null; };
+  diagnostics: string[]; iv_regime: string; pcr_signal: string;
   alert_review: string | null;
   strategies: { name: string; rationale: string; max_profit: string; max_loss: string; risk_level: string }[];
   llm_prompt: string;
 }
 
-const TRACKED_TICKERS = ["NVDA", "TSLA", "AAPL", "AMD", "MSTR", "COIN", "SMCI", "PLTR", "ARM", "AVGO"];
+/* ===== localStorage ===== */
+const STORAGE_KEY = "quant_watchlist";
+const DEFAULT_TICKERS = ["NVDA", "TSLA", "AAPL", "AMD", "MSTR", "COIN"];
 
+function loadWatchlist(): string[] {
+  try { const v = localStorage.getItem(STORAGE_KEY); return v ? JSON.parse(v) : [...DEFAULT_TICKERS]; }
+  catch { return [...DEFAULT_TICKERS]; }
+}
+function saveWatchlist(list: string[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+/* ===== Labels ===== */
+const regimeLabel: Record<string, string> = { extreme_high: "極端擴張", elevated: "偏高", normal: "正常", compressed: "收斂" };
+const pcrLabel: Record<string, string> = { bullish: "過度看漲", bearish: "看跌情緒", neutral: "中性" };
+
+/* ===== Page ===== */
 export default function QuantAnalysisPage() {
-  const [ticker, setTicker] = useState("NVDA");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [results, setResults] = useState<Record<string, AnalysisResult>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [fetching, setFetching] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [searchInput, setSearchInput] = useState("");
+  const [searchResult, setSearchResult] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [copiedTicker, setCopiedTicker] = useState<string | null>(null);
 
+  // Init watchlist
+  useEffect(() => { setWatchlist(loadWatchlist()); }, []);
+
+  // Fetch analysis for a ticker (from DB only, no live fetch)
   const fetchAnalysis = useCallback(async (t: string) => {
-    setLoading(true);
-    setError("");
+    setLoading((p) => ({ ...p, [t]: true }));
+    setErrors((p) => { const n = { ...p }; delete n[t]; return n; });
     try {
       const res = await fetch(`/api/quant/analyze?ticker=${t}`);
       const data = await res.json();
       if (data.status === "ok") {
-        setResult(data);
+        setResults((p) => ({ ...p, [t]: data }));
       } else {
-        setError(data.message || "分析失敗");
-        setResult(null);
+        setErrors((p) => ({ ...p, [t]: data.message || "無數據" }));
       }
     } catch {
-      setError("連線失敗");
+      setErrors((p) => ({ ...p, [t]: "連線失敗" }));
     } finally {
-      setLoading(false);
+      setLoading((p) => ({ ...p, [t]: false }));
     }
   }, []);
 
+  // Fetch live yfinance data → DB → then analyze
+  const fetchLive = useCallback(async (t: string) => {
+    setFetching((p) => ({ ...p, [t]: true }));
+    try {
+      // Step 1: Fetch live options data via options_api + populate DB
+      const fetchRes = await fetch("/api/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tickers: [t] }),
+      });
+      const fetchJson = await fetchRes.json();
+      if (fetchJson._source !== "yfinance") {
+        setErrors((p) => ({ ...p, [t]: "yfinance 數據擷取失敗" }));
+        setFetching((p) => ({ ...p, [t]: false }));
+        return;
+      }
+      // Also ensure price data exists
+      await fetch(`/api/quant/ensure-prices?ticker=${t}`);
+      // Step 2: Re-analyze from fresh DB data
+      await fetchAnalysis(t);
+    } catch {
+      setErrors((p) => ({ ...p, [t]: "Fetch 失敗" }));
+    } finally {
+      setFetching((p) => ({ ...p, [t]: false }));
+    }
+  }, [fetchAnalysis]);
+
+  // Load all on mount
   useEffect(() => {
-    fetchAnalysis(ticker);
-  }, []);
+    if (watchlist.length > 0) {
+      watchlist.forEach((t) => fetchAnalysis(t));
+    }
+  }, [watchlist.length]);
 
-  function handleTickerChange(t: string) {
-    setTicker(t);
-    fetchAnalysis(t);
-  }
-
-  function copyPrompt() {
-    if (result?.llm_prompt) {
-      navigator.clipboard.writeText(result.llm_prompt);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  // Search
+  function handleSearch(input: string) {
+    const upper = input.toUpperCase().trim();
+    setSearchInput(upper);
+    if (!upper) { setSearchResult(null); setSearchError(""); return; }
+    if (/^[A-Z]{1,5}$/.test(upper) || /^[A-Z]{1,5}\.[A-Z]{2}$/.test(upper)) {
+      setSearchResult(upper); setSearchError("");
+    } else {
+      setSearchResult(null); setSearchError("格式: 1-5 字母 (如 MSFT)");
     }
   }
 
-  const regimeLabel: Record<string, string> = {
-    extreme_high: "極端擴張",
-    elevated: "偏高",
-    normal: "正常",
-    compressed: "收斂",
-  };
+  function addTicker(t: string) {
+    const upper = t.toUpperCase().trim();
+    if (!upper || watchlist.includes(upper)) return;
+    const updated = [...watchlist, upper];
+    setWatchlist(updated); saveWatchlist(updated);
+    setSearchInput(""); setSearchResult(null);
+    fetchAnalysis(upper);
+  }
 
-  const pcrLabel: Record<string, string> = {
-    bullish: "過度看漲",
-    bearish: "看跌情緒",
-    neutral: "中性",
-  };
+  function deleteTicker(t: string) {
+    const updated = watchlist.filter((x) => x !== t);
+    setWatchlist(updated); saveWatchlist(updated);
+    setResults((p) => { const n = { ...p }; delete n[t]; return n; });
+    setErrors((p) => { const n = { ...p }; delete n[t]; return n; });
+  }
+
+  function toggleExpand(t: string) {
+    setExpanded((p) => ({ ...p, [t]: !p[t] }));
+  }
+
+  function copyPrompt(ticker: string, prompt: string) {
+    navigator.clipboard.writeText(prompt);
+    setCopiedTicker(ticker);
+    setTimeout(() => setCopiedTicker(null), 2000);
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -114,213 +150,203 @@ export default function QuantAnalysisPage() {
         <div>
           <h1 className="text-2xl font-bold">Quant Analysis — 波動率診斷</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Hermes AI 量化引擎：IV/HV 結構、PCR 籌碼、技術指標交叉驗證、策略推演
+            Hermes AI 量化引擎 · IV/HV · PCR · RSI · Bollinger · 策略推演
           </p>
         </div>
       </div>
 
-      {/* Ticker selector */}
-      <Card>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Search size={16} className="text-[var(--color-text-muted)] shrink-0" />
-          {TRACKED_TICKERS.map((t) => (
-            <button
-              key={t}
-              onClick={() => handleTickerChange(t)}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                ticker === t
-                  ? "bg-indigo-500 text-white"
-                  : "bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-              )}
-            >
-              {t}
-            </button>
-          ))}
+      {/* Search + Add Bar */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="relative flex-1 w-full">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <input
+              type="text" value={searchInput}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Add ticker... (e.g. MSFT, INTC, GOOGL)"
+              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+              onKeyDown={(e) => { if (e.key === "Enter" && searchResult) addTicker(searchResult); }}
+            />
+            {searchResult && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400" />}
+          </div>
+          <Button onClick={() => searchResult && addTicker(searchResult)} disabled={!searchResult || watchlist.includes(searchResult || "")} size="md">
+            <Plus size={14} /> Add {searchResult || ""}
+          </Button>
+          {watchlist.length > DEFAULT_TICKERS.length && (
+            <Button variant="ghost" size="sm" onClick={() => { setWatchlist([...DEFAULT_TICKERS]); saveWatchlist([...DEFAULT_TICKERS]); }}>
+              Reset
+            </Button>
+          )}
         </div>
+        {searchError && <p className="text-xs text-red-400 mt-2 ml-1">{searchError}</p>}
       </Card>
 
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 size={24} className="animate-spin text-indigo-400" />
-          <span className="ml-3 text-sm text-[var(--color-text-muted)]">分析中...</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-center">
-          <AlertTriangle size={32} className="mx-auto text-red-400 mb-2" />
-          <p className="text-red-400">{error}</p>
-        </div>
-      )}
-
-      {result && !loading && (
-        <>
-          {/* ── 1. Data Status ── */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Activity size={18} className="text-indigo-400" />
-                <CardTitle>系統數據狀態</CardTitle>
-                <Badge variant="success" size="sm">{result.ticker}</Badge>
-              </div>
-            </CardHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {[
-                ["Price", `$${result.data.price?.toFixed(2) || "—"}`],
-                ["IV", `${result.data.iv?.toFixed(1)}%`],
-                ["HV (20d)", `${result.data.hv?.toFixed(1)}%`],
-                ["IV/HV Spread", `${result.data.iv_hv_spread?.toFixed(1)}%`],
-                ["IV Rank", `${result.data.iv_rank?.toFixed(0)}%`],
-                ["PCR", result.data.pcr?.toFixed(2)],
-                ["RSI(14)", result.technical.rsi?.toFixed(1) || "N/A"],
-                ["%B", result.technical.bollinger ? `${result.technical.bollinger.pct_b}%` : "N/A"],
-              ].map(([label, value]) => (
-                <div key={label} className="px-3 py-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
-                  <p className="text-[10px] uppercase text-[var(--color-text-muted)]">{label}</p>
-                  <p className="text-sm font-mono font-medium">{value}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* ── 2. Diagnostic ── */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Shield size={18} className="text-amber-400" />
-                <CardTitle>波動率與籌碼診斷</CardTitle>
-                <Badge variant={result.iv_regime === "extreme_high" ? "danger" : result.iv_regime === "compressed" ? "info" : "default"} size="sm">
-                  IV: {regimeLabel[result.iv_regime] || result.iv_regime}
-                </Badge>
-                <Badge variant={result.pcr_signal === "bearish" ? "danger" : result.pcr_signal === "bullish" ? "warning" : "default"} size="sm">
-                  PCR: {pcrLabel[result.pcr_signal] || result.pcr_signal}
-                </Badge>
-              </div>
-            </CardHeader>
-            <div className="space-y-2">
-              {result.diagnostics.map((d, i) => (
-                <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-[var(--color-surface)]">
-                  <ChevronRight size={14} className="text-[var(--color-accent)] mt-0.5 shrink-0" />
-                  <p className="text-sm text-[var(--color-text-secondary)]">{d}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* AI Alert Review */}
-            {result.alert_review && (
-              <div className={cn(
-                "mt-4 p-4 rounded-xl border",
-                result.alert_review.includes("駁回") ? "bg-red-500/5 border-red-500/20" : "bg-amber-500/5 border-amber-500/20"
-              )}>
-                <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">舊系統 AI 警示覆核</p>
-                <p className="text-sm text-[var(--color-text-secondary)]">{result.alert_review}</p>
-              </div>
+      {/* Watchlist chips + Fetch All */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {watchlist.map((t) => (
+          <button
+            key={t}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all group",
+              results[t] ? "bg-indigo-500/10 text-indigo-400" : "bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]"
             )}
-          </Card>
+          >
+            <span>{t}</span>
+            <X size={12} className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity" onClick={(e) => { e.stopPropagation(); deleteTicker(t); }} />
+          </button>
+        ))}
+      </div>
 
-          {/* ── 3. Technical ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={18} className="text-sky-400" />
-                  <CardTitle>技術指標</CardTitle>
-                </div>
-              </CardHeader>
-              <div className="space-y-3">
-                {result.technical.rsi && (
-                  <div className="p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
-                    <p className="text-xs text-[var(--color-text-muted)] mb-1">RSI (14)</p>
-                    <div className="flex items-center gap-2">
-                      <span className={cn("text-lg font-bold", result.technical.rsi > 70 ? "text-red-400" : result.technical.rsi < 30 ? "text-emerald-400" : "text-[var(--color-text-primary)]")}>
-                        {result.technical.rsi}
-                      </span>
-                      <Badge variant={result.technical.rsi > 70 ? "danger" : result.technical.rsi < 30 ? "success" : "default"} size="sm">
-                        {result.technical.rsi > 70 ? "超買" : result.technical.rsi < 30 ? "超賣" : "正常"}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                {result.technical.bollinger && (
-                  <div className="p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
-                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Bollinger Bands (20,2)</p>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div><span className="text-[var(--color-text-muted)]">上軌</span><p className="font-mono">{result.technical.bollinger.upper}</p></div>
-                      <div><span className="text-[var(--color-text-muted)]">中軌</span><p className="font-mono">{result.technical.bollinger.middle}</p></div>
-                      <div><span className="text-[var(--color-text-muted)]">下軌</span><p className="font-mono">{result.technical.bollinger.lower}</p></div>
-                    </div>
-                    <p className="text-xs mt-2">
-                      %B: <span className="font-mono">{result.technical.bollinger.pct_b}%</span>
-                      {result.technical.bollinger.pct_b > 100 ? " — 突破上軌" : result.technical.bollinger.pct_b < 0 ? " — 跌破下軌" : ""}
-                    </p>
-                  </div>
-                )}
-                {result.technical.support_resistance && (
-                  <div className="p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
-                    <p className="text-xs text-[var(--color-text-muted)] mb-1">支撐 / 壓力</p>
-                    <div className="flex gap-4 text-sm">
-                      <span>🟢 支撐 <span className="font-mono">${result.technical.support_resistance.support}</span></span>
-                      <span>🔴 壓力 <span className="font-mono">${result.technical.support_resistance.resistance}</span></span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            {/* ── 4. Strategies ── */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Target size={18} className="text-emerald-400" />
-                  <CardTitle>策略推演</CardTitle>
-                </div>
-              </CardHeader>
-              <div className="space-y-3">
-                {result.strategies.map((s, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-semibold text-sm">{s.name}</p>
-                      <Badge variant={s.risk_level === "high" ? "danger" : s.risk_level === "medium" ? "warning" : "success"} size="sm">
-                        {s.risk_level === "high" ? "高風險" : s.risk_level === "medium" ? "中風險" : "低風險"}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-[var(--color-text-secondary)] mb-2">{s.rationale}</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><span className="text-[var(--color-text-muted)]">最大獲利</span><p className="text-emerald-400">{s.max_profit}</p></div>
-                      <div><span className="text-[var(--color-text-muted)]">最大虧損</span><p className="text-red-400">{s.max_loss}</p></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-
-          {/* LLM Prompt */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap size={18} className="text-purple-400" />
-                  <CardTitle>AI 分析提示詞</CardTitle>
-                </div>
-                <Button variant="ghost" size="sm" onClick={copyPrompt}>
-                  {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                  <span className="ml-1">{copied ? "已複製" : "複製"}</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <pre className="p-4 text-xs font-mono text-[var(--color-text-secondary)] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
-              {result.llm_prompt}
-            </pre>
-          </Card>
-
-          {/* Disclaimer */}
-          <p className="text-xs text-center text-[var(--color-text-muted)]">
-            ⚠️ 以上分析基於公開市場數據與數學模型推演，不構成投資建議。選擇權交易存在重大風險，可能導致本金全部損失。請根據個人風險承受能力獨立決策。
-          </p>
-        </>
+      {/* Results */}
+      {watchlist.length === 0 && (
+        <p className="text-center py-16 text-[var(--color-text-muted)]">Search a ticker above to start analysis</p>
       )}
+
+      <div className="space-y-4">
+        {watchlist.map((t) => {
+          const r = results[t];
+          const load = loading[t];
+          const fetch = fetching[t];
+          const err = errors[t];
+          const exp = expanded[t];
+
+          return (
+            <Card key={t} className={cn("transition-all", exp && "border-[var(--color-accent)]/50")}>
+              {/* Summary Row */}
+              <div
+                className="flex items-center gap-3 p-4 cursor-pointer"
+                onClick={() => r && toggleExpand(t)}
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 shrink-0">
+                  <TrendingUp size={18} className="text-indigo-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">{t}</span>
+                    {r && (
+                      <>
+                        <Badge variant={r.iv_regime === "extreme_high" ? "danger" : r.iv_regime === "compressed" ? "info" : "default"} size="sm">
+                          {regimeLabel[r.iv_regime] || r.iv_regime}
+                        </Badge>
+                        <Badge variant={r.pcr_signal === "bearish" ? "danger" : r.pcr_signal === "bullish" ? "warning" : "default"} size="sm">
+                          PCR {r.data.pcr?.toFixed(2)}
+                        </Badge>
+                      </>
+                    )}
+                    {err && <Badge variant="danger" size="sm">Error</Badge>}
+                  </div>
+                  {r ? (
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      IV: {r.data.iv?.toFixed(1)}% · HV: {r.data.hv?.toFixed(1)}% · Spread: {r.data.iv_hv_spread?.toFixed(1)}% · RSI: {r.technical.rsi?.toFixed(1) || "N/A"} · Updated: {new Date(r.fetched_at || r.generated_at).toLocaleTimeString()}
+                    </p>
+                  ) : load ? (
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5 flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Loading...</p>
+                  ) : (
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{err || "No data"}</p>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="sm" onClick={() => fetchLive(t)} disabled={fetch} title="Fetch live from yfinance">
+                    {fetch ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => deleteTicker(t)} title="Remove">
+                    <Trash2 size={14} className="text-red-400" />
+                  </Button>
+                  {r && (
+                    <Button variant="ghost" size="sm" onClick={() => toggleExpand(t)}>
+                      <ChevronRight size={14} className={cn("transition-transform", exp && "rotate-90")} />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Expanded Analysis */}
+              {exp && r && (
+                <div className="px-4 pb-4 space-y-4 border-t border-[var(--color-border)] pt-4">
+                  {/* Data Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[["Price", `$${r.data.price?.toFixed(2) || "—"}`], ["IV", `${r.data.iv?.toFixed(1)}%`], ["HV (20d)", `${r.data.hv?.toFixed(1)}%`], ["Spread", `${r.data.iv_hv_spread?.toFixed(1)}%`], ["IV Rank", `${r.data.iv_rank?.toFixed(0)}%`], ["PCR", r.data.pcr?.toFixed(2)], ["RSI(14)", r.technical.rsi?.toFixed(1) || "N/A"], ["%B", r.technical.bollinger ? `${r.technical.bollinger.pct_b}%` : "N/A"]].map(([l, v]) => (
+                      <div key={l} className="px-2 py-1.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+                        <p className="text-[10px] uppercase text-[var(--color-text-muted)]">{l}</p>
+                        <p className="text-xs font-mono font-medium">{v}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Diagnostics */}
+                  <div className="space-y-1">
+                    {r.diagnostics.map((d, i) => (
+                      <div key={i} className="flex items-start gap-1.5 text-xs text-[var(--color-text-secondary)]">
+                        <ChevronRight size={12} className="text-[var(--color-accent)] mt-0.5 shrink-0" />{d}
+                      </div>
+                    ))}
+                  </div>
+
+                  {r.alert_review && (
+                    <div className={cn("p-3 rounded-xl text-xs border", r.alert_review.includes("駁回") ? "bg-red-500/5 border-red-500/20 text-red-400" : "bg-amber-500/5 border-amber-500/20 text-amber-400")}>
+                      {r.alert_review}
+                    </div>
+                  )}
+
+                  {/* Technical + Strategies */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      {r.technical.rsi && (
+                        <div className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+                          <span className="text-xs text-[var(--color-text-muted)]">RSI(14): </span>
+                          <span className={cn("text-sm font-bold", r.technical.rsi > 70 ? "text-red-400" : r.technical.rsi < 30 ? "text-emerald-400" : "")}>{r.technical.rsi}</span>
+                          <Badge variant={r.technical.rsi > 70 ? "danger" : r.technical.rsi < 30 ? "success" : "default"} size="sm" className="ml-2">
+                            {r.technical.rsi > 70 ? "超買" : r.technical.rsi < 30 ? "超賣" : "正常"}
+                          </Badge>
+                        </div>
+                      )}
+                      {r.technical.bollinger && (
+                        <div className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-xs">
+                          <span className="text-[var(--color-text-muted)]">BB(20,2): </span>
+                          上{r.technical.bollinger.upper} · 中{r.technical.bollinger.middle} · 下{r.technical.bollinger.lower} · %B={r.technical.bollinger.pct_b}%
+                        </div>
+                      )}
+                      {r.technical.support_resistance && (
+                        <div className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-xs">
+                          🟢 S: ${r.technical.support_resistance.support} · 🔴 R: ${r.technical.support_resistance.resistance}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {r.strategies.map((s, i) => (
+                        <div key={i} className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold">{s.name}</span>
+                            <Badge variant={s.risk_level === "high" ? "danger" : s.risk_level === "medium" ? "warning" : "success"} size="sm">
+                              {s.risk_level === "high" ? "高" : s.risk_level === "medium" ? "中" : "低"}風險
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">{s.rationale}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* LLM Prompt */}
+                  <div className="relative">
+                    <pre className="p-3 text-[11px] font-mono text-[var(--color-text-secondary)] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">{r.llm_prompt}</pre>
+                    <Button variant="ghost" size="sm" className="absolute top-2 right-2" onClick={() => copyPrompt(t, r.llm_prompt)}>
+                      {copiedTicker === t ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
+      <p className="text-xs text-center text-[var(--color-text-muted)]">
+        ⚠️ 以上分析基於公開市場數據與數學模型推演，不構成投資建議。選擇權交易存在重大風險，可能導致本金全部損失。
+      </p>
     </div>
   );
 }
