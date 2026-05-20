@@ -60,8 +60,8 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # ---- Data (generated at runtime) ----
-data/
-!data/.gitkeep
+/data/
+!/data/.gitkeep
 
 # ---- Misc ----
 .cache/

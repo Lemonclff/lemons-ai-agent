@@ -35,7 +35,6 @@ const mainNav: NavItem[] = [
   { label: "Options & Volatility", href: "/options-volatility", icon: TrendingUp, badge: "New" },
   { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },
   { label: "Database Explorer", href: "/data", icon: HardDrive, badge: "DB" },
-  { label: "Observability", href: "/observability", icon: Activity, badge: "Langfuse" },
 ];
 
 const bottomNav: NavItem[] = [

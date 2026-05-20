@@ -26,18 +26,10 @@ interface DashboardData {
   cronOk: number;
   dbTables: number;
   dbRows: number;
-  metrics: {
-    totalTraces: number;
-    totalTokens: number;
-    totalCost: number;
-    avgLatency: number;
-    _source?: string;
-  } | null;
   systemStatus: {
     gateway: boolean;
     cron: boolean;
     db: boolean;
-    langfuse: boolean;
   };
   loading: boolean;
 }
@@ -48,8 +40,7 @@ export default function DashboardPage() {
     cronOk: 0,
     dbTables: 0,
     dbRows: 0,
-    metrics: null,
-    systemStatus: { gateway: false, cron: false, db: false, langfuse: false },
+    systemStatus: { gateway: false, cron: false, db: false },
     loading: true,
   });
 
@@ -85,17 +76,6 @@ export default function DashboardPage() {
         }
       } catch { /* db unavailable */ }
 
-      // Fetch Langfuse metrics
-      try {
-        const mRes = await fetch("/api/langfuse/metrics");
-        const mData = await mRes.json();
-        results.metrics = mData;
-        results.systemStatus = {
-          ...results.systemStatus,
-          langfuse: mData._source === "live",
-        };
-      } catch { /* langfuse unavailable */ }
-
       setData((prev) => ({ ...prev, ...results }));
     }
 
@@ -104,7 +84,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const { cronCount, cronOk, dbTables, dbRows, metrics, systemStatus } = data;
+  const { cronCount, cronOk, dbTables, dbRows, systemStatus } = data;
 
   const stats = [
     {
@@ -115,30 +95,6 @@ export default function DashboardPage() {
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       href: "/schedule",
-    },
-    {
-      label: "Traces Today",
-      value: metrics
-        ? fmtNum(metrics.totalTraces, 0)
-        : "—",
-      sub: metrics?._source === "live" ? "Live from Langfuse" : "Langfuse not configured",
-      icon: Activity,
-      color: metrics?._source === "live" ? "text-indigo-400" : "text-amber-400",
-      bg: metrics?._source === "live" ? "bg-indigo-500/10" : "bg-amber-500/10",
-      href: "/observability",
-    },
-    {
-      label: "Total Tokens",
-      value: metrics
-        ? metrics.totalTokens > 1e6
-          ? `${(metrics.totalTokens / 1e6).toFixed(1)}M`
-          : fmtNum(metrics.totalTokens, 0)
-        : "—",
-      sub: metrics?.totalCost ? `~${fmtUSD(metrics.totalCost)} cost` : "",
-      icon: Zap,
-      color: "text-amber-400",
-      bg: "bg-amber-500/10",
-      href: "/observability",
     },
     {
       label: "DB Records",
@@ -157,14 +113,6 @@ export default function DashboardPage() {
       desc: `Manage ${cronCount} cron jobs for sector rotation analysis, pre/post-market reports.`,
       icon: Clock,
       href: "/schedule",
-      color: "from-emerald-500/20 to-teal-500/20",
-    },
-    {
-      title: "Model Observability",
-      desc: "Langfuse traces, token usage, latency monitoring, and cost tracking.",
-      icon: Activity,
-      href: "/observability",
-      color: "from-indigo-500/20 to-purple-500/20",
     },
   ];
 
@@ -203,11 +151,6 @@ export default function DashboardPage() {
                     {cronCount > 0 ? "Running" : "Idle"}
                   </Badge>
                 )}
-                {stat.label === "Traces Today" && (
-                  <Badge variant={metrics?._source === "live" ? "success" : "warning"} size="sm">
-                    {metrics?._source === "live" ? "Live" : "Offline"}
-                  </Badge>
-                )}
                 {stat.label === "DB Records" && (
                   <Badge variant={dbRows > 0 ? "success" : "warning"} size="sm">
                     {dbRows > 0 ? "Connected" : "Empty"}
@@ -231,9 +174,7 @@ export default function DashboardPage() {
           {quickLinks.map((link) => (
             <Link key={link.title} href={link.href}>
               <Card hover className="relative overflow-hidden group h-full">
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${link.color} opacity-50 group-hover:opacity-80 transition-opacity`}
-                />
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 opacity-50 group-hover:opacity-80 transition-opacity" />
                 <div className="relative">
                   <div className="flex items-center gap-3 mb-3">
                     <link.icon size={24} className="text-[var(--color-accent)]" />
@@ -279,11 +220,6 @@ export default function DashboardPage() {
                 ok: systemStatus.db,
                 detail: systemStatus.db ? `${dbTables} tables, ${fmtNum(dbRows, 0)} rows` : "Not connected",
               },
-              {
-                name: "Langfuse",
-                ok: systemStatus.langfuse,
-                detail: systemStatus.langfuse ? "Traces streaming" : "Not configured",
-              },
             ].map((item) => (
               <div
                 key={item.name}
@@ -304,13 +240,6 @@ export default function DashboardPage() {
               </div>
             ))}
 
-            {!systemStatus.langfuse && (
-              <div className="mt-3 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                <p className="text-xs text-amber-400">
-                  Set LANGFUSE_PUBLIC_KEY + LANGFUSE_SECRET_KEY in frontend/.env.local to enable live traces.
-                </p>
-              </div>
-            )}
           </div>
         </Card>
       </div>

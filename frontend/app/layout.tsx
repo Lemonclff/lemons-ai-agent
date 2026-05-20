@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Lemon's AI Agent — US Stock Quant & LLM Observability Dashboard",
   description:
-    "US stock quantitative analysis, sector rotation monitoring, and LLM observability powered by Langfuse.",
+    "US stock quantitative analysis, sector rotation monitoring, and options volatility dashboard.",
 };
 
 export default function RootLayout({
