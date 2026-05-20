@@ -11,6 +11,8 @@ function runAnalyzer(ticker: string): Promise<unknown> {
       env: {
         ...process.env,
         DATABASE_URL: process.env.DATABASE_URL || "",
+        NVIDIA_API_KEY: process.env.NVIDIA_API_KEY || "",
+        NVIDIA_MODEL: process.env.NVIDIA_MODEL || "",
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || "",
         DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
         OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",

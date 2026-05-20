@@ -3,7 +3,7 @@
 Lemon's AI Asset Analysis Engine
 =================================
 靈感來自 QuantDinger 的 fast_analysis 服務。
-整合 yfinance + PostgreSQL + OpenRouter/DeepSeek LLM，
+整合 yfinance + PostgreSQL + NVIDIA NIM (DeepSeek V4 Pro) / OpenRouter / DeepSeek LLM，
 提供結構化的 AI 資產分析（繁體中文）。
 
 用法：
@@ -14,26 +14,54 @@ Lemon's AI Asset Analysis Engine
 輸出：JSON（stdout）
 """
 import json, sys, os, re, time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 from typing import Optional
+
+# ── Load .env for standalone CLI usage ──
+# When spawned by Next.js, env vars are already injected.
+# This covers direct `python ai_analyzer.py` usage.
+_ENV_FILE = Path(__file__).resolve().parent.parent / "frontend" / ".env.local"
+if _ENV_FILE.exists():
+    with open(_ENV_FILE) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                # Strip inline comments (anything after ' # ' or ' #')
+                key, _, val = line.partition("=")
+                # Remove inline comment if present
+                if "#" in val:
+                    # Only strip if # is preceded by space or is at start of value
+                    comment_idx = val.find(" #")
+                    if comment_idx == -1:
+                        comment_idx = val.find("\t#")
+                    if comment_idx >= 0:
+                        val = val[:comment_idx]
+                val = val.strip()
+                if key.strip() not in os.environ:
+                    os.environ[key.strip()] = val
 
 # ── Path setup ──
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # ── Config ──
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "openrouter")
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
+NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "deepseek-ai/deepseek-v4-pro")
+NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek/deepseek-chat")
-LLM_TIMEOUT = int(os.environ.get("LLM_TIMEOUT", "60"))
+LLM_TIMEOUT = int(os.environ.get("LLM_TIMEOUT", "120"))
 ANALYSIS_LANG = os.environ.get("ANALYSIS_LANG", "zh-TW")
 
 # ── Auto-detect provider ──
 def detect_provider() -> tuple[str, str, str]:
     """Returns (provider_name, api_key, model)."""
+    if NVIDIA_API_KEY and NVIDIA_API_KEY not in ("nvapi-...xxxx", ""):
+        return ("nvidia", NVIDIA_API_KEY, NVIDIA_MODEL)
     if DEEPSEEK_API_KEY and DEEPSEEK_API_KEY not in ("DEEPSE...chat", ""):
         return ("deepseek", DEEPSEEK_API_KEY, LLM_MODEL if "deepseek" in LLM_MODEL else "deepseek-chat")
     if OPENROUTER_API_KEY and OPENROUTER_API_KEY not in ("OPENRO...t-4o", ""):
@@ -326,7 +354,13 @@ def call_llm(provider: str, api_key: str, model: str, system_prompt: str, user_p
     """Call LLM API and return parsed JSON response."""
     import urllib.request, urllib.error
 
-    if provider == "openrouter":
+    if provider == "nvidia":
+        url = f"{NVIDIA_BASE_URL}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+    elif provider == "openrouter":
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -343,16 +377,30 @@ def call_llm(provider: str, api_key: str, model: str, system_prompt: str, user_p
     else:
         return {"error": f"不支援的 LLM 供應商: {provider}"}
 
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.3,
-        "max_tokens": 2048,
-        "response_format": {"type": "json_object"},
-    }
+    if provider == "nvidia":
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 1,
+            "top_p": 0.95,
+            "max_tokens": 16384,
+            "extra_body": {"chat_template_kwargs": {"thinking": False}},
+            "stream": False,
+        }
+    else:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 2048,
+            "response_format": {"type": "json_object"},
+        }
 
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
@@ -435,7 +483,7 @@ def analyze(ticker: str, provider: Optional[str] = None, model: Optional[str] = 
     if prov == "none" or not api_key:
         return {
             "status": "no_api_key",
-            "message": "未設定 LLM API Key。請在 .env 中設定 OPENROUTER_API_KEY 或 DEEPSEEK_API_KEY。",
+            "message": "未設定 LLM API Key。請在 .env 中設定 NVIDIA_API_KEY 或其他 LLM API Key。",
             "data": data,
             "ticker": ticker,
         }
@@ -466,7 +514,7 @@ def analyze(ticker: str, provider: Optional[str] = None, model: Optional[str] = 
         "analysis": result,
         "market_data": data,
         "analysis_time_ms": elapsed_ms,
-        "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
 
@@ -476,7 +524,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Lemon's AI Asset Analysis Engine")
     parser.add_argument("ticker", nargs="?", default=None, help="股票代碼（如 AAPL）")
     parser.add_argument("--ticker", "-t", dest="ticker_flag", help="股票代碼")
-    parser.add_argument("--provider", "-p", help="LLM 供應商 (openrouter/deepseek/openai)")
+    parser.add_argument("--provider", "-p", help="LLM 供應商 (nvidia/openrouter/deepseek/openai)")
     parser.add_argument("--model", "-m", help="LLM 模型名稱")
     args = parser.parse_args()
 

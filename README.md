@@ -14,7 +14,7 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 | **⏰ Schedule & Automation** | Admin-only cron job control — pause/resume/run with real API |
 | **🧠 Quant Analysis** | Multi-ticker volatility diagnostics — IV/HV/PCR/RSI/Bollinger/Strategy Engine |
 | **📈 Options & Volatility** | Search any ticker, live IV/HV spread, Put/Call ratio, auto-refresh |
-| **🤖 AI 資產分析** | AI-powered stock analysis with LLM (DeepSeek/OpenRouter), trading radar, sentiment panel, structured trading plans |
+| **🤖 AI 資產分析** | NVIDIA NIM (DeepSeek V4 Pro) AI-powered stock analysis, trading radar, sentiment panel, structured trading plans |
 | **📅 Macro Impact Matrix** | Economic calendar with expected vs. actual values, AI sector flow impact |
 | **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, table usage docs |
 | **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag |
@@ -29,7 +29,7 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
                               │
 ┌─────────────────────────────┼──────────────────────────────┐
 │                        INTERNET                              │
-│  https://xxx.trycloudflare.com                               │
+│  https://dashboard.lemonffing.com  (永久固定域名)             │
 └─────────────────────────────┼──────────────────────────────┘
                               │
 ┌─────────────────────────────┼──────────────────────────────┐
@@ -37,9 +37,9 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 │                                                              │
 │  ┌─────────────────┐     ┌──────────────────────────────┐  │
 │  │  Cloudflare      │────▶│  Next.js 14 (port 3000)      │  │
-│  │  Tunnel          │     │                              │  │
-│  └─────────────────┘     │  ┌──────────────────────┐    │  │
-│                          │  │ Auth Middleware       │    │  │
+│  │  Named Tunnel    │     │                              │  │
+│  │  (自動啟動)       │     │  ┌──────────────────────┐    │  │
+│  └─────────────────┘     │  │ Auth Middleware       │    │  │
 │                          │  │ (cookie check)        │    │  │
 │                          │  └──────┬───────────────┘    │  │
 │                          │         │                     │  │
@@ -49,21 +49,24 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 │                          │  │ /api/db               │    │  │
 │                          │  │ /api/options          │    │  │
 │                          │  │ /api/quant/*          │    │  │
-│                          │  │ /api/cron             │    │  │
+│                          │  │ /api/ai/*  (NVIDIA)   │    │  │
+│                          │  │ /api/sentiment        │    │  │
+│                          │  │ /api/radar            │    │  │
 │                          │  └──────┬───────────────┘    │  │
 │                          └─────────┼────────────────────┘  │
 │                                    │                        │
 │  ┌─────────────────┐    ┌─────────▼──────────────────────┐ │
 │  │ Python Scripts   │    │ PostgreSQL (localhost:5432)    │ │
-│  │ - yfinance       │───▶│ Database: ai_dashboard_db     │ │
+│  │ - ai_analyzer    │───▶│ Database: ai_dashboard_db     │ │
 │  │ - options_api    │    │ Tables: 5                     │ │
-│  │ - db_populate    │    └────────────────────────────────┘ │
-│  │ - cron jobs      │                                        │
-│  └─────────────────┘                                        │
-│                                                              │
-│  ┌─────────────────┐                                        │
-│  │ Telegram         │◀── cron job stdout delivery            │
-│  └─────────────────┘                                        │
+│  │ - quant_analyzer │    └────────────────────────────────┘ │
+│  │ - sentiment      │                                        │
+│  │ - radar          │    ┌────────────────────────────────┐  │
+│  └─────────────────┘    │ External APIs                   │  │
+│                          │ - NVIDIA NIM (LLM)              │  │
+│                          │ - yfinance (market data)        │  │
+│                          │ - alternative.me (Fear&Greed)   │  │
+│                          └────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -250,9 +253,12 @@ scripts/ai_analyzer.py
   │   └─ 基本面 → 格式化數據
   │
   ├─ ③ 呼叫 LLM API
-  │   ├─ DeepSeek (優先) → api.deepseek.com/v1
-  │   ├─ OpenRouter → openrouter.ai/api/v1
-  │   └─ OpenAI → api.openai.com/v1
+  │   ├─ NVIDIA NIM (優先) → integrate.api.nvidia.com/v1
+  │   │   Model: deepseek-ai/deepseek-v4-pro
+  │   │   max_tokens: 16384, temperature: 1, top_p: 0.95
+  │   ├─ DeepSeek 官方 → api.deepseek.com/v1 (備援)
+  │   ├─ OpenRouter → openrouter.ai/api/v1 (備援)
+  │   └─ OpenAI → api.openai.com/v1 (備援)
   │
   ├─ ④ 後處理與驗證
   │   ├─ JSON 解析 + Markdown fence 剝離
@@ -265,15 +271,36 @@ scripts/ai_analyzer.py
 
 #### LLM Provider 自動偵測
 
-在 `.env` 中設定任一 API Key，系統自動偵測優先級：
+在 `frontend/.env.local` 中設定任一 API Key，系統自動偵測優先級：
 
 ```bash
-# 優先級：DeepSeek > OpenRouter > OpenAI
-DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx    # 最優先
-OPENROUTER_API_KEY=sk-or-v1-xxxxxxxx    # 備援
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx      # 備援
-LLM_MODEL=deepseek/deepseek-chat        # 可選自訂模型
+# === LLM API (AI 資產分析) ===
+# Provider 優先級: NVIDIA > DeepSeek > OpenRouter > OpenAI
+# 只要設定其中一個即可，前端 AI 分析會自動選用
+
+# --- NVIDIA NIM (DeepSeek V4 Pro, 推薦) ---
+NVIDIA_API_KEY=nvapi-REDACTED-REGENERATE
+NVIDIA_MODEL=deepseek-ai/deepseek-v4-pro
+
+# --- 備援 Provider ---
+# OPENROUTER_API_KEY=sk-or-v1-xxxxx
+# DEEPSEEK_API_KEY=sk-xxxxx
+# OPENAI_API_KEY=sk-xxxxx
+
+LLM_TIMEOUT=180    # NVIDIA 16384 tokens 約需 90s
 ```
+
+#### NVIDIA NIM API 規格
+
+| 參數 | 值 |
+|------|-----|
+| Base URL | `https://integrate.api.nvidia.com/v1` |
+| Model | `deepseek-ai/deepseek-v4-pro` |
+| Max Tokens | 16384 |
+| Temperature | 1.0 |
+| Top P | 0.95 |
+| Extra Body | `chat_template_kwargs.thinking: false` |
+| Timeout | 180s (預設 120s) |
 
 #### 情緒面板 — 數據來源
 
@@ -412,34 +439,47 @@ Sidebar → Admin — Reset Password
 
 ## Cloudflare Tunnel (Public Access)
 
-Your dashboard is accessible from any device via Cloudflare Tunnel.
+Your dashboard is accessible from any device via **Cloudflare Named Tunnel** with a permanent fixed domain.
 
-### Current Setup: trycloudflare.com
+### Current Setup: Permanent Domain ✅
+
+| Setting | Value |
+|---------|-------|
+| Domain | `dashboard.lemonffing.com` |
+| Tunnel | `lemons-dashboard` (UUID: `991df800`) |
+| Target | `localhost:3000` |
+| HTTPS | Auto-provisioned by Cloudflare |
+| Auto-start | `cron @reboot` → `~/.local/bin/start-cloudflared-tunnel.sh` |
+| Log | `/tmp/tunnel.log` |
+| Config | `~/.cloudflared/config.yml` |
+
+### Quick Commands
 
 ```bash
-~/.local/bin/cloudflared tunnel --url http://localhost:3000
-# Output: https://<random>.trycloudflare.com
+# Start tunnel manually
+~/.local/bin/cloudflared tunnel --config ~/.cloudflared/config.yml run
+
+# Check status
+ps aux | grep cloudflared
+
+# Add new subdomain (e.g., quantdinger.lemonffing.com)
+~/.cloudflared tunnel route dns lemons-dashboard quantdinger.lemonffing.com
+# Then edit ~/.cloudflared/config.yml, add ingress rule, restart tunnel
 ```
 
-| Pro | Con |
-|-----|-----|
-| Zero config, instant | URL changes on every restart |
-| Free forever | No custom domain |
-| Auto HTTPS | No Cloudflare Access (login before tunnel) |
+### Setup Guide for Your Own Domain
 
-### Upgrade Path: Permanent Fixed Domain ($1/year)
+If you're setting this up from scratch on your own domain:
 
-For a truly permanent URL that never changes:
+1. Buy a domain on [Cloudflare Registrar](https://dash.cloudflare.com) (~$1/year for `.xyz`)
+2. `cloudflared tunnel login` → open URL in browser → authorize
+3. `cloudflared tunnel create <name>` → generates credentials JSON
+4. `cloudflared tunnel route dns <name> dashboard.yourdomain.com`
+5. Create `~/.cloudflared/config.yml` with ingress rules
+6. `cloudflared tunnel run <name>`
+7. Set up `cron @reboot` for auto-start
 
-1. Buy a `.xyz` domain on [Cloudflare Registrar](https://dash.cloudflare.com) (~$1/year)
-2. Authenticate cloudflared: `cloudflared tunnel login`
-3. Create named tunnel: `cloudflared tunnel create lemons-dashboard`
-4. Route DNS: `cloudflared tunnel route dns lemons-dashboard dashboard.yourdomain.xyz`
-5. Start: `cloudflared tunnel run lemons-dashboard`
-6. Result: `https://dashboard.yourdomain.xyz` — permanent, never changes
-
-Bonus: With a Cloudflare domain, you also get Cloudflare Access (email/PIN login before
-the tunnel, adding a second layer of authentication).
+See `docs/cloudflare-tunnel-setup.md` for the complete step-by-step guide.
 
 ---
 
@@ -450,78 +490,147 @@ Frontend        Next.js 14 (App Router) · React 18 · Tailwind CSS · TypeScrip
 Auth            bcryptjs · HMAC-SHA256 tokens · httpOnly cookies · PG users table
 Database        PostgreSQL · node-postgres (pg) · psycopg2 (Python)
 Analysis        Python 3.12 · yfinance · pandas · numpy · FRED API
-| **AI Analysis** | DeepSeek / OpenRouter / OpenAI · System Prompt (zh-TW) · RSI/MACD/BB/ATR · Straddle IV
+AI Analysis     NVIDIA NIM (DeepSeek V4 Pro, 16384 tokens) · OpenRouter · DeepSeek · OpenAI
+                System Prompt (zh-TW) · RSI/MACD/BB/ATR · Straddle IV · JSON 驗證層
 Scheduling      Hermes cronjob (pre/post market) · Telegram delivery
-Tunnel          Cloudflare Tunnel (trycloudflare.com)
+Tunnel          Cloudflare Named Tunnel (dashboard.lemonffing.com) · cron @reboot 自動啟動
 Icons           Lucide React
 ```
 
 ---
 
-## Quick Start
+## Quick Start — 從零開始完整設定指南
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- Python 3.10+ with venv
-- PostgreSQL (local)
-- Git
+| 需求 | 版本 | 檢查指令 |
+|------|------|---------|
+| Node.js | 18+ | `node -v` |
+| npm | 9+ | `npm -v` |
+| Python | 3.10+ | `python3 --version` |
+| PostgreSQL | 14+ | `psql --version` |
+| Git | any | `git --version` |
+| cloudflared | 最新版 | `~/.local/bin/cloudflared version` |
 
-### 1. Clone & Install
+### Step 1: Clone & Install
 
 ```bash
 git clone https://github.com/Lemonclff/lemons-ai-agent.git
 cd lemons-ai-agent
 
-# Frontend
+# === Frontend ===
 cd frontend
 npm install
-
-# Python venv
 cd ..
+
+# === Python venv ===
 python3 -m venv venv
 source venv/bin/activate
 pip install psycopg2-binary yfinance pandas numpy
+deactivate
 ```
 
-### 2. Configure Environment
+### Step 2: 設定環境變數（唯一設定檔）
+
+所有配置集中在 **`frontend/.env.local`** 一個檔案。Next.js 自動載入，Python 腳本透過 spawn 繼承。
 
 ```bash
-cp .env.example .env
-# Edit .env with your values
-
-cd frontend
-# Create .env.local (already done if following this README)
+cp frontend/.env.local.example frontend/.env.local  # 如果有範例檔
+# 或直接編輯 frontend/.env.local
 ```
 
-**Required env vars:**
+**必填變數：**
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `ACCESS_PASSWORD` | HMAC signing secret for auth tokens |
-| `FRED_API_KEY` | Macro economic data |
+| 變數 | 說明 | 範例 |
+|------|------|------|
+| `DATABASE_URL` | PostgreSQL 連線字串 | `postgresql://admin:pass@localhost:5432/ai_dashboard_db` |
+| `ACCESS_PASSWORD` | Auth HMAC 簽章密鑰 | `your-secret-password` |
+| `NVIDIA_API_KEY` | LLM API Key (NVIDIA NIM) | `nvapi-xxxxx` |
+| `NVIDIA_MODEL` | LLM 模型名稱 | `deepseek-ai/deepseek-v4-pro` |
 
-### 3. Initialize Database
+**選填變數：**
+
+| 變數 | 說明 | 預設值 |
+|------|------|--------|
+| `OPENROUTER_API_KEY` | 備援 LLM | - |
+| `DEEPSEEK_API_KEY` | 備援 LLM | - |
+| `OPENAI_API_KEY` | 備援 LLM | - |
+| `LLM_TIMEOUT` | LLM API timeout (秒) | `120` |
+| `FRED_API_KEY` | 總經數據 (FRED) | - |
+| `LANGFUSE_*` | LLM observability | - |
+
+> **切換 AI 模型**：只需在 `frontend/.env.local` 中註解/取消註解對應的 `*_API_KEY`，系統會自動偵測優先級（NVIDIA > DeepSeek > OpenRouter > OpenAI）。不需要改任何程式碼。
+
+### Step 3: 初始化 PostgreSQL
 
 ```bash
-export DATABASE_URL="postgresql://admin:password@localhost:5432/ai_dashboard_db"
+# 建立 PostgreSQL 資料庫（如果尚未建立）
+sudo -u postgres psql -c "CREATE DATABASE ai_dashboard_db;"
+sudo -u postgres psql -c "CREATE USER admin WITH PASSWORD 'your-db-password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ai_dashboard_db TO admin;"
+sudo -u postgres psql -d ai_dashboard_db -c "GRANT ALL ON SCHEMA public TO admin;"
+
+# 初始化 schema（建立 5 張表）
 cd /home/lemon/lemons-ai-agent
 source venv/bin/activate
+export DATABASE_URL="postgresql://admin:your-db-password@localhost:5432/ai_dashboard_db"
 python3 scripts/db_init.py
+deactivate
 ```
 
-### 4. Run Development Server
+### Step 4: 啟動開發伺服器
 
 ```bash
-cd frontend
+cd /home/lemon/lemons-ai-agent/frontend
 npm run dev
-# Open http://localhost:3000
+# → http://localhost:3000
 ```
 
-### 5. Register First User
+### Step 5: 設定 Cloudflare Tunnel（公開訪問）
 
-Open http://localhost:3000/register → create account → auto-login
+```bash
+# 一次性設定（僅需執行一次）
+~/.local/bin/cloudflared tunnel login        # → 瀏覽器授權
+~/.local/bin/cloudflared tunnel create lemons-dashboard
+~/.local/bin/cloudflared tunnel route dns lemons-dashboard dashboard.lemonffing.com
+
+# 啟動 tunnel
+~/.local/bin/cloudflared tunnel --config ~/.cloudflared/config.yml run
+
+# → https://dashboard.lemonffing.com
+```
+
+### Step 6: 註冊帳號 + 設定 Admin
+
+```
+1. 打開 http://localhost:3000/register
+2. 註冊你的帳號
+3. 在 PostgreSQL 中設為 admin：
+   psql -d ai_dashboard_db -c "UPDATE users SET is_admin = TRUE WHERE username = '你的帳號';"
+4. 重新登入即可看到 Admin 功能
+```
+
+### Step 7: 開機自動啟動（選用）
+
+```bash
+# Next.js + Tunnel 都已在 cron @reboot 設定
+crontab -l
+# @reboot /home/lemon/.local/bin/start-nextjs.sh
+# @reboot /home/lemon/.local/bin/start-cloudflared-tunnel.sh
+```
+
+### 快速啟動（已設定完成後）
+
+```bash
+# 啟動 Next.js
+cd /home/lemon/lemons-ai-agent/frontend && npm run dev &
+
+# 啟動 Tunnel
+~/.local/bin/cloudflared tunnel --config ~/.cloudflared/config.yml run &
+
+# 從 Windows 測試
+Invoke-WebRequest -Uri "https://dashboard.lemonffing.com" -UseBasicParsing
+```
 
 ---
 
@@ -592,7 +701,7 @@ lemons-ai-agent/
 │   │   ├── db.ts                    # PostgreSQL connection pool
 │   │   └── utils.ts                 # Utility functions
 │   ├── middleware.ts                # Auth guard (cookie check → redirect)
-│   └── .env.local                   # ACCESS_PASSWORD, DATABASE_URL
+│   ├── frontend/.env.local           # 唯一配置檔：所有 KEY/TOKEN/DB (Next.js 自動載入)
 ├── scripts/                         # Python analysis engine
 │   ├── db_connection.py             # Dual-backend connection layer
 │   ├── db_init.py                   # Database initializer
@@ -601,7 +710,7 @@ lemons-ai-agent/
 │   ├── migrate_to_pg.py             # SQLite → PostgreSQL migration
 │   ├── options_api.py               # Options chain API worker
 │   ├── quant_analyzer.py            # Rule-based quant engine (RSI/BB/PCR/IV)
-│   ├── ai_analyzer.py               # LLM-powered AI analysis (DeepSeek/OpenRouter)
+│   ├── ai_analyzer.py               # AI analysis: NVIDIA NIM + OpenRouter + DeepSeek
 │   ├── sentiment_fetcher.py         # Fear&Greed / VIX / DXY / 10Y fetcher
 │   ├── opportunity_radar.py         # 30+ stock 24h scanner → trading signals
 │   └── ...
@@ -623,7 +732,10 @@ lemons-ai-agent/
 cd frontend && npm run dev
 
 # Start Cloudflare Tunnel
-~/.local/bin/cloudflared tunnel --url http://localhost:3000
+~/.local/bin/cloudflared tunnel --config ~/.cloudflared/config.yml run
+
+# Test from Windows
+Invoke-WebRequest -Uri "https://dashboard.lemonffing.com" -UseBasicParsing
 
 # Database queries
 python3 scripts/db_query.py "SELECT * FROM stock_price_daily ORDER BY trade_date DESC LIMIT 10"
@@ -658,4 +770,4 @@ MIT — see LICENSE file.
 
 ---
 
-*Last updated: 2026-05-20*
+*Last updated: 2026-05-21*
