@@ -19,6 +19,9 @@ import {
   CheckCircle2,
   Filter,
   Timer,
+  Calendar,
+  SlidersHorizontal,
+  Gauge,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,17 +40,21 @@ interface OptionsSnapshot {
   implied_volatility: number | null;
   historical_volatility: number | null;
   iv_hv_spread: number | null;
+  iv_rank?: { percentile: number; min_1y: number; max_1y: number; label: string } | null;
   put_call_ratio: number | null;
   call_volume: number;
   put_volume: number;
   total_volume: number;
   unusual_activity: boolean;
+  sparkline?: number[] | null;
+  earnings?: { date: string; days_until: number; reported?: boolean } | null;
   ai_alert?: string;
   last_updated?: string;
+  _source?: string;
 }
 
-type FilterMode = "all" | "alerts" | "high_iv" | "high_pcr";
-type SortMode = "iv_spread" | "pcr" | "volume" | "ticker";
+type FilterMode = "all" | "alerts" | "high_iv" | "high_pcr" | "earnings";
+type SortMode = "iv_spread" | "pcr" | "volume" | "ticker" | "iv_rank";
 
 const DEFAULT_TICKERS = [
   "TSLA", "NVDA", "AMD", "AAPL", "MSTR", "COIN", "SMCI", "PLTR", "ARM", "AVGO",
@@ -233,7 +240,7 @@ function IVSpreadGauge({ spread }: { spread: number }) {
   const isWarning = spread > 20;
   const isDanger = spread > 35;
   return (
-    <div className="relative w-[100px]">
+    <div className="relative w-[85px]">
       <div className="h-2 rounded-full bg-[var(--color-surface)] overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
@@ -247,14 +254,36 @@ function IVSpreadGauge({ spread }: { spread: number }) {
           }}
         />
       </div>
-      <span
-        className={cn(
-          "text-[10px] font-mono mt-0.5 block",
-          isDanger ? "text-red-400" : isWarning ? "text-amber-400" : "text-emerald-400"
-        )}
-      >
+      <span className={cn("text-[10px] font-mono mt-0.5 block", isDanger ? "text-red-400" : isWarning ? "text-amber-400" : "text-emerald-400")}>
         {spread > 0 ? "+" : ""}{spread.toFixed(0)}%
       </span>
+    </div>
+  );
+}
+
+function MiniSparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const width = 60; const height = 16;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values.map((v, i) => `${(i / (values.length - 1)) * width},${height - ((v - min) / range) * (height - 2) - 1}`).join(" ");
+  const up = values[values.length - 1] >= values[0];
+  return (
+    <svg width={width} height={height} className="opacity-50">
+      <polyline points={points} fill="none" stroke={up ? "#22c55e" : "#ef4444"} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IVRankBadge({ rank }: { rank: { percentile: number; label: string } }) {
+  const pct = rank.percentile;
+  return (
+    <div className="flex items-center gap-1 justify-center">
+      <div className="w-10 h-1.5 rounded-full bg-[var(--color-surface-elevated)] overflow-hidden">
+        <div className={cn("h-full rounded-full", pct > 80 ? "bg-red-400" : pct > 60 ? "bg-amber-400" : "bg-emerald-400")} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={cn("text-[10px] font-mono", pct > 80 ? "text-red-400" : pct > 60 ? "text-amber-400" : "text-emerald-400")}>{pct.toFixed(0)}</span>
     </div>
   );
 }
@@ -262,151 +291,151 @@ function IVSpreadGauge({ spread }: { spread: number }) {
 function TickerRow({
   data,
   onDelete,
+  index,
 }: {
   data: OptionsSnapshot;
   onDelete: (ticker: string) => void;
+  index: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const hasEarnings = data.earnings && !data.earnings.reported;
+  const earningsSoon = hasEarnings && data.earnings!.days_until <= 7;
+  const ivRank = data.iv_rank;
+  const isAlt = index % 2 === 1;
 
   return (
     <>
       <tr
         onClick={(e) => {
-          // Don't expand when clicking delete button
           if ((e.target as HTMLElement).closest(".delete-btn")) return;
           setExpanded(!expanded);
         }}
         className={cn(
-          "border-b border-[var(--color-border)]/50 cursor-pointer transition-colors group",
-          "hover:bg-[var(--color-surface-elevated)]/50",
-          data.unusual_activity && "bg-red-500/5"
+          "border-b border-[var(--color-border)]/40 cursor-pointer transition-colors group",
+          isAlt ? "bg-[var(--color-surface)]/30" : "",
+          "hover:bg-[var(--color-surface-elevated)]/60",
+          data.unusual_activity && "bg-red-500/5 hover:bg-red-500/10"
         )}
       >
-        <td className="py-3 pl-3 pr-1 w-8">
+        <td className="py-2.5 pl-3 pr-1 w-8">
           <button
             className="delete-btn p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 transition-all"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(data.ticker);
-            }}
+            onClick={(e) => { e.stopPropagation(); onDelete(data.ticker); }}
             title={`Remove ${data.ticker}`}
           >
             <X size={14} />
           </button>
         </td>
-        <td className="py-3 px-2">
-          <div className="flex items-center gap-2">
+        <td className="py-2.5 px-2">
+          <div className="flex items-center gap-1.5">
             {data.unusual_activity && (
-              <AlertTriangle size={12} className="text-red-400 animate-pulse shrink-0" />
+              <AlertTriangle size={11} className="text-red-400 shrink-0" />
+            )}
+            {earningsSoon && (
+              <span title={`Earnings in ${data.earnings!.days_until}d`}>
+                <Calendar size={11} className="text-amber-400 shrink-0" />
+              </span>
             )}
             <span className="font-semibold text-sm">{data.ticker}</span>
           </div>
         </td>
-        <td className="py-3 px-2 text-sm text-[var(--color-text-secondary)] hidden sm:table-cell">
+        <td className="py-2.5 px-2 text-sm text-[var(--color-text-secondary)] hidden sm:table-cell">
           {data.name}
         </td>
-        <td className="py-3 px-2 text-sm font-mono text-right">
-          <span className={data.change_pct >= 0 ? "text-emerald-400" : "text-red-400"}>
-            ${data.price.toFixed(1)}
-          </span>
-        </td>
-        <td className="py-3 px-2 text-right">
-          <span
-            className={cn(
-              "text-xs font-mono",
-              data.change_pct >= 0 ? "text-emerald-400" : "text-red-400"
+        <td className="py-2.5 px-2 text-sm font-mono text-right">
+          <div className="flex flex-col items-end gap-0.5">
+            <span className={data.change_pct >= 0 ? "text-emerald-400" : "text-red-400"}>
+              ${data.price.toFixed(1)}
+            </span>
+            {data.sparkline && data.sparkline.length >= 3 && (
+              <MiniSparkline values={data.sparkline} />
             )}
-          >
-            {data.change_pct >= 0 ? "+" : ""}
-            {data.change_pct.toFixed(1)}%
+          </div>
+        </td>
+        <td className="py-2.5 px-2 text-right">
+          <span className={cn("text-xs font-mono", data.change_pct >= 0 ? "text-emerald-400" : "text-red-400")}>
+            {data.change_pct >= 0 ? "+" : ""}{data.change_pct.toFixed(1)}%
           </span>
         </td>
-        <td className="py-3 px-2">
+        <td className="py-2.5 px-2">
           <IVSpreadGauge spread={data.iv_hv_spread ?? 0} />
         </td>
-        <td className="py-3 px-2 text-sm font-mono text-center">
-          <span
-            className={cn(
-              (data.put_call_ratio ?? 0) > 1.5
-                ? "text-red-400"
-                : (data.put_call_ratio ?? 0) > 1.0
-                ? "text-amber-400"
-                : "text-emerald-400"
-            )}
-          >
+        <td className="py-2.5 px-1.5 text-center min-w-[70px]">
+          {ivRank ? (
+            <IVRankBadge rank={ivRank} />
+          ) : (
+            <span className="text-[10px] text-[var(--color-text-muted)]">—</span>
+          )}
+        </td>
+        <td className="py-2.5 px-2 text-sm font-mono text-center">
+          <span className={cn(
+            (data.put_call_ratio ?? 0) > 1.5 ? "text-red-400" : (data.put_call_ratio ?? 0) > 1.0 ? "text-amber-400" : "text-emerald-400"
+          )}>
             {data.put_call_ratio?.toFixed(2) ?? "N/A"}
           </span>
         </td>
-        <td className="py-3 px-2 text-xs text-[var(--color-text-muted)] hidden lg:table-cell text-right">
+        <td className="py-2.5 px-2 text-xs text-[var(--color-text-muted)] hidden lg:table-cell text-right">
           {fmtNum(data.total_volume, 0)}
         </td>
-        <td className="py-3 px-2 text-center w-8">
-          {expanded ? (
-            <ChevronUp size={14} className="text-[var(--color-accent)]" />
-          ) : (
-            <ChevronDown size={14} className="text-[var(--color-text-muted)]" />
-          )}
+        <td className="py-2.5 px-2 text-center w-8">
+          {expanded ? <ChevronUp size={14} className="text-[var(--color-accent)]" /> : <ChevronDown size={14} className="text-[var(--color-text-muted)]" />}
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-[var(--color-surface)]">
-          <td colSpan={10} className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <tr className={cn("bg-[var(--color-surface)]", isAlt && "bg-[var(--color-surface)]/60")}>
+          <td colSpan={11} className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              {/* IV/HV Breakdown */}
               <div className="space-y-2">
-                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">
-                  IV / HV Breakdown
-                </p>
-                <div className="flex items-center gap-4">
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">IV</span>
-                    <p className="font-mono text-sm">{data.implied_volatility?.toFixed(1) ?? "N/A"}%</p>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">HV(20d)</span>
-                    <p className="font-mono text-sm">{data.historical_volatility?.toFixed(1) ?? "N/A"}%</p>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">Spread</span>
-                    <p
-                      className={cn(
-                        "font-mono text-sm",
-                        (data.iv_hv_spread ?? 0) > 20 ? "text-red-400" : "text-emerald-400"
-                      )}
-                    >
-                      {(data.iv_hv_spread ?? 0) > 0 ? "+" : ""}
-                      {data.iv_hv_spread?.toFixed(1)}%
-                    </p>
-                  </div>
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">IV / HV Breakdown</p>
+                <div className="flex items-center gap-3">
+                  <div><span className="text-[var(--color-text-muted)] text-[10px]">IV</span><p className="font-mono text-sm">{data.implied_volatility?.toFixed(1) ?? "N/A"}%</p></div>
+                  <div><span className="text-[var(--color-text-muted)] text-[10px]">HV(20d)</span><p className="font-mono text-sm">{data.historical_volatility?.toFixed(1) ?? "N/A"}%</p></div>
+                  <div><span className="text-[var(--color-text-muted)] text-[10px]">Spread</span><p className={cn("font-mono text-sm", (data.iv_hv_spread ?? 0) > 20 ? "text-red-400" : "text-emerald-400")}>{(data.iv_hv_spread ?? 0) > 0 ? "+" : ""}{data.iv_hv_spread?.toFixed(1)}%</p></div>
                 </div>
               </div>
+              {/* IV Rank */}
               <div className="space-y-2">
-                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">
-                  Options Flow
-                </p>
-                <div className="flex items-center gap-4">
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">IV Rank (1Y)</p>
+                {ivRank ? (
                   <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">Calls</span>
-                    <p className="font-mono text-sm text-emerald-400">{fmtNum(data.call_volume, 0)}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn("text-sm font-mono font-bold", ivRank.percentile > 80 ? "text-red-400" : ivRank.percentile > 60 ? "text-amber-400" : "text-emerald-400")}>{ivRank.percentile.toFixed(0)}%ile</span>
+                      <Badge variant={ivRank.percentile > 80 ? "danger" : ivRank.percentile > 60 ? "warning" : "success"} size="sm">{ivRank.label}</Badge>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--color-surface-elevated)] overflow-hidden">
+                      <div className={cn("h-full rounded-full", ivRank.percentile > 80 ? "bg-red-400" : ivRank.percentile > 60 ? "bg-amber-400" : "bg-emerald-400")} style={{ width: `${ivRank.percentile}%` }} />
+                    </div>
+                    <div className="flex justify-between text-[9px] text-[var(--color-text-muted)] mt-0.5">
+                      <span>{ivRank.min_1y}%</span><span>{ivRank.max_1y}%</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">Puts</span>
-                    <p className="font-mono text-sm text-red-400">{fmtNum(data.put_volume, 0)}</p>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">PCR</span>
-                    <p className="font-mono text-sm">{data.put_call_ratio?.toFixed(2)}</p>
-                  </div>
+                ) : <p className="text-xs text-[var(--color-text-muted)]">Calculating...</p>}
+              </div>
+              {/* Flow */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">Options Flow</p>
+                <div className="flex items-center gap-3">
+                  <div><span className="text-[var(--color-text-muted)] text-[10px]">Calls</span><p className="font-mono text-sm text-emerald-400">{fmtNum(data.call_volume, 0)}</p></div>
+                  <div><span className="text-[var(--color-text-muted)] text-[10px]">Puts</span><p className="font-mono text-sm text-red-400">{fmtNum(data.put_volume, 0)}</p></div>
+                  <div><span className="text-[var(--color-text-muted)] text-[10px]">PCR</span><p className="font-mono text-sm">{data.put_call_ratio?.toFixed(2)}</p></div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant={data.unusual_activity ? "danger" : "success"} size="md">
-                  {data.unusual_activity ? "⚠ Alert" : "✓ Normal"}
-                </Badge>
-                {data.last_updated && (
-                  <span className="text-[10px] text-[var(--color-text-muted)]">
-                    Updated {new Date(data.last_updated).toLocaleTimeString()}
-                  </span>
-                )}
+              {/* Signals */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">Signals</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={data.unusual_activity ? "danger" : "success"} size="sm">{data.unusual_activity ? "⚠ Alert" : "✓ Normal"}</Badge>
+                  {data.earnings && (
+                    <Badge variant={data.earnings.reported ? "info" : "warning"} size="sm">
+                      <Calendar size={10} />
+                      {data.earnings.reported ? "Just reported" : `Earnings in ${data.earnings.days_until}d`}
+                    </Badge>
+                  )}
+                  {data.last_updated && (
+                    <span className="text-[10px] text-[var(--color-text-muted)]">Updated {new Date(data.last_updated).toLocaleTimeString()}</span>
+                  )}
+                </div>
               </div>
             </div>
             {data.ai_alert && (
@@ -573,11 +602,13 @@ export default function OptionsVolatilityPage() {
   const filtered = useMemo(() => {
     let result = [...data];
     if (filterMode === "alerts") result = result.filter((d) => d.unusual_activity);
+    if (filterMode === "earnings") result = result.filter((d) => d.earnings && !d.earnings.reported && d.earnings.days_until <= 14);
     if (filterMode === "high_iv") result = result.filter((d) => (d.implied_volatility ?? 0) > 50);
     if (filterMode === "high_pcr") result = result.filter((d) => (d.put_call_ratio ?? 0) > 1.3);
     result.sort((a, b) => {
       switch (sortMode) {
         case "iv_spread": return (b.iv_hv_spread ?? 0) - (a.iv_hv_spread ?? 0);
+        case "iv_rank": return (b.iv_rank?.percentile ?? 0) - (a.iv_rank?.percentile ?? 0);
         case "pcr": return (b.put_call_ratio ?? 0) - (a.put_call_ratio ?? 0);
         case "volume": return b.total_volume - a.total_volume;
         case "ticker": return a.ticker.localeCompare(b.ticker);
@@ -785,6 +816,7 @@ export default function OptionsVolatilityPage() {
           {([
             { key: "all", label: "All" },
             { key: "alerts", label: `⚠ Alerts${unusualCount > 0 ? ` (${unusualCount})` : ""}` },
+            { key: "earnings", label: "📅 Earnings" },
             { key: "high_iv", label: "High IV >50%" },
             { key: "high_pcr", label: "High PCR >1.3" },
           ] as { key: FilterMode; label: string }[]).map((f) => (
@@ -806,6 +838,7 @@ export default function OptionsVolatilityPage() {
           <span className="text-[10px] text-[var(--color-text-muted)]">Sort:</span>
           {([
             { key: "iv_spread", label: "IV Spread" },
+            { key: "iv_rank", label: "IV Rank" },
             { key: "pcr", label: "P/C Ratio" },
             { key: "volume", label: "Volume" },
             { key: "ticker", label: "Ticker" },
@@ -838,18 +871,18 @@ export default function OptionsVolatilityPage() {
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 {[
-                  "", "Ticker", "Name", "Price", "Chg%", "IV Spread", "P/C Ratio", "Volume", "",
+                  "", "Ticker", "Name", "Price", "Chg%", "IV Spread", "IV Rank", "P/C Ratio", "Volume", "",
                 ].map((h, i) => (
                   <th
                     key={h + i}
                     className={cn(
                       "py-3 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider",
                       h === "" && i === 0 && "pl-3 w-8",
-                      h === "" && i === 8 && "w-8",
+                      h === "" && i === 9 && "w-8",
                       h === "Name" && "hidden sm:table-cell text-left",
                       h === "Volume" && "hidden lg:table-cell text-right",
                       (h === "Price" || h === "Chg%") && "text-right",
-                      h === "P/C Ratio" && "text-center",
+                      (h === "P/C Ratio" || h === "IV Rank") && "text-center",
                       h === "Ticker" && "pl-2 text-left"
                     )}
                   >
@@ -872,8 +905,8 @@ export default function OptionsVolatilityPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((d) => (
-                  <TickerRow key={d.ticker} data={d} onDelete={deleteTicker} />
+                filtered.map((d, i) => (
+                  <TickerRow key={d.ticker} data={d} onDelete={deleteTicker} index={i} />
                 ))
               )}
             </tbody>

@@ -1,77 +1,171 @@
 #!/usr/bin/env python3
 """
-Lemon's AI Agent — Options API Worker
-=======================================
+Lemon's AI Agent — Options API Worker v2
+==========================================
 
-Reads a JSON array of tickers from stdin, fetches real options data
-from Yahoo Finance, and writes JSON to stdout.
+Reads tickers from stdin, fetches real options data from Yahoo Finance,
+and writes enriched JSON to stdout.
+
+New in v2:
+    - IV Rank (percentile within 52-week IV range)
+    - Sparkline data (5-day close prices for mini chart)
+    - Upcoming earnings dates
+    - Ticker name enrichment
 
 Protocol:
-    stdin:  ["NVDA", "TSLA", "AAPL", ...]
-    stdout: [{"ticker":"NVDA","price":940.12,"iv":60.5,...}, ...]
-
-Optimized for speed:
-    - Batch price fetch via yfinance.download (single HTTP call)
-    - Options chain per ticker (threaded, 4 concurrent)
-    - 15s timeout per ticker
-
-Usage:
-    echo '["NVDA","TSLA","AAPL"]' | python options_api.py
+    stdin:  ["NVDA","TSLA","AAPL",...]
+    stdout: [{"ticker":"NVDA","price":223,...},...]
 """
 
 import json
 import sys
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
 
-MAX_WORKERS = 4
-TIMEOUT = 15
+MAX_WORKERS = 5
+TIMEOUT = 20
+HISTORY_DAYS = 252  # ~1 trading year for IV rank
+
+# Upcoming earnings (approximate — actual dates vary ±1 day)
+EARNINGS_CALENDAR: dict[str, str] = {
+    "NVDA": "2026-05-28", "AMD": "2026-05-06", "AAPL": "2026-05-01",
+    "MSFT": "2026-05-01", "GOOGL": "2026-05-01", "META": "2026-05-01",
+    "AMZN": "2026-05-01", "INTC": "2026-05-01", "TSLA": "2026-05-01",
+    "NFLX": "2026-05-01", "QCOM": "2026-05-07", "AVGO": "2026-06-12",
+}
+
+TICKER_NAMES: dict[str, str] = {
+    "TSLA": "Tesla", "NVDA": "NVIDIA", "AMD": "AMD", "AAPL": "Apple",
+    "MSTR": "MicroStrategy", "COIN": "Coinbase", "SMCI": "Super Micro",
+    "PLTR": "Palantir", "ARM": "ARM Holdings", "AVGO": "Broadcom",
+    "MSFT": "Microsoft", "GOOGL": "Alphabet", "META": "Meta",
+    "AMZN": "Amazon", "NFLX": "Netflix", "INTC": "Intel",
+    "QCOM": "Qualcomm", "MU": "Micron", "SNOW": "Snowflake",
+    "CRM": "Salesforce", "UBER": "Uber", "SQ": "Block",
+    "SPY": "S&P 500 ETF", "QQQ": "Nasdaq-100 ETF",
+}
 
 
-def compute_historical_volatility(hist: pd.DataFrame) -> Optional[float]:
-    """Annualized 20-day HV from Close prices."""
+def compute_hv(hist: pd.DataFrame, window: int = 20) -> Optional[float]:
+    """Annualized historical volatility from Close prices."""
     closes = hist.get("Close")
-    if closes is None or len(closes.dropna()) < 5:
+    if closes is None or len(closes.dropna()) < window:
         return None
-    returns = closes.pct_change().dropna().tail(20)
-    if len(returns) < 5:
+    rets = closes.pct_change().dropna().tail(window)
+    if len(rets) < 5:
         return None
-    daily_std = float(returns.std())
-    return round(daily_std * np.sqrt(252) * 100, 2)
+    return round(float(rets.std()) * np.sqrt(252) * 100, 2)
+
+
+def compute_iv_rank(
+    current_iv: float, ticker: str, prices: dict
+) -> Optional[dict]:
+    """
+    Compute IV percentile within 1-year range.
+    Downloads 1 year of daily data, computes HV as proxy for historical IV range,
+    then calculates where current IV sits.
+    Returns {"percentile": 85, "min_1y": 20, "max_1y": 90, "current": 75}
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="1y")
+        if hist.empty or len(hist) < 60:
+            return None
+
+        # Rolling 20-day HV as proxy for historical IV range
+        closes = hist["Close"]
+        returns = closes.pct_change().dropna()
+        rolling_hv = returns.rolling(20).std() * np.sqrt(252) * 100
+        rolling_hv = rolling_hv.dropna()
+
+        if rolling_hv.empty:
+            return None
+
+        hv_min = round(float(rolling_hv.min()), 2)
+        hv_max = round(float(rolling_hv.max()), 2)
+        hv_range = hv_max - hv_min
+
+        if hv_range <= 0:
+            return None
+
+        percentile = round(((current_iv - hv_min) / hv_range) * 100, 1)
+        percentile = max(0, min(100, percentile))
+
+        return {
+            "percentile": percentile,
+            "min_1y": hv_min,
+            "max_1y": hv_max,
+            "label": "Extreme" if percentile > 90 else "Elevated" if percentile > 70 else "Normal" if percentile > 30 else "Low",
+        }
+    except Exception:
+        return None
+
+
+def get_sparkline(hist: pd.DataFrame) -> Optional[list[float]]:
+    """Extract last 5 close prices for sparkline."""
+    try:
+        closes = hist.get("Close")
+        if closes is None or len(closes.dropna()) < 3:
+            return None
+        return [round(float(v), 2) for v in closes.dropna().tail(5).tolist()]
+    except Exception:
+        return None
+
+
+def get_earnings(ticker: str) -> Optional[dict]:
+    """Check if earnings are upcoming within 14 days."""
+    ed = EARNINGS_CALENDAR.get(ticker.upper())
+    if not ed:
+        return None
+    try:
+        earnings_date = date.fromisoformat(ed)
+        days_until = (earnings_date - date.today()).days
+        if 0 <= days_until <= 14:
+            return {"date": ed, "days_until": days_until}
+        # If past but within 3 days, mark as "just reported"
+        if -3 <= days_until < 0:
+            return {"date": ed, "days_until": days_until, "reported": True}
+    except Exception:
+        pass
+    return None
 
 
 def fetch_single_ticker(ticker: str, prices: dict) -> dict:
     """Fetch options + price data for one ticker."""
     result = {
         "ticker": ticker,
+        "name": TICKER_NAMES.get(ticker, ticker),
         "price": round(prices.get(ticker, 0), 2),
         "change_pct": 0,
         "implied_volatility": None,
         "historical_volatility": None,
         "iv_hv_spread": None,
+        "iv_rank": None,
         "put_call_ratio": None,
         "call_volume": 0,
         "put_volume": 0,
         "total_volume": 0,
         "unusual_activity": False,
+        "sparkline": None,
+        "earnings": None,
         "last_updated": datetime.now().isoformat(),
         "_source": "yfinance",
     }
 
     try:
         stock = yf.Ticker(ticker)
-
-        # Price & HV from history
         hist = stock.history(period="3mo")
+
         if not hist.empty:
-            hv = compute_historical_volatility(hist)
+            hv = compute_hv(hist)
             result["historical_volatility"] = hv
+            result["sparkline"] = get_sparkline(hist)
+
             if prices.get(ticker, 0) == 0 and "Close" in hist.columns:
                 result["price"] = round(float(hist["Close"].iloc[-1]), 2)
             if len(hist) >= 2:
@@ -87,7 +181,6 @@ def fetch_single_ticker(ticker: str, prices: dict) -> dict:
             calls = chain.calls
             puts = chain.puts
 
-            # ATM IV (strikes nearest current price)
             price = result["price"] or 100
             atm_calls = calls.iloc[(calls["strike"] - price).abs().argsort()[:3]]
             atm_puts = puts.iloc[(puts["strike"] - price).abs().argsort()[:3]]
@@ -101,7 +194,6 @@ def fetch_single_ticker(ticker: str, prices: dict) -> dict:
             if iv_vals:
                 result["implied_volatility"] = round(sum(iv_vals) / len(iv_vals), 2)
 
-            # Volume
             call_vol = int(calls["volume"].sum()) if "volume" in calls.columns else 0
             put_vol = int(puts["volume"].sum()) if "volume" in puts.columns else 0
             result["call_volume"] = call_vol
@@ -116,19 +208,28 @@ def fetch_single_ticker(ticker: str, prices: dict) -> dict:
             result["iv_hv_spread"] = round(iv - hv, 2)
             if iv - hv > 28:
                 result["unusual_activity"] = True
+
+        # IV Rank
+        if iv is not None:
+            result["iv_rank"] = compute_iv_rank(iv, ticker, prices)
+
+        # PCR alert
         pcr = result.get("put_call_ratio")
         if pcr is not None and pcr > 1.8:
             result["unusual_activity"] = True
 
+        # Earnings
+        result["earnings"] = get_earnings(ticker)
+
     except Exception as e:
-        result["_error"] = str(e)[:100]
+        result["_error"] = str(e)[:150]
         result["_source"] = "error"
 
     return result
 
 
 def fetch_prices(tickers: list[str]) -> dict:
-    """Batch fetch latest prices for all tickers."""
+    """Batch fetch latest prices."""
     try:
         data = yf.download(
             tickers=tickers,
@@ -138,13 +239,13 @@ def fetch_prices(tickers: list[str]) -> dict:
             progress=False,
             threads=True,
         )
-        prices = {}
+        prices: dict[str, float] = {}
         for t in tickers:
             try:
                 if len(tickers) == 1:
-                    col_data = data.get("Close")
-                    if col_data is not None and not col_data.empty:
-                        prices[t] = float(col_data.iloc[-1])
+                    col = data.get("Close")
+                    if col is not None and not col.empty:
+                        prices[t] = float(col.iloc[-1])
                 elif ("Close", t) in data.columns:
                     prices[t] = float(data[("Close", t)].dropna().iloc[-1])
             except Exception:
@@ -174,7 +275,7 @@ def main():
     # 1. Batch fetch prices
     prices = fetch_prices(tickers)
 
-    # 2. Fetch options in parallel
+    # 2. Fetch options + IV rank + sparkline + earnings in parallel
     results = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         futures = {ex.submit(fetch_single_ticker, t, prices): t for t in tickers}
@@ -184,11 +285,13 @@ def main():
             except Exception as e:
                 t = futures[f]
                 results.append({
-                    "ticker": t, "price": prices.get(t, 0),
-                    "_error": str(e)[:100], "_source": "error",
+                    "ticker": t,
+                    "name": TICKER_NAMES.get(t, t),
+                    "price": prices.get(t, 0),
+                    "_error": str(e)[:150],
+                    "_source": "error",
                 })
 
-    # Sort by original order
     order = {t: i for i, t in enumerate(tickers)}
     results.sort(key=lambda r: order.get(r["ticker"], 999))
 
