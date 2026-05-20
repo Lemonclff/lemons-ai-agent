@@ -174,10 +174,14 @@ def fetch_single_ticker(ticker: str, prices: dict) -> dict:
                 if prev > 0:
                     result["change_pct"] = round(((curr - prev) / prev) * 100, 2)
 
-        # Options chain
+        # Options chain — pick expiry ~30 days out for meaningful IV
         expiries = stock.options
         if expiries:
-            chain = stock.option_chain(expiries[0])
+            from datetime import date
+            target = date.today().toordinal() + 30
+            best_idx = min(range(len(expiries)), key=lambda i: abs(date.fromisoformat(expiries[i]).toordinal() - target))
+            expiry = expiries[max(0, min(best_idx + 1, len(expiries) - 1))]  # slightly past 30d for liquidity
+            chain = stock.option_chain(expiry)
             calls = chain.calls
             puts = chain.puts
 
@@ -186,13 +190,31 @@ def fetch_single_ticker(ticker: str, prices: dict) -> dict:
             atm_puts = puts.iloc[(puts["strike"] - price).abs().argsort()[:3]]
 
             iv_vals = []
-            for df in [atm_calls, atm_puts]:
-                if "impliedVolatility" in df.columns:
-                    for v in df["impliedVolatility"].dropna():
-                        iv_vals.append(float(v) * 100)
+            # Brenner-Subrahmanyam ATM straddle IV approximation
+            # IV ≈ sqrt(2π / T) * (C+P) / (2S)  where T = DTE/365
+            from datetime import date
+            import statistics, math
+            dte = max(1, (date.fromisoformat(expiry) - date.today()).days)
+            T = dte / 365
+
+            # Pair up calls and puts at same/similar strikes
+            call_strikes = atm_calls["strike"].values if "strike" in atm_calls.columns else []
+            put_strikes = atm_puts["strike"].values if "strike" in atm_puts.columns else []
+
+            for c_idx, c_row in atm_calls.iterrows():
+                strike_c = float(c_row["strike"])
+                call_px = float(c_row.get("lastPrice", 0))
+                # Find closest put strike
+                if len(put_strikes) > 0:
+                    p_idx = min(range(len(atm_puts)), key=lambda i: abs(float(atm_puts.iloc[i]["strike"]) - strike_c))
+                    put_px = float(atm_puts.iloc[p_idx].get("lastPrice", 0))
+                    if call_px > 0.01 and put_px > 0.01 and strike_c > 0:
+                        iv_synth = math.sqrt(2 * math.pi / T) * (call_px + put_px) / (2 * strike_c) * 100
+                        if 5 < iv_synth < 300:
+                            iv_vals.append(round(iv_synth, 2))
 
             if iv_vals:
-                result["implied_volatility"] = round(sum(iv_vals) / len(iv_vals), 2)
+                result["implied_volatility"] = round(statistics.median(iv_vals), 2)
 
             call_vol = int(calls["volume"].sum()) if "volume" in calls.columns else 0
             put_vol = int(puts["volume"].sum()) if "volume" in puts.columns else 0

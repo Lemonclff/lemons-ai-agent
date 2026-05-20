@@ -75,7 +75,18 @@ def insert_options(data: list[dict]):
                     VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
                     ON CONFLICT (ticker, trade_date) DO UPDATE SET
                         implied_volatility=EXCLUDED.implied_volatility,
+                        historical_volatility=EXCLUDED.historical_volatility,
+                        put_call_ratio=EXCLUDED.put_call_ratio,
+                        call_volume=EXCLUDED.call_volume,
+                        put_volume=EXCLUDED.put_volume,
+                        total_options_volume=EXCLUDED.total_options_volume,
                         iv_hv_spread=EXCLUDED.iv_hv_spread,
+                        unusual_activity_flag=EXCLUDED.unusual_activity_flag,
+                        iv_rank_percentile=EXCLUDED.iv_rank_percentile,
+                        sparkline_json=EXCLUDED.sparkline_json,
+                        earnings_days_until=EXCLUDED.earnings_days_until,
+                        ai_risk_alert=EXCLUDED.ai_risk_alert,
+                        data_source=EXCLUDED.data_source,
                         updated_at=CURRENT_TIMESTAMP
                 """, vals)
             except Exception as e:
