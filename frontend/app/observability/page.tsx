@@ -185,15 +185,27 @@ function generateMockTraces(): Trace[] {
 }
 
 /* ===== Latency Bars ===== */
-function LatencyHistogram() {
-  const buckets = [
-    { label: "<500ms", value: 45, color: "bg-emerald-400" },
-    { label: "500ms–1s", value: 30, color: "bg-emerald-400/70" },
-    { label: "1s–3s", value: 15, color: "bg-amber-400" },
-    { label: "3s–5s", value: 7, color: "bg-orange-400" },
-    { label: ">5s", value: 3, color: "bg-red-400" },
-  ];
-  const max = Math.max(...buckets.map((b) => b.value));
+function LatencyHistogram({ traces }: { traces: Trace[] }) {
+  const latencies = traces.map((t) => t.latency).filter(Boolean) as number[];
+
+  // Build dynamic buckets from real data
+  const buckets = latencies.length > 0
+    ? [
+        { label: "<500ms", value: latencies.filter((l) => l < 0.5).length, color: "bg-emerald-400" },
+        { label: "500ms–1s", value: latencies.filter((l) => l >= 0.5 && l < 1).length, color: "bg-emerald-400/70" },
+        { label: "1s–3s", value: latencies.filter((l) => l >= 1 && l < 3).length, color: "bg-amber-400" },
+        { label: "3s–5s", value: latencies.filter((l) => l >= 3 && l < 5).length, color: "bg-orange-400" },
+        { label: ">5s", value: latencies.filter((l) => l >= 5).length, color: "bg-red-400" },
+      ]
+    : [
+        { label: "<500ms", value: 45, color: "bg-emerald-400" },
+        { label: "500ms–1s", value: 30, color: "bg-emerald-400/70" },
+        { label: "1s–3s", value: 15, color: "bg-amber-400" },
+        { label: "3s–5s", value: 7, color: "bg-orange-400" },
+        { label: ">5s", value: 3, color: "bg-red-400" },
+      ];
+  const max = Math.max(...buckets.map((b) => b.value), 1);
+  const total = buckets.reduce((s, b) => s + b.value, 0);
 
   return (
     <div className="space-y-2">
@@ -209,7 +221,7 @@ function LatencyHistogram() {
             />
           </div>
           <span className="text-xs font-mono text-[var(--color-text-secondary)] w-10">
-            {b.value}%
+            {total > 0 ? `${((b.value / total) * 100).toFixed(0)}%` : "0%"}
           </span>
         </div>
       ))}
@@ -371,7 +383,7 @@ export default function ObservabilityPage() {
               Last 24 hours
             </Badge>
           </CardHeader>
-          <LatencyHistogram />
+          <LatencyHistogram traces={traces} />
         </Card>
       )}
 
