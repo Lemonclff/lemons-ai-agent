@@ -291,7 +291,7 @@ scripts/ai_analyzer.py
 # 只要設定其中一個即可，前端 AI 分析會自動選用
 
 # --- NVIDIA NIM (DeepSeek V4 Pro, 推薦) ---
-NVIDIA_API_KEY=nvapi-REDACTED-REGENERATE
+NVIDIA_API_KEY=nvapi-your-key-here
 NVIDIA_MODEL=deepseek-ai/deepseek-v4-pro
 
 # --- 備援 Provider ---
@@ -771,7 +771,7 @@ Invoke-WebRequest -Uri "https://dashboard.lemonffing.com" -UseBasicParsing
 python3 scripts/db_query.py "SELECT * FROM stock_price_daily ORDER BY trade_date DESC LIMIT 10"
 
 # Populate price data via yfinance
-export DATABASE_URL="postgresql://admin:password@localhost:5432/ai_dashboard_db"
+export DATABASE_URL="postgresql://admin:your-db-password@localhost:5432/ai_dashboard_db"
 python3 -c "
 import yfinance as yf, sys; sys.path.insert(0, 'scripts')
 from db_populate import insert_prices
