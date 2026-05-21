@@ -558,7 +558,7 @@ export default function AIAnalysisPage() {
                 <span className="flex items-center gap-1.5"><BarChart3 size={12} /> 四維評分</span>
                 {expandedSections.scores ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
-              {expandedSections.scores && (
+              {expandedSections.scores ? (
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { l: "技術面", v: a.technical_score, c: "text-indigo-400" },
@@ -579,7 +579,7 @@ export default function AIAnalysisPage() {
                     </Card>
                   ))}
                 </div>
-              )}
+              ) : null}
 
               {/* Trading Plan */}
               <Card className="p-3">

@@ -32,7 +32,7 @@ export function scriptPath(name: string): string {
 }
 
 // Helper: spawn Python script with standard env
-export function spawnPythonEnv(): Record<string, string> {
+export function spawnPythonEnv(): NodeJS.ProcessEnv {
   return {
     ...process.env,
     DATABASE_URL: process.env.DATABASE_URL || "",
@@ -41,8 +41,10 @@ export function spawnPythonEnv(): Record<string, string> {
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || "",
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
+    LMSTUDIO_BASE_URL: process.env.LMSTUDIO_BASE_URL || "",
+    LMSTUDIO_MODEL: process.env.LMSTUDIO_MODEL || "",
     PYTHONPATH: SCRIPTS_DIR,
-  } as Record<string, string>;
+  };
 }
 
 // Validate on import (dev-time check)
