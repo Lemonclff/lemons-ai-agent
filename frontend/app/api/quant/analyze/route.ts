@@ -1,29 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
-
-const PYTHON = "/home/lemon/lemons-ai-agent/venv/bin/python3";
-const SCRIPT = "/home/lemon/lemons-ai-agent/scripts/quant_analyzer.py";
+import { PYTHON_BIN, scriptPath, spawnPythonEnv } from "@/lib/config";
 
 function runAnalyzer(ticker: string): Promise<unknown> {
   return new Promise((resolve) => {
-    const proc = spawn(PYTHON, [SCRIPT, ticker], {
+    const proc = spawn(PYTHON_BIN, [scriptPath("quant_analyzer.py"), ticker], {
       timeout: 30000,
-      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL || "" },
+      env: spawnPythonEnv(),
     });
     let out = "";
     proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });
-    proc.on("close", () => {
-      try { resolve(JSON.parse(out)); }
-      catch { resolve({ status: "error", message: "Parse error", raw: out.slice(0, 300) }); }
-    });
-    proc.on("error", (e) => resolve({ status: "error", message: e.message }));
+    proc.on("close", () => { try { resolve(JSON.parse(out)); } catch { resolve({ error: "Parse error" }); } });
+    proc.on("error", (e) => resolve({ error: e.message }));
   });
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const ticker = (searchParams.get("ticker") || "NVDA").toUpperCase();
-
-  const result = await runAnalyzer(ticker);
-  return NextResponse.json(result);
+  const ticker = (searchParams.get("ticker") || "").toUpperCase().trim();
+  if (!ticker) return NextResponse.json({ error: "Missing ticker" }, { status: 400 });
+  return NextResponse.json(await runAnalyzer(ticker));
 }

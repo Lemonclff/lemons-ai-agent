@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
-
-const PYTHON = "/home/lemon/lemons-ai-agent/venv/bin/python3";
+import { PYTHON_BIN, SCRIPTS_DIR, PROJECT_ROOT, spawnPythonEnv } from "@/lib/config";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -10,7 +9,7 @@ export async function GET(req: NextRequest) {
 
   const script = `
 import yfinance as yf, sys, os, json
-sys.path.insert(0, '/home/lemon/lemons-ai-agent/scripts')
+sys.path.insert(0, '${SCRIPTS_DIR}')
 from db_populate import insert_prices
 
 df = yf.download('${ticker}', period='1mo', auto_adjust=False, progress=False)
@@ -24,14 +23,12 @@ for idx, row in df.iterrows():
     rows.append({
         'ticker': '${ticker}',
         'trade_date': str(idx.date()),
-        'open': float(row['Open']),
-        'high': float(row['High']),
-        'low': float(row['Low']),
-        'close': float(row['Close']),
+        'open': float(row['Open']), 'high': float(row['High']),
+        'low': float(row['Low']), 'close': float(row['Close']),
         'adj_close': float(row.get('Adj Close', row['Close'])),
         'volume': int(row['Volume']),
     })
-# Redirect db_populate logs to stderr so they don't contaminate stdout JSON
+
 import contextlib, io
 real_stdout = sys.stdout
 sys.stdout = io.StringIO()
@@ -44,9 +41,9 @@ print(json.dumps({"ok":true,"rows":len(rows)}))
 
   try {
     const result = await new Promise<string>((resolve, reject) => {
-      const proc = spawn(PYTHON, ["-c", script], {
+      const proc = spawn(PYTHON_BIN, ["-c", script], {
         timeout: 30000,
-        env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL || "", PYTHONPATH: "/home/lemon/lemons-ai-agent/scripts" },
+        env: spawnPythonEnv(),
       });
       let out = "";
       proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });

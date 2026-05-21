@@ -12,10 +12,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
-import path from "path";
+import { PYTHON_BIN, scriptPath } from "@/lib/config";
 
-const PYTHON = "/home/lemon/lemons-ai-agent/venv/bin/python3";
-const SCRIPT = path.resolve(process.cwd(), "..", "scripts", "options_api.py");
+const SCRIPT = scriptPath("options_api.py");
 const CACHE_TTL = 60_000; // 60 seconds
 
 // Simple in-memory cache

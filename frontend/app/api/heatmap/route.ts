@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
-
-const PYTHON = "/home/lemon/lemons-ai-agent/venv/bin/python3";
-const SCRIPT = "/home/lemon/lemons-ai-agent/scripts/heatmap_fetcher.py";
+import { PYTHON_BIN, scriptPath } from "@/lib/config";
 
 function runFetcher(category: string): Promise<unknown> {
   return new Promise((resolve) => {
-    const proc = spawn(PYTHON, [SCRIPT, category], { timeout: 30000 });
+    const proc = spawn(PYTHON_BIN, [scriptPath("heatmap_fetcher.py"), category], { timeout: 30000 });
     let out = "";
     proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });
     proc.on("close", () => {

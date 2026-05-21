@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Calendar,
   TrendingUp,
@@ -16,6 +16,12 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Zap,
+  Flame,
+  ShoppingCart,
+  Factory,
+  ArrowLeftRight,
+  Gauge,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,141 +32,43 @@ import { cn } from "@/lib/utils";
 type SurpriseFlag = "BEAT" | "MISS" | "INLINE" | "PENDING";
 
 interface MacroEvent {
-  id: string;
+  id: number;
   event_name: string;
-  event_time: string;        // ISO timestamp
+  event_name_zh: string | null;
+  event_time: string;
   expected_value: number | null;
   actual_value: number | null;
   previous_value: number | null;
-  deviation: number | null;  // actual - expected
+  deviation: number | null;
   surprise_flag: SurpriseFlag;
+  unit: string | null;
+  importance: string;
+  api_source?: string;
   ai_impact_tech?: string;
   ai_impact_financial?: string;
   ai_impact_broad?: string;
+  ai_impact_energy?: string;
+  ai_impact_consumer?: string;
+  ai_impact_industrial?: string;
   ai_impact_summary?: string;
-  importance: "high" | "medium" | "low";
+  capital_flow?: string;
+  volatility_outlook?: string;
 }
 
-/* ===== Mock Data ===== */
-function generateMockEvents(): MacroEvent[] {
-  const now = new Date();
-  const events: MacroEvent[] = [
-    {
-      id: "cpi-yoy",
-      event_name: "US Core CPI YoY",
-      event_time: new Date(now.getTime() + 1 * 86400000).toISOString(),
-      expected_value: 3.1,
-      actual_value: null,
-      previous_value: 3.2,
-      deviation: null,
-      surprise_flag: "PENDING",
-      importance: "high",
-    },
-    {
-      id: "ppi-mom",
-      event_name: "US PPI MoM",
-      event_time: new Date(now.getTime() + 2 * 86400000).toISOString(),
-      expected_value: 0.2,
-      actual_value: null,
-      previous_value: 0.1,
-      deviation: null,
-      surprise_flag: "PENDING",
-      importance: "high",
-    },
-    {
-      id: "nfp",
-      event_name: "Non-Farm Payrolls",
-      event_time: new Date(now.getTime() - 2 * 86400000).toISOString(),
-      expected_value: 180,
-      actual_value: 228,
-      previous_value: 151,
-      deviation: 48,
-      surprise_flag: "BEAT",
-      importance: "high",
-      ai_impact_tech:
-        "強勁就業 → 工資壓力上升 → 科技公司人力成本增加。但消費支出韌性支撐雲端/AI 需求。短期中性偏多。",
-      ai_impact_financial:
-        "就業超預期 → 聯儲局推遲減息 → 淨息差受壓。但信貸需求回升有利銀行手續費收入。短期中性。",
-      ai_impact_broad:
-        "強就業數據削弱減息預期，短期股市波動。但軟著陸信心增強，中期支撐估值。防禦型板塊可能轉強。",
-      ai_impact_summary:
-        "勞動市場韌性超預期 → 短期減息預期降溫 → 科技股估值承壓但基本面穩健 → 資金可能從高估值成長股輪動至價值/金融板塊。",
-    },
-    {
-      id: "retail-sales",
-      event_name: "US Retail Sales MoM",
-      event_time: new Date(now.getTime() - 4 * 86400000).toISOString(),
-      expected_value: 0.3,
-      actual_value: 0.1,
-      previous_value: 0.4,
-      deviation: -0.2,
-      surprise_flag: "MISS",
-      importance: "medium",
-      ai_impact_tech:
-        "消費放緩 → iPhone/Mac 等硬體銷售可能受壓，但軟體 SaaS 訂閱相對抗跌。關注 AAPL 供應鏈。",
-      ai_impact_financial:
-        "消費信貸放緩 → 信用卡業務收入承壓。但利率居高支撐淨息差，大型銀行相對穩健。",
-      ai_impact_broad:
-        "消費疲軟 → 經濟降溫訊號 → 防禦性板塊（必需消費、公用事業）可能吸引資金流入。",
-      ai_impact_summary:
-        "零售數據低於預期 → 消費者信心轉弱 → 可選消費板塊資金流出風險 → 資金可能轉向防禦型資產。",
-    },
-    {
-      id: "ism-mfg",
-      event_name: "ISM Manufacturing PMI",
-      event_time: new Date(now.getTime() - 5 * 86400000).toISOString(),
-      expected_value: 49.5,
-      actual_value: 50.3,
-      previous_value: 49.1,
-      deviation: 0.8,
-      surprise_flag: "BEAT",
-      importance: "medium",
-      ai_impact_tech:
-        "製造業重返擴張 → 半導體設備、工業軟體需求回升。NVDA/AMD 的 HPC/資料中心訂單持續強勁。",
-      ai_impact_financial:
-        "製造業擴張 → 商業貸款需求增加 → 地區銀行信貸組合改善 → 利好金融板塊。",
-      ai_impact_broad: "PMI 重返擴張區間 → 經濟韌性確認 → 周期性板塊（工業、材料）可能跑贏大盤。",
-    },
-    {
-      id: "fomc-minutes",
-      event_name: "FOMC Meeting Minutes",
-      event_time: new Date(now.getTime() - 6 * 86400000).toISOString(),
-      expected_value: null,
-      actual_value: null,
-      previous_value: null,
-      deviation: null,
-      surprise_flag: "INLINE",
-      importance: "high",
-      ai_impact_summary:
-        "會議紀要符合預期 → 維持數據依賴態度 → 市場已消化 → 無重大方向性影響。關注下次會議點陣圖更新。",
-    },
-    {
-      id: "gdp-q2",
-      event_name: "US GDP QoQ (2nd Est.)",
-      event_time: new Date(now.getTime() + 3 * 86400000).toISOString(),
-      expected_value: 2.4,
-      actual_value: null,
-      previous_value: 2.8,
-      deviation: null,
-      surprise_flag: "PENDING",
-      importance: "high",
-    },
-    {
-      id: "claims",
-      event_name: "Initial Jobless Claims",
-      event_time: new Date(now.getTime() + 1 * 86400000 - 12 * 3600000).toISOString(),
-      expected_value: 218,
-      actual_value: null,
-      previous_value: 215,
-      deviation: null,
-      surprise_flag: "PENDING",
-      importance: "low",
-    },
-  ];
+/* ===== Helpers ===== */
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  }) + " ET";
+}
 
-  return events.sort(
-    (a, b) => new Date(a.event_time).getTime() - new Date(b.event_time).getTime()
-  );
+function isPast(iso: string): boolean {
+  return new Date(iso) < new Date();
 }
 
 /* ===== Components ===== */
@@ -170,30 +78,33 @@ function SurpriseBadge({ flag }: { flag: SurpriseFlag }) {
     BEAT: { variant: "success" as const, label: "▲ Beat", icon: TrendingUp },
     MISS: { variant: "danger" as const, label: "▼ Miss", icon: TrendingDown },
     INLINE: { variant: "default" as const, label: "— Inline", icon: Minus },
-    PENDING: { variant: "info" as const, label: "⏳ Pending", icon: Clock },
+    PENDING: { variant: "info" as const, label: "⏳ 待發布", icon: Clock },
   };
   const c = config[flag];
   return (
     <Badge variant={c.variant} size="sm">
       <c.icon size={10} />
-      {c.label}
+      <span className="ml-1">{c.label}</span>
     </Badge>
   );
 }
 
-function ImportanceBadge({ level }: { level: "high" | "medium" | "low" }) {
-  const config = {
+function ImportanceStars({ level }: { level: string }) {
+  const config: Record<string, { label: string; className: string }> = {
     high: { label: "★★★", className: "text-red-400 bg-red-500/10" },
     medium: { label: "★★☆", className: "text-amber-400 bg-amber-500/10" },
     low: { label: "★☆☆", className: "text-[var(--color-text-muted)] bg-[var(--color-surface-elevated)]" },
   };
-  const c = config[level];
+  const c = config[level] || config.medium;
   return <span className={cn("px-1.5 py-0.5 text-[10px] rounded-md font-medium", c.className)}>{c.label}</span>;
 }
 
 function EventRow({ event }: { event: MacroEvent }) {
   const [expanded, setExpanded] = useState(false);
-  const hasAI = event.ai_impact_summary || event.ai_impact_tech;
+  const hasAI = !!(event.ai_impact_summary || event.ai_impact_tech || event.ai_impact_energy || event.capital_flow);
+
+  const displayName = event.event_name_zh || event.event_name;
+  const past = isPast(event.event_time);
 
   return (
     <>
@@ -207,21 +118,26 @@ function EventRow({ event }: { event: MacroEvent }) {
         )}
       >
         <td className="py-3 px-3">
-          <ImportanceBadge level={event.importance} />
+          <ImportanceStars level={event.importance} />
         </td>
         <td className="py-3 px-3">
-          <span className="text-sm font-medium">{event.event_name}</span>
+          <div>
+            <span className="text-sm font-medium">{displayName}</span>
+            {event.event_name_zh && event.event_name_zh !== event.event_name && (
+              <span className="text-[10px] text-[var(--color-text-muted)] ml-1.5">
+                {event.event_name}
+              </span>
+            )}
+          </div>
         </td>
         <td className="py-3 px-3 text-xs text-[var(--color-text-muted)] hidden sm:table-cell">
-          {new Date(event.event_time).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+          {formatDate(event.event_time)}
         </td>
         <td className="py-3 px-3 text-sm font-mono text-right">
-          {event.expected_value != null ? event.expected_value.toFixed(1) : "—"}
+          {event.expected_value != null
+            ? Number(event.expected_value).toFixed(event.unit?.includes("%") ? 1 : 0)
+            : "—"}
+          {event.unit && <span className="text-[10px] text-[var(--color-text-muted)] ml-0.5">{event.unit}</span>}
         </td>
         <td className="py-3 px-3 text-sm font-mono text-right">
           <span
@@ -230,17 +146,23 @@ function EventRow({ event }: { event: MacroEvent }) {
               event.surprise_flag === "MISS" && "text-red-400"
             )}
           >
-            {event.actual_value != null ? event.actual_value.toFixed(1) : "—"}
+            {event.actual_value != null
+              ? Number(event.actual_value).toFixed(event.unit?.includes("%") ? 1 : 0)
+              : "—"}
           </span>
         </td>
         <td className="py-3 px-3 text-sm font-mono text-right hidden sm:table-cell">
-          {event.previous_value != null ? event.previous_value.toFixed(1) : "—"}
+          {event.previous_value != null
+            ? Number(event.previous_value).toFixed(event.unit?.includes("%") ? 1 : 0)
+            : "—"}
         </td>
         <td className="py-3 px-3">
           <SurpriseBadge flag={event.surprise_flag} />
         </td>
         <td className="py-3 px-1">
-          {hasAI && (expanded ? <ChevronUp size={14} className="text-[var(--color-accent)]" /> : <ChevronDown size={14} className="text-[var(--color-text-muted)]" />)}
+          {hasAI && (
+            expanded ? <ChevronUp size={14} className="text-[var(--color-accent)]" /> : <ChevronDown size={14} className="text-[var(--color-text-muted)]" />
+          )}
         </td>
       </tr>
       {expanded && hasAI && (
@@ -248,18 +170,18 @@ function EventRow({ event }: { event: MacroEvent }) {
           <td colSpan={8} className="p-4">
             <div className="space-y-3">
               <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
-                🤖 AI Impact Analysis — Sector Flow Projections
+                🤖 AI Impact Analysis — Sector Flow Projections (NVIDIA NIM · DeepSeek V4 Pro)
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {[
-                  { label: "Technology", icon: Cpu, content: event.ai_impact_tech, color: "border-indigo-500/20 bg-indigo-500/5" },
-                  { label: "Financials", icon: Landmark, content: event.ai_impact_financial, color: "border-emerald-500/20 bg-emerald-500/5" },
-                  { label: "Broad Market", icon: Layers, content: event.ai_impact_broad, color: "border-amber-500/20 bg-amber-500/5" },
+                  { label: "科技板塊", icon: Cpu, content: event.ai_impact_tech, color: "border-indigo-500/20 bg-indigo-500/5" },
+                  { label: "金融板塊", icon: Landmark, content: event.ai_impact_financial, color: "border-emerald-500/20 bg-emerald-500/5" },
+                  { label: "大盤指數", icon: Layers, content: event.ai_impact_broad, color: "border-amber-500/20 bg-amber-500/5" },
+                  { label: "能源板塊", icon: Flame, content: event.ai_impact_energy, color: "border-orange-500/20 bg-orange-500/5" },
+                  { label: "消費板塊", icon: ShoppingCart, content: event.ai_impact_consumer, color: "border-pink-500/20 bg-pink-500/5" },
+                  { label: "工業/原材料", icon: Factory, content: event.ai_impact_industrial, color: "border-gray-400/20 bg-gray-500/5" },
                 ].map((sector) => (
-                  <div
-                    key={sector.label}
-                    className={cn("p-3 rounded-xl border text-xs", sector.color)}
-                  >
+                  <div key={sector.label} className={cn("p-3 rounded-xl border text-xs", sector.color)}>
                     <div className="flex items-center gap-2 mb-1">
                       <sector.icon size={12} />
                       <span className="font-semibold">{sector.label}</span>
@@ -270,16 +192,43 @@ function EventRow({ event }: { event: MacroEvent }) {
                   </div>
                 ))}
               </div>
+              {/* Capital Flow & Volatility */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {event.capital_flow && (
+                  <div className="p-3 rounded-xl border border-purple-500/20 bg-purple-500/5 text-xs">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ArrowLeftRight size={12} className="text-purple-400" />
+                      <span className="font-semibold text-purple-300">資金流向</span>
+                    </div>
+                    <p className="text-[var(--color-text-secondary)] leading-relaxed">{event.capital_flow}</p>
+                  </div>
+                )}
+                {event.volatility_outlook && (
+                  <div className="p-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 text-xs">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Gauge size={12} className="text-cyan-400" />
+                      <span className="font-semibold text-cyan-300">波動率展望</span>
+                    </div>
+                    <p className="text-[var(--color-text-secondary)] leading-relaxed">{event.volatility_outlook}</p>
+                  </div>
+                )}
+              </div>
               {event.ai_impact_summary && (
                 <div className="p-3 rounded-xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 text-xs">
-                  <span className="font-semibold text-[var(--color-accent)]">📋 Summary:</span>{" "}
+                  <span className="font-semibold text-[var(--color-accent)]">📋 總結：</span>{" "}
                   <span className="text-[var(--color-text-secondary)]">{event.ai_impact_summary}</span>
                 </div>
               )}
               <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
                 <Info size={10} />
-                Analysis generated by LLM based on historical patterns. Not financial advice. Cross-reference with multiple sources.
+                以上分析由 NVIDIA NIM (DeepSeek V4 Pro) 根據歷史規律與市場聯動關係生成，僅供參考，不構成投資建議。
               </div>
+              {event.api_source && (
+                <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
+                  <ExternalLink size={10} />
+                  數據來源：{event.api_source}
+                </div>
+              )}
             </div>
           </td>
         </tr>
@@ -293,26 +242,40 @@ export default function MacroImpactPage() {
   const [events, setEvents] = useState<MacroEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "high" | "beat-miss">("all");
+  const [error, setError] = useState("");
 
-  const fetchData = () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      setEvents(generateMockEvents());
-      setLoading(false);
-    }, 400);
-  };
+    setError("");
+    try {
+      const res = await fetch("/api/macro?days=30");
+      const json = await res.json();
+      setEvents(json.data || []);
+    } catch {
+      setError("無法載入經濟日曆");
+    }
+    setLoading(false);
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const filtered = useMemo(() => {
     if (filter === "high") return events.filter((e) => e.importance === "high");
-    if (filter === "beat-miss") return events.filter((e) => e.surprise_flag === "BEAT" || e.surprise_flag === "MISS");
+    if (filter === "beat-miss")
+      return events.filter((e) => e.surprise_flag === "BEAT" || e.surprise_flag === "MISS");
     return events;
   }, [events, filter]);
 
   const beatCount = events.filter((e) => e.surprise_flag === "BEAT").length;
   const missCount = events.filter((e) => e.surprise_flag === "MISS").length;
   const pendingCount = events.filter((e) => e.surprise_flag === "PENDING").length;
+  const aiAnalyzedCount = events.filter((e) => e.ai_impact_summary || e.ai_impact_tech).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-[slideIn_0.4s_ease-out]">
@@ -321,34 +284,24 @@ export default function MacroImpactPage() {
         <div>
           <h1 className="text-2xl font-bold">Macro Impact Matrix</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Economic calendar with expected vs. actual values, and AI-generated sector flow impact analysis.
+            Real economic calendar · auto-updating status · AI-generated sector flow projections
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
+          <Button variant="secondary" size="sm" onClick={fetchData} disabled={loading}>
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            Refresh
+            {loading ? "Loading..." : "Refresh"}
           </Button>
-          <a
-            href="https://fred.stlouisfed.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="ghost" size="sm">
-              <ExternalLink size={14} />
-              FRED
-            </Button>
-          </a>
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {[
-          { label: "Upcoming", value: String(pendingCount), sub: "Pending releases", icon: Calendar, color: "text-sky-400", bg: "bg-sky-500/10" },
-          { label: "Beat Expectations", value: String(beatCount), sub: "Data above forecast", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-          { label: "Missed Expectations", value: String(missCount), sub: "Data below forecast", icon: TrendingDown, color: "text-red-400", bg: "bg-red-500/10" },
-          { label: "AI Analyzed", value: String(beatCount + missCount + 1), sub: "LLM impact generated", icon: Cpu, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+          { label: "即將發布", value: String(pendingCount), sub: "Pending releases", icon: Calendar, color: "text-sky-400", bg: "bg-sky-500/10" },
+          { label: "優於預期", value: String(beatCount), sub: "Data above forecast", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+          { label: "遜於預期", value: String(missCount), sub: "Data below forecast", icon: TrendingDown, color: "text-red-400", bg: "bg-red-500/10" },
+          { label: "AI 已分析", value: String(aiAnalyzedCount), sub: "NVIDIA NIM generated", icon: Cpu, color: "text-indigo-400", bg: "bg-indigo-500/10" },
         ].map((card) => (
           <Card key={card.label} className="p-4">
             <div className="flex items-center justify-between mb-2">
@@ -366,9 +319,9 @@ export default function MacroImpactPage() {
       {/* Filters */}
       <div className="flex items-center gap-2">
         {([
-          { key: "all", label: "All Events" },
-          { key: "high", label: "High Impact" },
-          { key: "beat-miss", label: "Surprises" },
+          { key: "all", label: "全部事件" },
+          { key: "high", label: "高重要性" },
+          { key: "beat-miss", label: "驚喜事件" },
         ] as const).map((f) => (
           <button
             key={f.key}
@@ -384,24 +337,30 @@ export default function MacroImpactPage() {
           </button>
         ))}
         <span className="text-xs text-[var(--color-text-muted)] ml-auto">
-          {filtered.length} events
+          {filtered.length} 個事件 · auto-refresh 5min
         </span>
       </div>
 
-      {/* Event Calendar Table */}
+      {error && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* Event Table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
-                {["", "Event", "Date", "Expected", "Actual", "Prev", "Status", ""].map((h) => (
+                {["", "事件", "日期", "預期", "實際", "前期", "狀態", ""].map((h) => (
                   <th
                     key={h}
                     className={cn(
                       "text-left py-3 px-3 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider",
-                      h === "Date" && "hidden sm:table-cell",
-                      h === "Prev" && "hidden sm:table-cell",
-                      (h === "Expected" || h === "Actual") && "text-right"
+                      h === "日期" && "hidden sm:table-cell",
+                      h === "前期" && "hidden sm:table-cell",
+                      (h === "預期" || h === "實際") && "text-right"
                     )}
                   >
                     {h}
@@ -410,6 +369,13 @@ export default function MacroImpactPage() {
               </tr>
             </thead>
             <tbody>
+              {filtered.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-[var(--color-text-muted)] text-sm">
+                    No economic events found. Try refreshing.
+                  </td>
+                </tr>
+              )}
               {filtered.map((evt) => (
                 <EventRow key={evt.id} event={evt} />
               ))}
@@ -418,38 +384,16 @@ export default function MacroImpactPage() {
         </div>
       </Card>
 
-      {/* Prompt Template Preview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Info size={16} className="text-[var(--color-accent)]" />
-            <CardTitle>LLM Analysis Prompt Template</CardTitle>
-          </div>
-          <Badge variant="accent" size="sm">Auto-generated</Badge>
-        </CardHeader>
-        <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] font-mono text-xs leading-relaxed">
-          <p className="text-[var(--color-text-muted)] mb-2">
-            # Trigger: When actual economic data is published
-          </p>
-          <p className="text-[var(--color-text-secondary)]">
-            You are a macro-economic analyst. Analyze the impact of the following data release:
-            <br /><br />
-            <span className="text-[var(--color-accent)]">Event:</span> {"{event_name}"}<br />
-            <span className="text-[var(--color-accent)]">Expected:</span> {"{expected_value}"}<br />
-            <span className="text-[var(--color-accent)]">Actual:</span> {"{actual_value}"}<br />
-            <span className="text-[var(--color-accent)]">Previous:</span> {"{previous_value}"}<br />
-            <span className="text-[var(--color-accent)]">Deviation:</span> {"{deviation}"}<br />
-            <br />
-            Generate 3 brief summaries (2-3 sentences each):<br />
-            1. Impact on <span className="text-indigo-400">US Technology Sector</span> (semis, SaaS, hardware)<br />
-            2. Impact on <span className="text-emerald-400">US Financial Sector</span> (banks, fintech, insurance)<br />
-            3. Impact on <span className="text-amber-400">Broad Market Indices</span> (S&P 500, Nasdaq)<br />
-            4. Overall capital flow prediction (rotation direction)<br />
-            <br />
-            Be specific. Reference historical patterns. Avoid generic advice.
-          </p>
+      {/* Data Source */}
+      <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
+        <div className="flex items-center gap-2">
+          <Zap size={10} className="text-amber-400" />
+          <span>Data: FRED (Federal Reserve) · ForexFactory Calendar · Auto-update every 5 min</span>
         </div>
-      </Card>
+        <a href="https://fred.stlouisfed.org" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-accent)] transition-colors">
+          <ExternalLink size={10} className="inline mr-0.5" />FRED
+        </a>
+      </div>
     </div>
   );
 }

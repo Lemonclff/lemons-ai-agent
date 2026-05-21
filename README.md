@@ -11,14 +11,24 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 | Module | Description |
 |--------|-------------|
 | **📊 Dashboard** | Live system overview — cron job status, DB record counts, connectivity health |
-| **⏰ Schedule & Automation** | Admin-only cron job control — pause/resume/run with real API |
+| **⏰ Schedule & Automation** | Admin-only cron job control — pause/resume/run (Sector Rotation + Macro Economic + Fund Flow) |
 | **🧠 Quant Analysis** | Multi-ticker volatility diagnostics — IV/HV/PCR/RSI/Bollinger/Strategy Engine |
 | **📈 Options & Volatility** | Search any ticker, live IV/HV spread, Put/Call ratio, auto-refresh |
-| **🤖 AI 資產分析** | NVIDIA NIM (DeepSeek V4 Pro) AI-powered stock analysis, trading radar, sentiment panel, structured trading plans |
-| **📅 Macro Impact Matrix** | Economic calendar with expected vs. actual values, AI sector flow impact |
-| **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, table usage docs |
-| **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag |
-| **🛡️ Admin Panel** | Password reset, admin-only pages (Schedule, Database Explorer) |
+| **🤖 AI 資產分析** | NVIDIA NIM (DeepSeek V4 Pro) AI stock analysis — 3-dimension scoring, trading plans, zh-TW |
+| **📅 Macro Impact Matrix** | Real economic calendar (10 events) · auto-detect PENDING→BEAT/MISS · NVIDIA NIM 7-sector flow analysis · Telegram push |
+| **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, dynamic PG table listing |
+| **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag, httpOnly cookies |
+
+### Key Integrations
+
+| Integration | Detail |
+|-------------|--------|
+| **NVIDIA NIM** | DeepSeek V4 Pro via `integrate.api.nvidia.com/v1` — AI analysis + Macro sector flow |
+| **Cloudflare Tunnel** | Permanent domain `dashboard.lemonffing.com` — HTTPS auto, cron @reboot auto-start |
+| **PostgreSQL** | 5 tables, psycopg2 + node-postgres dual access, cursor-safe patterns |
+| **Telegram** | Macro economic alerts auto-push, cron-scheduled delivery |
+| **FRED API** | Federal Reserve economic data — actual values for calendar events |
+| **ForexFactory** | Economic calendar release dates scraping (fallback: BLS/BEA published schedules) |
 
 ---
 
@@ -85,11 +95,13 @@ options_volatility_log             ├── volume
 ├── ticker, trade_date             └── data_source
 ├── implied_volatility
 ├── historical_volatility          macro_economic_events
-├── put_call_ratio                 ├── event_name, event_time
-├── iv_hv_spread                   ├── expected/actual/prev
-├── iv_rank_percentile             ├── deviation, surprise_flag
-├── unusual_activity_flag          ├── ai_impact_tech/financial/broad
-└── ai_risk_alert                  └── ai_impact_summary
+├── put_call_ratio                 ├── event_name, event_name_zh (中文)
+├── iv_hv_spread                   ├── event_time, expected/actual/prev
+├── iv_rank_percentile             ├── deviation, surprise_flag (BEAT/MISS/INLINE/PENDING)
+├── unusual_activity_flag          ├── api_source (FRED/BLS/ISM...)
+└── ai_risk_alert                  ├── ai_impact_tech/financial/broad/energy/consumer/industrial
+                                   ├── ai_impact_summary, capital_flow, volatility_outlook
+                                   └── unit, importance
 
 tracked_tickers
 ├── ticker (UNIQUE)
@@ -487,15 +499,33 @@ See `docs/cloudflare-tunnel-setup.md` for the complete step-by-step guide.
 
 ```
 Frontend        Next.js 14 (App Router) · React 18 · Tailwind CSS · TypeScript
+Config          lib/config.ts — unified PROJECT_ROOT / PYTHON_BIN / spawnPythonEnv()
 Auth            bcryptjs · HMAC-SHA256 tokens · httpOnly cookies · PG users table
 Database        PostgreSQL · node-postgres (pg) · psycopg2 (Python)
 Analysis        Python 3.12 · yfinance · pandas · numpy · FRED API
 AI Analysis     NVIDIA NIM (DeepSeek V4 Pro, 16384 tokens) · OpenRouter · DeepSeek · OpenAI
                 System Prompt (zh-TW) · RSI/MACD/BB/ATR · Straddle IV · JSON 驗證層
-Scheduling      Hermes cronjob (pre/post market) · Telegram delivery
+Macro Impact    economic_calendar.py · ForexFactory + FRED · NVIDIA NIM 7-sector flow
+Scheduling      cron_control.py (state-file) + Hermes cronjob (Telegram delivery)
 Tunnel          Cloudflare Named Tunnel (dashboard.lemonffing.com) · cron @reboot 自動啟動
 Icons           Lucide React
 ```
+
+---
+
+## Shared Config System
+
+All Python paths and environment variables are centralized in **`frontend/lib/config.ts`**:
+
+```ts
+import { PYTHON_BIN, scriptPath, spawnPythonEnv, PROJECT_ROOT } from "@/lib/config";
+
+// PYTHON_BIN    → <project>/venv/bin/python3 (auto-detected)
+// scriptPath()  → <project>/scripts/<name>
+// spawnPythonEnv() → { DATABASE_URL, NVIDIA_API_KEY, ...PYTHONPATH }
+```
+
+Every API route uses these — no hardcoded `/home/lemon/...` paths. Clone to any directory, it auto-detects.
 
 ---
 

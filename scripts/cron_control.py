@@ -31,6 +31,16 @@ DEFAULT_JOBS = [
         "tags": ["sector-rotation", "post-market"],
     },
     {
+        "id": "macro-economic",
+        "name": "Macro Economic Calendar — Auto-Check",
+        "description": "每 15 分鐘檢查經濟日曆事件發布，自動獲取實際數據並調用 NVIDIA NIM 生成板塊資金流向 AI 分析，完成後透過 Telegram 推送。",
+        "schedule": "*/15 * * * 1-5",
+        "schedule_label": "每 15 分鐘 (美股時段 Mon–Fri 8:30–17:00 ET)",
+        "script": "scripts/economic_calendar.py --fetch --check --analyze-all",
+        "status": "active",
+        "tags": ["macro", "economic-calendar", "ai-analysis", "telegram", "critical"],
+    },
+    {
         "id": "fund-flow-daily",
         "name": "Institutional Fund Flow Tracker",
         "description": "Track large-block trades, dark pool activity, and options flow for institutional signal detection.",

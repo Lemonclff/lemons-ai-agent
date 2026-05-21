@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
-
-const PYTHON = "/home/lemon/lemons-ai-agent/venv/bin/python3";
-const SCRIPT = "/home/lemon/lemons-ai-agent/scripts/opportunity_radar.py";
+import { PYTHON_BIN, scriptPath } from "@/lib/config";
 
 function runRadar(): Promise<unknown> {
   return new Promise((resolve) => {
-    const proc = spawn(PYTHON, [SCRIPT], { timeout: 60000 });
+    const proc = spawn(PYTHON_BIN, [scriptPath("opportunity_radar.py")], { timeout: 60000 });
     let out = "";
     let errOut = "";
     proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });

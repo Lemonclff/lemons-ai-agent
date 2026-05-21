@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
-
-const PYTHON = "/home/lemon/lemons-ai-agent/venv/bin/python3";
-const SCRIPT = "/home/lemon/lemons-ai-agent/scripts/sentiment_fetcher.py";
+import { PYTHON_BIN, scriptPath } from "@/lib/config";
 
 function runFetcher(): Promise<unknown> {
   return new Promise((resolve) => {
-    const proc = spawn(PYTHON, [SCRIPT], { timeout: 30000 });
+    const proc = spawn(PYTHON_BIN, [scriptPath("sentiment_fetcher.py")], { timeout: 30000 });
     let out = "";
     proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });
     proc.on("close", () => {
