@@ -14,8 +14,9 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 | **⏰ Schedule & Automation** | Admin-only cron job control — pause/resume/run (Sector Rotation + Macro Economic + Fund Flow) |
 | **🧠 Quant Analysis** | Multi-ticker volatility diagnostics — IV/HV/PCR/RSI/Bollinger/Strategy Engine |
 | **📈 Options & Volatility** | Search any ticker, live IV/HV spread, Put/Call ratio, auto-refresh |
-| **🤖 AI 資產分析** | NVIDIA NIM (DeepSeek V4 Pro) AI stock analysis — 3-dimension scoring, trading plans, zh-TW |
-| **📅 Macro Impact Matrix** | Real economic calendar (10 events) · auto-detect PENDING→BEAT/MISS · NVIDIA NIM 7-sector flow analysis · Telegram push |
+|| **🤖 AI 資產分析** | NVIDIA NIM (DeepSeek V4 Pro) AI stock analysis — 3-dimension scoring, trading plans, zh-TW |
+|| **💰 AI 智慧理財** | AI OCR 記帳 — 解析銀行帳單/收據，多 LLM 供應商，任務隊列，Recharts 圖表，月篩選 |
+|| **📅 Macro Impact Matrix** | Real economic calendar (10 events) · auto-detect PENDING→BEAT/MISS · NVIDIA NIM 7-sector flow analysis · Telegram push |
 | **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, dynamic PG table listing |
 | **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag, httpOnly cookies |
 
@@ -107,6 +108,24 @@ tracked_tickers
 ├── ticker (UNIQUE)
 ├── name, sector
 └── is_active
+
+transactions
+├── transaction_id (UUID PK)
+├── user_id → users(id)
+├── type (income|expense)
+├── category, sub_category
+├── amount (NUMERIC)
+├── transaction_date (DATE)
+├── description, source_file
+└── created_at
+
+parse_task_history
+├── task_id (VARCHAR PK)
+├── user_id, file_name, provider
+├── status (pending→running→completed→done/cancelled/error)
+├── tx_count, error_msg
+├── result_json (TEXT)
+└── created_at, finished_at
 ```
 
 ---
@@ -380,6 +399,212 @@ GET /api/radar
   "analysis_time_ms": 4500
 }
 ```
+
+### AI 智慧理財 (Personal Finance) — AI OCR 記帳系統
+
+> 自動解析銀行帳單 / 信用卡帳單 / 收據，提取結構化交易記錄，支援多 LLM 供應商，含任務隊列、儀表板圖表、月篩選、管理面板。
+
+#### 頁面架構
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  AI 智慧理財                            [用戶切換] [刷新] [手動記帳] │
+├──────────────────────────────────────────────────────────────┤
+│  [儀表板]  [檔案處理 ADMIN]  [待確認 (N)]                       │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ═══ 儀表板 Tab ═══                                          │
+│  ┌──────────┬──────────┬──────────┬──────────┐              │
+│  │ 本月支出   │ 本月收入   │ 淨收支     │ 交易筆數   │              │
+│  │ HKD xxx  │ HKD xxx  │ HKD xxx  │   25     │              │
+│  └──────────┴──────────┴──────────┴──────────┘              │
+│                                                              │
+│  [month picker] [全部]                                       │
+│                                                              │
+│  ┌─────────────────────┐ ┌─────────────────────┐            │
+│  │ 每月收支趨勢 (Area)   │ │ 支出類別佔比 (Donut)  │            │
+│  └─────────────────────┘ └─────────────────────┘            │
+│  ┌─────────────────────┐ ┌─────────────────────┐            │
+│  │ 主類別排行 (Bar)      │ │ 次分類分佈 (Treemap) │            │
+│  └─────────────────────┘ └─────────────────────┘            │
+│  ┌─────────────────────────────────────────────┐            │
+│  │ 最近交易紀錄 (Table — 6 columns, inline edit) │            │
+│  └─────────────────────────────────────────────┘            │
+│                                                              │
+│  ═══ 檔案處理 Tab (Admin) ═══                                │
+│  ┌──────────────────────┐ ┌──────────────────────┐         │
+│  │ TempRecords 瀏覽器     │ │ 上傳 (drag-drop)      │         │
+│  │ [📁 /] [202604] ...  │ │ AI 解析設定            │         │
+│  │ 📄 test_upload.txt   │ │ [模型: ▼] [AI 解析]   │         │
+│  └──────────────────────┘ └──────────────────────┘         │
+│                                                              │
+│  ═══ 待確認 Tab ═══                                          │
+│  [清除] [確認並儲存]                                          │
+│  ┌─────────────────────────────────────────────┐            │
+│  │ ▼ 任務管理 (可展開)                           │            │
+│  │   pending/running/completed/done/cancelled   │            │
+│  │   [✕ kill] for running tasks                 │            │
+│  └─────────────────────────────────────────────┘            │
+│  ┌─────────────────────────────────────────────┐            │
+│  │ 交易預覽 Table (可編輯)                       │            │
+│  └─────────────────────────────────────────────┘            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### PostgreSQL Tables
+
+**1. `transactions` — 交易記錄**
+
+```sql
+CREATE TABLE transactions (
+    transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id        INTEGER NOT NULL REFERENCES users(id),
+    type           transaction_type NOT NULL,  -- 'income' | 'expense'
+    category       VARCHAR(50) NOT NULL,
+    sub_category   VARCHAR(50),
+    amount         NUMERIC(12,2) NOT NULL,
+    transaction_date DATE NOT NULL,
+    description    TEXT,
+    source_file    VARCHAR(512),
+    created_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+-- Indexes: user_id, transaction_date DESC, category, type
+-- RLS: user_id isolation + admin (Lemon) override
+```
+
+**Valid Categories:**
+| Type | Categories |
+|------|-----------|
+| Income | 薪水, 獎金, 補助費, 利息, 股息, 租金, 版稅, 傭金, 退休金, 遺產, 彩券, 保險 |
+| Expense | 飲食, 交通, 娛樂, 購物, 投資, 醫療, 家居, 生活, 學習 |
+
+**2. `parse_task_history` — AI 解析任務隊列**
+
+```sql
+CREATE TABLE parse_task_history (
+    task_id     VARCHAR(32) PRIMARY KEY,
+    user_id     INTEGER,
+    file_name   VARCHAR(255),
+    provider    VARCHAR(20),
+    status      VARCHAR(20) DEFAULT 'pending',
+    tx_count    INTEGER DEFAULT 0,
+    error_msg   TEXT,
+    result_json TEXT,         -- AI return content (JSON array of transactions)
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    finished_at TIMESTAMPTZ
+);
+```
+
+**Status Flow:**
+```
+pending → running → completed (等待確認) → done (已儲存)
+                    ↘ error               ↘ cancelled (已丟棄)
+```
+
+#### AI OCR 解析流程
+
+```
+Browser                          API Route                     Python Script
+  │                                 │                              │
+  │  POST /api/finance              │                              │
+  │  {action:"parse",               │                              │
+  │   file_path, provider}          │                              │
+  ├────────────────────────────────►│  spawn task_queue.py         │
+  │                                 │  parse-async                 │
+  │                                 ├─────────────────────────────►│
+  │  ← {task_id, status:"pending"}  │                              │ INSERT parse_task_history
+  │◄────────────────────────────────┤◄─────────────────────────────┤ status=pending
+  │                                 │                              │
+  │  poll: parse-status(task_id)    │                              │
+  │  (every 3s, up to 9min)         │                              │
+  ├────────────────────────────────►├─────────────────────────────►│
+  │                                 │                              │  spawn subprocess
+  │                                 │                              │  (detached, survives)
+  │                                 │                              │     │
+  │                                 │                              │     ▼ call LLM API
+  │                                 │                              │  NVIDIA/DeepSeek/LM Studio
+  │                                 │                              │     │
+  │                                 │                              │     ▼ _extract_json_array()
+  │                                 │                              │  strip fences, find [...]
+  │                                 │                              │  fix trailing commas
+  │                                 │                              │     │
+  │                                 │                              │  save result_json → DB
+  │                                 │                              │  status → completed
+  │  ← {status:"completed", ...}    │                              │
+  │◄────────────────────────────────┤◄─────────────────────────────┤
+  │                                 │                              │
+  │  前端「待確認」自動載入           │                              │
+  │  GET /api/finance?sub=staging-all                              │
+  │                                 │                              │
+  │  用戶確認：POST confirm-task    │                              │
+  ├────────────────────────────────►├─────────────────────────────►│
+  │                                 │                              │  INSERT transactions
+  │                                 │                              │  UPDATE status → done
+  │  用戶清除：POST cancel-task     │                              │
+  ├────────────────────────────────►├─────────────────────────────►│
+  │                                 │                              │  UPDATE status → cancelled
+```
+
+#### Multi-Provider AI Support
+
+| Provider | Config Key | Model | Notes |
+|----------|-----------|-------|-------|
+| `nvidia` | `NVIDIA_API_KEY` | `deepseek-ai/deepseek-v4-pro` | Requires `extra_body.thinking=false` |
+| `hermes` | `DEEPSEEK_API_KEY` | `deepseek-chat` | Same key as Hermes agent |
+| `lmstudio` | `LMSTUDIO_BASE_URL` | `qwen/qwen3.5-9b-Q4` | Local, no API key. IP in `.env.local` only |
+
+**Date Year Intelligence (Rule 7 in prompt):**
+```
+Current year is {datetime.now().year}.
+- File explicitly states a year → use file's year
+- File doesn't state a year → default to current year
+- Never guess
+```
+
+#### Robust JSON Extraction
+
+The `_extract_json_array()` function handles common LLM output issues via 5 strategies:
+
+| Strategy | Handles |
+|----------|---------|
+| 1. Strip markdown fences | `` ```json ... ``` `` anywhere in response |
+| 2. Find `[...]` boundaries | Reasoning text before/after JSON array |
+| 3. Direct `json.loads()` | Clean JSON |
+| 4. Fix trailing commas | `,}` → `}` / `,]` → `]` |
+| 5. Repair truncated output | Auto-close unmatched `{` `[` brackets |
+
+#### API Routes
+
+| Method | Endpoint | Action | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/finance?sub=scan` | Admin | List TempRecords files (recursive) |
+| GET | `/api/finance?sub=transactions[&month=]` | Auth | Query transactions with optional month filter |
+| GET | `/api/finance?sub=stats[&month=]` | Auth | Aggregated dashboard statistics |
+| GET | `/api/finance?sub=tasks` | Auth | List all parse tasks (30-day cleanup) |
+| GET | `/api/finance?sub=staging-all` | Auth | Load all completed (unconfirmed) tasks |
+| GET | `/api/finance?sub=admin-users` | Admin | List all users |
+| POST | `/api/finance` `{action:"parse"}` | Admin | Start AI OCR parse (returns task_id) |
+| POST | `/api/finance` `{action:"parse-status"}` | Auth | Poll async task status |
+| POST | `/api/finance` `{action:"insert"}` | Auth | Batch insert confirmed transactions |
+| POST | `/api/finance` `{action:"upload"}` | Admin | Upload file to TempRecords |
+| POST | `/api/finance` `{action:"update"}` | Auth | Update single transaction field |
+| POST | `/api/finance` `{action:"delete"}` | Auth | Delete transaction |
+| POST | `/api/finance` `{action:"confirm-task"}` | Auth | Confirm → insert transactions + mark done |
+| POST | `/api/finance` `{action:"cancel-task"}` | Auth | Discard completed task |
+| POST | `/api/finance` `{action:"kill-task"}` | Auth | Force-kill running task (SIGKILL + cleanup) |
+
+#### Key Features
+
+| Feature | Implementation |
+|---------|---------------|
+| **Month Filter** | `to_char(transaction_date, 'YYYY-MM')` in PG; frontend passes only when selected |
+| **Background AI** | `subprocess.Popen(start_new_session=True)` — survives browser close |
+| **Staging Persistence** | `result_json` stored in DB — reload after page close |
+| **Task Control Panel** | Expandable panel in 待確認 tab — kill running/pending tasks |
+| **Charts** | Recharts: AreaChart (trend), PieChart/donut (category), BarChart (ranking), Treemap (sub-category) |
+| **Drag-Drop Upload** | `ondrop` handler reads File.text(), POSTs to upload endpoint |
+| **Inline Edit** | Click edit icon → inline inputs for date/type/category/sub_category/amount/description |
+| **Admin Override** | Admin dropdown to view other users' data; file browser admin-only |
 
 ### Cron + Telegram 推送
 
