@@ -1,22 +1,28 @@
 /**
- * Speech-to-Text Transcription API Routes
+ * Speech-to-Text API Routes v2
  *
- * GET  /api/transcribe?sub=scan          → List audio files in TempRecords
- * GET  /api/transcribe?sub=tasks         → List all transcription tasks
- * POST /api/transcribe                   → Start transcription (action=transcribe)
- * POST /api/transcribe (action=status)   → Check task progress
- * POST /api/transcribe (action=result)   → Get full transcription result
- * POST /api/transcribe (action=upload)   → Upload audio file
+ * GET  ?sub=scan             → list audio files
+ * GET  ?sub=list-transcripts  → list transcript files
+ * GET  ?sub=list-summaries    → list summary files
+ * GET  ?sub=tasks             → list task history
+ * POST {action:"read-file"}   → read file content
+ * POST {action:"upload"}      → upload audio file
+ * POST {action:"transcribe"}  → start transcription (async)
+ * POST {action:"status"}      → poll task progress
+ * POST {action:"result"}      → get transcript result
+ * POST {action:"analyze"}     → AI summary of transcript
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
 import { verifyToken } from "@/lib/auth";
 import { PYTHON_BIN, scriptPath, spawnPythonEnv } from "@/lib/config";
+import * as fs from "fs";
+import * as path from "path";
 
 const SCRIPT = scriptPath("transcribe_backend.py");
 
-function runTranscribe(args: string[], stdin?: string): Promise<unknown> {
+function runPython(args: string[], stdin?: string): Promise<unknown> {
   return new Promise((resolve) => {
     const proc = spawn(PYTHON_BIN, [SCRIPT, ...args], {
       timeout: 300000,
@@ -43,6 +49,7 @@ function getAuth(req: NextRequest): { userId: number; isAdmin: boolean } | null 
   return { userId: payload.userId || 1, isAdmin: !!payload.isAdmin };
 }
 
+// ── GET ──
 export async function GET(req: NextRequest) {
   const auth = getAuth(req);
   if (!auth) return NextResponse.json({ error: "未登入" }, { status: 401 });
@@ -50,20 +57,21 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sub = searchParams.get("sub") || "scan";
 
-  if (sub === "scan") {
-    if (!auth.isAdmin) return NextResponse.json({ error: "需管理員權限" }, { status: 403 });
-    const result = await runTranscribe(["scan"]);
-    return NextResponse.json(result);
+  // Admin-only: scan audio files, list all transcripts/summaries
+  const adminSubs = ["scan", "list-transcripts", "list-summaries"];
+  if (adminSubs.includes(sub) && !auth.isAdmin) {
+    return NextResponse.json({ error: "需管理員權限" }, { status: 403 });
   }
 
-  if (sub === "tasks") {
-    const result = await runTranscribe(["tasks"]);
-    return NextResponse.json(result);
-  }
+  if (sub === "scan")              return NextResponse.json(await runPython(["scan"]));
+  if (sub === "list-transcripts")  return NextResponse.json(await runPython(["list-transcripts"]));
+  if (sub === "list-summaries")    return NextResponse.json(await runPython(["list-summaries"]));
+  if (sub === "tasks")             return NextResponse.json(await runPython(["tasks"]));
 
   return NextResponse.json({ error: "Unknown sub-action" }, { status: 400 });
 }
 
+// ── POST ──
 export async function POST(req: NextRequest) {
   const auth = getAuth(req);
   if (!auth) return NextResponse.json({ error: "未登入" }, { status: 401 });
@@ -71,59 +79,57 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const action = body.action || "transcribe";
 
-  if (action === "transcribe") {
-    if (!auth.isAdmin) return NextResponse.json({ error: "需管理員權限" }, { status: 403 });
+  // Admin-only actions
+  const adminActions = ["transcribe", "upload", "analyze"];
+  if (adminActions.includes(action) && !auth.isAdmin) {
+    return NextResponse.json({ error: "需管理員權限" }, { status: 403 });
+  }
+
+  // ── READ-FILE (any auth user) ──
+  if (action === "read-file") {
     const filePath = body.file_path;
     if (!filePath) return NextResponse.json({ error: "Missing file_path" }, { status: 400 });
-
-    const model = body.model || "cantonese";
-    const language = body.language || "yue";
-    const diarize = body.diarize === true;
-    const numSpeakers = body.num_speakers || 0;
-
-    const args = ["transcribe", filePath, "--model", model, "--language", language];
-    if (diarize) {
-      args.push("--diarize");
-      if (numSpeakers > 0) args.push("--speakers", String(numSpeakers));
-    }
-
-    const result = await runTranscribe(args);
+    const result = await runPython(["read-file", filePath]);
     return NextResponse.json(result);
   }
 
-  if (action === "status") {
-    const taskId = body.task_id;
-    if (!taskId) return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
-    const result = await runTranscribe(["status", taskId]);
-    return NextResponse.json(result);
-  }
-
-  if (action === "result") {
-    const taskId = body.task_id;
-    if (!taskId) return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
-    const result = await runTranscribe(["result", taskId]);
-    return NextResponse.json(result);
-  }
-
+  // ── UPLOAD ──
   if (action === "upload") {
-    if (!auth.isAdmin) return NextResponse.json({ error: "需管理員權限" }, { status: 403 });
     const { fileName, content } = body;
     if (!fileName || !content) return NextResponse.json({ error: "Missing fileName or content" }, { status: 400 });
-    // For binary files, content should be base64
     const buf = Buffer.from(content, "base64");
-    // Write tmp file then pass to Python via stdin
-    const tmpPath = `/tmp/transcribe_upload_${Date.now()}_${fileName}`;
-    const fs = await import("fs");
-    fs.writeFileSync(tmpPath, buf);
-    // Use upload subcommand via stdin
-    const pythonArgs = ["upload", fileName];
-    const result = await runTranscribe(pythonArgs, buf.toString("base64"));
-    // Actually, let's just write to disk directly
-    const homeDir = process.env.HOME || "/home/lemon";
-    const destDir = `${homeDir}/TempRecords`;
+    const destDir = `${process.env.HOME || "/home/lemon"}/TempRecords/audio`;
     if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-    fs.writeFileSync(`${destDir}/${fileName}`, buf);
-    return NextResponse.json({ success: true, path: `${destDir}/${fileName}`, size: buf.length });
+    fs.writeFileSync(path.join(destDir, path.basename(fileName)), buf);
+    return NextResponse.json({ success: true, path: path.join(destDir, path.basename(fileName)), size: buf.length });
+  }
+
+  // ── TRANSCRIBE ──
+  if (action === "transcribe") {
+    const filePath = body.file_path;
+    if (!filePath) return NextResponse.json({ error: "Missing file_path" }, { status: 400 });
+    const args = ["transcribe", filePath, "--model", body.model || "large-v3", "--language", body.language || "yue"];
+    if (body.diarize) { args.push("--diarize"); if (body.num_speakers > 0) args.push("--speakers", String(body.num_speakers)); }
+    return NextResponse.json(await runPython(args));
+  }
+
+  // ── ANALYZE (AI summary) ──
+  if (action === "analyze") {
+    const filePath = body.file_path;
+    if (!filePath) return NextResponse.json({ error: "Missing file_path" }, { status: 400 });
+    const args = ["analyze", filePath, "--provider", body.provider || "nvidia"];
+    if (body.llm_model) args.push("--model", body.llm_model);
+    return NextResponse.json(await runPython(args));
+  }
+
+  // ── STATUS / RESULT ──
+  if (action === "status") {
+    if (!body.task_id) return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
+    return NextResponse.json(await runPython(["status", body.task_id]));
+  }
+  if (action === "result") {
+    if (!body.task_id) return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
+    return NextResponse.json(await runPython(["result", body.task_id]));
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

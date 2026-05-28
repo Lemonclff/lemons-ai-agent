@@ -28,7 +28,8 @@ try:
     language = os.environ.get("TRANS_LANGUAGE", "yue")
     do_diarize = os.environ.get("TRANS_DIARIZE", "false") == "true"
     num_speakers = int(os.environ.get("TRANS_NUM_SPEAKERS", "0"))
-    audio_dir = Path(os.environ["TRANS_AUDIO_DIR"])
+    audio_dir = Path(os.environ.get("TRANS_AUDIO_DIR", str(Path.home() / "TempRecords" / "audio")))
+    transcript_dir = Path(os.environ.get("TRANS_TRANSCRIPT_DIR", str(Path.home() / "TempRecords" / "transcripts")))
     
     # ── Step 1: Load faster-whisper ──
     update_task(status="running", progress=10, step="Loading model...")
@@ -142,7 +143,7 @@ try:
     safe_name = "".join(c for c in base_name if c.isalnum() or c in "._- ()[]")
     
     # Save as .txt
-    txt_path = audio_dir / f"{safe_name}_轉錄.txt"
+    txt_path = transcript_dir / f"{safe_name}_轉錄.txt"
     with open(txt_path, "w", encoding="utf-8") as f:
         f.write(f"語音轉文字記錄\n")
         f.write(f"原始檔案：{Path(file_path).name}\n")
@@ -158,7 +159,7 @@ try:
         f.write(full_transcript)
     
     # Save as JSON (for frontend)
-    json_path = audio_dir / f"{safe_name}_轉錄.json"
+    json_path = transcript_dir / f"{safe_name}_轉錄.json"
     result = {
         "filename": Path(file_path).name,
         "model": model_key,
