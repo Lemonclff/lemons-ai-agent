@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+L = []
+w = L.append
+w('"use client";')
+w('import { useState, useEffect, useCallback } from "react";')
+w('import FullCalendar from "@fullcalendar/react";')
+w('import dayGridPlugin from "@fullcalendar/daygrid";')
+w('import interactionPlugin from "@fullcalendar/interaction";')
+w('import { Loader2, Zap, X, Plus, Edit3, Trash2, UserPlus, CalendarPlus, RotateCcw, Settings2, BarChart3, Lock, Unlock, Download, Copy, Info, SlidersHorizontal, Save } from "lucide-react";')
+w('import { Button } from "@/components/ui/button";')
+w('')
+w('export default function Page(){')
+w('const[staff,setStaff]=useState([]);const[units,setUnits]=useState([]);const[roles,setRoles]=useState([]);')
+w('const[assignments,setAssignments]=useState([]);const[leaveList,setLeaveList]=useState([]);')
+w('const[currentMonth,setCurrentMonth]=useState(new Date().toISOString().slice(0,7));')
+w('const[solving,setSolving]=useState(false);const[loading,setLoading]=useState(true);const[msg,setMsg]=useState("");')
+w('const[showSettings,setShowSettings]=useState(false);const[settingsTab,setSettingsTab]=useState("constraints");')
+w('const[showStaffForm,setShowStaffForm]=useState(false);const[editStaffId,setEditStaffId]=useState(null);')
+w('const[staffForm,setStaffForm]=useState({name:"",role:"RW",home_unit:"A",can_work_units:""});')
+w('const[showLeaveForm,setShowLeaveForm]=useState(false);const[editLeaveId,setEditLeaveId]=useState(null);')
+w('const[leaveForm,setLeaveForm]=useState({staff_id:0,start_date:"",end_date:"",leave_type:"annual"});')
+w('const[showStats,setShowStats]=useState(false);const[showReplace,setShowReplace]=useState(null);')
+print("Generated basic page")

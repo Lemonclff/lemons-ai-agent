@@ -21,6 +21,7 @@ import {
   Brain,
   Wallet,
   Mic,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,7 @@ const mainNav: NavItem[] = [
   { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },
   { label: "AI 智慧理財", href: "/finance", icon: Wallet, badge: "New" },
   { label: "語音轉文字", href: "/transcribe", icon: Mic, badge: "STT" },
+  { label: "智能排更", href: "/roster", icon: CalendarDays, badge: "New" },
   { label: "Database Explorer", href: "/data", icon: HardDrive, badge: "DB" },
 ];
 

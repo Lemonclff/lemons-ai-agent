@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+path = "/home/lemon/lemons-ai-agent/frontend/app/roster/page.tsx"
+with open(path, "w") as f:
+    f.write('"use client";\n')
+    f.write('import { useState, useEffect } from "react";\n')
+    f.write('export default function Page() {\n')
+    f.write('  const [staff, setStaff] = useState([]);\n')
+    f.write('  const [msg, setMsg] = useState("loading...");\n')
+    f.write('  useEffect(() => {\n')
+    f.write('    fetch("/api/schedule?sub=staff").then(r => r.json()).then(d => {\n')
+    f.write('      if (Array.isArray(d)) { setStaff(d); setMsg("OK: " + d.length + " staff"); }\n')
+    f.write('      else { setMsg("Error: " + JSON.stringify(d)); }\n')
+    f.write('    }).catch(e => setMsg("Fetch error: " + e.message));\n')
+    f.write('  }, []);\n')
+    f.write('  return (<div className="p-8">\n')
+    f.write('    <h1 className="text-2xl text-white mb-4">智能排更 TEST</h1>\n')
+    f.write('    <p className="text-zinc-400 mb-4">{msg}</p>\n')
+    f.write('    {staff.length > 0 && <div className="space-y-1">{staff.map((s) => <div key={s.id} className="text-zinc-300">{s.id}: {s.name} ({s.role})</div>)}</div>}\n')
+    f.write('  </div>);\n')
+    f.write('}\n')
+print("Written test page")
