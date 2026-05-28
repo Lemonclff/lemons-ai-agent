@@ -34,17 +34,11 @@ try:
     update_task(status="running", progress=10, step="Loading model...")
     from faster_whisper import WhisperModel
     
-    use_gpu = True
-    try:
-        import torch
-        use_gpu = torch.cuda.is_available()
-    except Exception:
-        use_gpu = False
-    
+    # CTranslate2 (faster-whisper backend) has its own CUDA — always use GPU
     model = WhisperModel(
         model_name,
-        device="cuda" if use_gpu else "cpu",
-        compute_type="float16" if use_gpu else "int8",
+        device="cuda",
+        compute_type="float16",
         num_workers=2,
     )
     
@@ -82,9 +76,8 @@ try:
                 "pyannote/speaker-diarization-3.1",
                 use_auth_token=hf_token,
             )
-            if use_gpu:
-                import torch
-                pipeline.to(torch.device("cuda"))
+            # pyannote runs on CPU — PyTorch CUDA is not compatible with this driver
+            # (faster-whisper uses CTranslate2 CUDA which works fine)
             
             diarization = pipeline(file_path, num_speakers=num_speakers if num_speakers > 0 else None)
             
