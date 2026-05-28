@@ -23,7 +23,7 @@ Commands:
   result <task_id> → get full result
   tasks           → list all tasks
 """
-import sys, os, json, uuid, subprocess, re
+import sys, os, json, uuid, subprocess, re, socket
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -262,14 +262,19 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
         req.add_header("X-Title","Lemons AI Agent")
 
     try:
+        socket.setdefaulttimeout(30)
         with urllib.request.urlopen(req, timeout=180) as resp:
             result = json.loads(resp.read())
         llm_text = result["choices"][0]["message"]["content"]
-
-        # Parse JSON from LLM response
         summary = _extract_json(llm_text)
+    except urllib.error.HTTPError as e:
+        jout({"error": f"LLM HTTP {e.code}: {e.reason}"}); return
+    except urllib.error.URLError as e:
+        jout({"error": f"無法連接 {provider} ({base_url}): {e.reason}. 請確認服務是否啟動。"}); return
+    except socket.timeout:
+        jout({"error": f"連線超時: {provider} ({base_url}) 無回應"}); return
     except Exception as e:
-        jout({"error":f"LLM call failed: {e}"}); return
+        jout({"error": f"LLM call failed: {e}"}); return
 
     # ── Save output ──
     base = src.stem
