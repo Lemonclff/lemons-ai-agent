@@ -27,6 +27,23 @@ import sys, os, json, uuid, subprocess, re
 from pathlib import Path
 from datetime import datetime, timedelta
 
+# ── Load .env.local (project) + Hermes .env (global) ──
+_ENV_FILE = Path(__file__).resolve().parent.parent / "frontend" / ".env.local"
+_HERMES_ENV = Path.home() / ".hermes" / ".env"
+for _ef in [_HERMES_ENV, _ENV_FILE]:
+    if _ef.exists():
+        with open(_ef) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, _, v = line.partition("=")
+                    if "#" in v:
+                        ci = v.find(" #")
+                        if ci < 0: ci = v.find("\t#")
+                        if ci >= 0: v = v[:ci]
+                    if k.strip() not in os.environ or not os.environ.get(k.strip()):
+                        os.environ[k.strip()] = v.strip()
+
 # ── Paths ──
 HOME = Path.home()
 AUDIO_DIR = HOME / "TempRecords" / "audio"
@@ -159,11 +176,14 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
         jout({"error":"Transcript too short for analysis (<50 chars)"}); return
 
     # ── Load LLM config from env ──
-    api_key = ""; base_url = ""; model = model_override
+    api_key = ""; base_url = ""; model = model_override; is_local = False
+    extra_body = {}
+
     if provider == "nvidia":
         api_key = os.environ.get("NVIDIA_API_KEY","")
         base_url = "https://integrate.api.nvidia.com/v1"
         if not model: model = os.environ.get("NVIDIA_MODEL","deepseek-ai/deepseek-v4-pro")
+        extra_body = {"chat_template_kwargs": {"thinking": False}}
     elif provider == "deepseek":
         api_key = os.environ.get("DEEPSEEK_API_KEY","")
         base_url = "https://api.deepseek.com/v1"
@@ -176,8 +196,19 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
         api_key = os.environ.get("OPENAI_API_KEY","")
         base_url = "https://api.openai.com/v1"
         if not model: model = "gpt-4o"
+    elif provider == "hermes":
+        # Hermes agent's LLM config (falls back to DeepSeek)
+        api_key = os.environ.get("HERMES_LLM_API_KEY") or os.environ.get("DEEPSEEK_API_KEY","")
+        base_url = os.environ.get("HERMES_LLM_BASE_URL") or os.environ.get("DEEPSEEK_BASE_URL","https://api.deepseek.com/v1")
+        if not model: model = os.environ.get("HERMES_LLM_MODEL") or os.environ.get("LLM_MODEL","deepseek-chat")
+    elif provider == "lmstudio":
+        # Local LM Studio — no API key needed
+        api_key = "lm-studio"
+        base_url = (os.environ.get("LMSTUDIO_BASE_URL") or "http://localhost:1234/v1")
+        if not model: model = os.environ.get("LMSTUDIO_MODEL") or "qwen/qwen3.5-9b-Q4"
+        is_local = True
 
-    if not api_key:
+    if not api_key and not is_local:
         jout({"error":f"No API key for provider '{provider}'. Set in .env.local"}); return
 
     # ── Build prompt ──
@@ -206,7 +237,7 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
 
     # ── Call LLM API ──
     import urllib.request, urllib.error
-    req_body = json.dumps({
+    req_payload = {
         "model": model,
         "messages": [
             {"role":"system","content":system_prompt},
@@ -214,8 +245,14 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
         ],
         "temperature": 0.3,
         "max_tokens": 4096,
-        "response_format": {"type": "json_object"},
-    }).encode()
+    }
+    # response_format not supported by local models / some providers
+    if not is_local and provider not in ("hermes",):
+        req_payload["response_format"] = {"type": "json_object"}
+    if extra_body:
+        req_payload["extra_body"] = extra_body
+
+    req_body = json.dumps(req_payload).encode()
 
     req = urllib.request.Request(f"{base_url}/chat/completions", data=req_body)
     req.add_header("Content-Type","application/json")

@@ -36,10 +36,12 @@ const LANGUAGES = [
   { key: "yue", label: "粵語" }, { key: "zh", label: "中文" }, { key: "en", label: "English" }, { key: "auto", label: "自動" },
 ];
 const LLM_PROVIDERS = [
-  { key: "nvidia", label: "NVIDIA NIM (DeepSeek V4)", desc: "推薦" },
-  { key: "deepseek", label: "DeepSeek", desc: "備援" },
+  { key: "nvidia", label: "NVIDIA NIM (DeepSeek V4)", desc: "推薦 · 雲端" },
+  { key: "deepseek", label: "DeepSeek 官方", desc: "雲端備援" },
+  { key: "hermes", label: "Hermes Agent (DeepSeek)", desc: "跟隨 Hermes 設定" },
+  { key: "lmstudio", label: "LM Studio (本地)", desc: "本機模型 · 無需 API Key" },
   { key: "openrouter", label: "OpenRouter", desc: "多模型" },
-  { key: "openai", label: "OpenAI", desc: "備援" },
+  { key: "openai", label: "OpenAI", desc: "雲端備援" },
 ];
 
 function fmtSize(b: number) { if (b < 1024) return b + " B"; if (b < 1048576) return (b / 1024).toFixed(1) + " KB"; return (b / 1048576).toFixed(1) + " MB"; }
