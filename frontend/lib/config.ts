@@ -43,6 +43,8 @@ export function spawnPythonEnv(): NodeJS.ProcessEnv {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
     LMSTUDIO_BASE_URL: process.env.LMSTUDIO_BASE_URL || "",
     LMSTUDIO_MODEL: process.env.LMSTUDIO_MODEL || "",
+    HF_TOKEN: process.env.HF_TOKEN || "",
+    WHISPER_PYTHON: process.env.WHISPER_PYTHON || `${process.env.HOME}/.whisper-venv/bin/python3`,
     PYTHONPATH: SCRIPTS_DIR,
   };
 }

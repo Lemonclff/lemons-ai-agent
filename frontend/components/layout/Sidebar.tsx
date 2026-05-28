@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Brain,
   Wallet,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ const mainNav: NavItem[] = [
   { label: "Options & Volatility", href: "/options-volatility", icon: TrendingUp, badge: "New" },
   { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },
   { label: "AI 智慧理財", href: "/finance", icon: Wallet, badge: "New" },
+  { label: "語音轉文字", href: "/transcribe", icon: Mic, badge: "STT" },
   { label: "Database Explorer", href: "/data", icon: HardDrive, badge: "DB" },
 ];
 

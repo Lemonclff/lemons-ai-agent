@@ -16,6 +16,7 @@ Next.js 14 · PostgreSQL · Python · Tailwind CSS · Cloudflare Tunnel
 | **📈 Options & Volatility** | Search any ticker, live IV/HV spread, Put/Call ratio, auto-refresh |
 || **🤖 AI 資產分析** | NVIDIA NIM (DeepSeek V4 Pro) AI stock analysis — 3-dimension scoring, trading plans, zh-TW |
 || **💰 AI 智慧理財** | AI OCR 記帳 — 解析銀行帳單/收據，多 LLM 供應商，任務隊列，Recharts 圖表，月篩選 |
+|| **🎤 語音轉文字** | 粵語優化語音辨識 — faster-whisper + pyannote 說話者分離，上傳/瀏覽音檔，背景非同步處理 |
 || **📅 Macro Impact Matrix** | Real economic calendar (10 events) · auto-detect PENDING→BEAT/MISS · NVIDIA NIM 7-sector flow analysis · Telegram push |
 | **🗄️ Database Explorer** | Admin-only — browse/edit/delete/insert rows, SQL console, dynamic PG table listing |
 | **🔐 Auth System** | Register/login with bcrypt, HMAC tokens, admin role flag, httpOnly cookies |
@@ -620,6 +621,187 @@ cron job (no_agent mode)
     ▼ stdout → Hermes Gateway → Telegram
 ```
 
+### 🎤 語音轉文字 (Speech-to-Text) — 本地語音辨識系統
+
+> 基於 faster-whisper + pyannote.audio，支援粵語優化模型，可選說話者分離（Speaker Diarization）。
+> **所有處理在本地 GPU/CPU 完成，音檔從不外傳。**
+
+#### 頁面架構
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🎤 語音轉文字                            [轉錄] [歷史記錄]     │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ═══ 轉錄 Tab ═══                                             │
+│  ┌─────────────────────┐ ┌──────────────────────────────────┐│
+│  │ 📁 選擇音檔           │ │ 進度 / 結果                       ││
+│  │                     │ │                                  ││
+│  │ [拖放上傳區]          │ │ ████████░░ 40% 轉錄中...         ││
+│  │ MP3 M4A WAV OGG FLAC│ │                                  ││
+│  │                     │ │ ┌─ 統計卡片 ──────────────────┐   ││
+│  │ 📂 檔案瀏覽器         │ │ │ 時長   段落   模型   說話者  │   ││
+│  │ [全部] [202604] ...  │ │ │ 2:07   4158  canto   3     │   ││
+│  │ 📄 五月內閣會.m4a     │ │ └───────────────────────────┘   ││
+│  │ 📄 meeting_001.m4a   │ │                                  ││
+│  │                     │ │ [Speaker 1] [Speaker 2] [Spk 3] ││
+│  └─────────────────────┘ │                                  ││
+│  ┌─────────────────────┐ │ ┌─ 逐字稿預覽 ────────────────┐   ││
+│  │ ⚙ 轉錄設定           │ │ │ [00:00:00] Speaker 1: 今日...│   ││
+│  │ 模型: [粵語專用 ▼]    │ │ │ [00:00:05] Speaker 2: 我哋..│   ││
+│  │ 語言: [粵語 ▼]       │ │ │ [00:00:10] Speaker 1: 好... │   ││
+│  │ 👥 說話者分離 [🔘]   │ │ │ ... (前100段預覽)            │   ││
+│  │ 預期人數: [0=自動]   │ │ └───────────────────────────────┘  ││
+│  │                     │ │                                  ││
+│  │ [⚡ 開始轉錄]         │ │                                  ││
+│  └─────────────────────┘ └──────────────────────────────────┘│
+│                                                              │
+│  ═══ 歷史記錄 Tab ═══                                         │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ ✅ 五月內閣會.m4a   canto  完成  2026-05-28 17:35     │   │
+│  │ ✅ meeting_001.m4a  large-v3 完成  2026-05-27 14:20  │   │
+│  │ 🔄 test.wav        small  處理中  2026-05-28 18:00   │   │
+│  └──────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### 技術架構
+
+```
+音檔 (.m4a/.mp3/.wav)
+    │
+    ▼ (本機 GPU)
+┌─────────────────────────────┐
+│  faster-whisper (CTranslate2) │
+│  + 粵語微調模型                 │  ← 模型僅首次下載 (~1.6GB)
+│  (JackyHoCL/cantonese-ct2)   │     快取在 ~/.cache/huggingface/
+│                              │
+│  輸出：逐字稿 + 段落時間戳       │
+└──────────┬──────────────────┘
+           │
+    (可選) ▼ (本機 CPU)
+┌─────────────────────────────┐
+│  pyannote.audio 4.0          │  ← 模型僅首次下載 (~500MB)
+│  speaker-diarization-3.1     │     需 HuggingFace Token
+│                              │
+│  輸出：說話者標籤 (Speaker N)    │
+└──────────┬──────────────────┘
+           │
+           ▼ (時間軸合併)
+┌─────────────────────────────┐
+│  最終輸出                     │
+│  /home/lemon/TempRecords/   │
+│  ├── xxx_轉錄.txt (全文)      │
+│  └── xxx_轉錄.json (結構化)   │
+└─────────────────────────────┘
+```
+
+#### 支援模型
+
+| Model Key | Model Name | VRAM | Speed | Accuracy | Use Case |
+|-----------|-----------|------|-------|----------|----------|
+| `cantonese` ⭐ | JackyHoCL/whisper-large-v3-turbo-cantonese-yue-english-ct2 | ~4 GB | 快 | 最高（粵語） | **粵語會議/對話（預設推薦）** |
+| `large-v3` | Systran/faster-whisper-large-v3 | ~8 GB | 中 | 最高（通用） | 最高準確度需求 |
+| `large-v3-turbo` | Systran/faster-whisper-large-v3-turbo | ~4 GB | 快 | 高 | 速度優先 |
+| `medium` | Systran/faster-whisper-medium | ~3 GB | 快 | 中高 | 平衡選擇 |
+| `small` | Systran/faster-whisper-small | ~2 GB | 很快 | 中 | 快速預覽 |
+| `tiny` | Systran/faster-whisper-tiny | ~1 GB | 最快 | 低 | 即時測試 |
+
+#### 🔒 隱私保證
+
+| 環節 | 位置 | 對外傳輸 |
+|------|------|---------|
+| 音檔儲存 | `/home/lemon/TempRecords/`（本地） | ❌ 無 |
+| 語音轉文字 | 本機 RTX 5080 GPU（faster-whisper） | ❌ 無 |
+| 說話者分離 | 本機 CPU（pyannote.audio） | ❌ 無 |
+| 模型下載 | HuggingFace CDN（僅首次，只下載權重） | ✅ 僅下載，不上傳 |
+| 轉錄結果 | `/home/lemon/TempRecords/*.txt`（本地） | ❌ 無 |
+| 任務狀態 | `/home/lemon/TempRecords/.transcribe_tasks/`（本地 JSON） | ❌ 無 |
+
+**整個流程零雲端依賴。你的音檔從錄製到轉錄，全程不離開電腦。**
+
+#### API Routes
+
+| Method | Endpoint | Action | Auth | Description |
+|--------|----------|--------|------|-------------|
+| GET | `/api/transcribe?sub=scan` | scan | Admin | 掃描 TempRecords 音檔列表 |
+| GET | `/api/transcribe?sub=tasks` | tasks | Auth | 列出所有轉錄任務歷史 |
+| POST | `/api/transcribe` `{action:"transcribe"}` | transcribe | Admin | 啟動背景轉錄（回傳 task_id） |
+| POST | `/api/transcribe` `{action:"status"}` | status | Auth | 查詢任務進度（每 2s 輪詢） |
+| POST | `/api/transcribe` `{action:"result"}` | result | Auth | 取得完整轉錄結果 |
+| POST | `/api/transcribe` `{action:"upload"}` | upload | Admin | 上傳音檔到 TempRecords |
+
+#### 非同步任務流程
+
+```
+Browser                          API Route                     Python Script
+  │                                 │                              │
+  │  POST /api/transcribe           │                              │
+  │  {action:"transcribe",          │                              │
+  │   file_path, model, language,   │                              │
+  │   diarize, num_speakers}        │                              │
+  ├────────────────────────────────►│  spawn transcribe_backend.py │
+  │                                 ├─────────────────────────────►│
+  │  ← {task_id, status:"pending"}  │                              │ 寫入 task JSON
+  │◄────────────────────────────────┤◄─────────────────────────────┤ spawn worker subprocess
+  │                                 │                              │ (detached, survives)
+  │  poll: status(task_id)          │                              │     │
+  │  (every 2s)                     │                              │     ├─ load model (10%→20%)
+  ├────────────────────────────────►├─────────────────────────────►│     ├─ transcribe (20%→40%)
+  │  ← {status:"running", 20%}      │                              │     ├─ diarize (40%→70%)
+  │◄────────────────────────────────┤                              │     ├─ build output (70%→85%)
+  │                                 │                              │     └─ save files (85%→100%)
+  │  ← {status:"completed", 100%}   │                              │
+  │◄────────────────────────────────┤◄─────────────────────────────┤ status=completed
+
+  │  POST /api/transcribe           │                              │
+  │  {action:"result", task_id}     │                              │
+  ├────────────────────────────────►├─────────────────────────────►│
+  │  ← {segments, speakers, txt_path, ...}                         │
+  │◄────────────────────────────────┤◄─────────────────────────────┤
+```
+
+#### 設定指南
+
+**基礎轉錄**（無需額外設定）：
+粵語模型已預裝在 `/home/lemon/.cache/huggingface/`。開箱即用。
+
+**說話者分離**（可選，需 HuggingFace Token）：
+
+1. 到 https://huggingface.co/pyannote/speaker-diarization-3.1 → Accept 使用條款
+2. 到 https://huggingface.co/pyannote/segmentation-3.0 → Accept 使用條款
+3. 到 https://huggingface.co/settings/tokens → 建立 Read-only token
+4. 加入 `frontend/.env.local`：
+
+```bash
+HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
+```
+
+5. 重啟 Next.js，在頁面打開「👥 說話者分離」開關即可
+
+#### 輸出格式範例
+
+```json
+{
+  "filename": "五月內閣會.m4a.mp4",
+  "model": "cantonese",
+  "language": "yue",
+  "diarize": true,
+  "duration_fmt": "2:07:54",
+  "total_segments": 4158,
+  "speakers": [
+    {"id": "SPEAKER_00", "label": "Speaker 1"},
+    {"id": "SPEAKER_01", "label": "Speaker 2"}
+  ],
+  "segments": [
+    {"start": 0.0, "end": 4.2, "text": "活動預算 活動教學書 活動收支報告", "speaker": "SPEAKER_00"},
+    {"start": 4.2, "end": 8.5, "text": "要注意的事項其實都是那一句", "speaker": "SPEAKER_00"},
+    {"start": 8.5, "end": 12.0, "text": "就是請大家跟回 還有要督導你們的下屬", "speaker": "SPEAKER_01"}
+  ],
+  "txt_path": "/home/lemon/TempRecords/五月內閣會_轉錄.txt"
+}
+```
+
 ---
 
 ## Admin System
@@ -732,6 +914,8 @@ AI Analysis     NVIDIA NIM (DeepSeek V4 Pro, 16384 tokens) · OpenRouter · Deep
                 System Prompt (zh-TW) · RSI/MACD/BB/ATR · Straddle IV · JSON 驗證層
 Macro Impact    economic_calendar.py · ForexFactory + FRED · NVIDIA NIM 7-sector flow
 Scheduling      cron_control.py (state-file) + Hermes cronjob (Telegram delivery)
+STT             faster-whisper · pyannote.audio 4.0 · Cantonese fine-tuned model
+                GPU inference (CTranslate2) · CPU diarization · All local processing
 Tunnel          Cloudflare Named Tunnel (dashboard.lemonffing.com) · cron @reboot 自動啟動
 Icons           Lucide React
 ```
@@ -812,6 +996,8 @@ cp frontend/.env.local.example frontend/.env.local  # 如果有範例檔
 | `OPENAI_API_KEY` | 備援 LLM | - |
 | `LLM_TIMEOUT` | LLM API timeout (秒) | `120` |
 | `FRED_API_KEY` | 總經數據 (FRED) | - |
+| `HF_TOKEN` | HuggingFace Token（語音轉文字說話者分離） | - |
+| `WHISPER_PYTHON` | Whisper Python venv 路徑 | `~/.whisper-venv/bin/python3` |
 | `LANGFUSE_*` | LLM observability | - |
 
 > **切換 AI 模型**：只需在 `frontend/.env.local` 中註解/取消註解對應的 `*_API_KEY`，系統會自動偵測優先級（NVIDIA > DeepSeek > OpenRouter > OpenAI）。不需要改任何程式碼。
@@ -923,6 +1109,8 @@ lemons-ai-agent/
 │   │   ├── quant-analysis/          # Multi-ticker quant engine (IV/PCR/RSI/BB)
 │   │   ├── ai-analysis/             # AI-powered LLM analysis (QuantDinger-inspired)
 │   │   ├── macro-impact/            # Economic calendar
+│   │   ├── finance/                 # AI 智慧理財 (OCR + 記帳)
+│   │   ├── transcribe/              # 🎤 語音轉文字 (STT)
 │   │   ├── admin/reset-password/    # Admin password reset
 │   │   ├── data/page.tsx            # Database Explorer (admin-only, CRUD + SQL)
 │   │   └── api/
@@ -945,7 +1133,9 @@ lemons-ai-agent/
 │   │       ├── sentiment/route.ts   # GET Fear&Greed / VIX / DXY / 10Y
 │   │       ├── radar/route.ts       # GET trading opportunity radar (30+ stocks)
 │   │       ├── cron/route.ts        # GET list / control cron jobs
-│   │       └── macro/route.ts       # Macro calendar proxy
+│   │       ├── macro/route.ts       # Macro calendar proxy
+│   │       ├── finance/route.ts     # AI OCR parse/upload/transactions/stats
+│   │       └── transcribe/route.ts  # STT scan/upload/transcribe/status/result
 │   ├── components/
 │   │   └── layout/
 │   │       ├── LayoutShell.tsx      # Client wrapper: auth vs dashboard layout
@@ -968,6 +1158,10 @@ lemons-ai-agent/
 │   ├── ai_analyzer.py               # AI analysis: NVIDIA NIM + OpenRouter + DeepSeek
 │   ├── sentiment_fetcher.py         # Fear&Greed / VIX / DXY / 10Y fetcher
 │   ├── opportunity_radar.py         # 30+ stock 24h scanner → trading signals
+│   ├── finance_backend.py           # AI OCR + transaction CRUD + stats
+│   ├── task_queue.py                # Async task manager + parse history
+│   ├── transcribe_backend.py        # STT main controller (scan/upload/transcribe/status)
+│   ├── _transcribe_worker.py        # STT background worker (faster-whisper + pyannote)
 │   └── ...
 ├── db/
 │   └── schema.sql                   # PostgreSQL DDL (5 tables)
