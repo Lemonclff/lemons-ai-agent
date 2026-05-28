@@ -160,8 +160,11 @@ def cmd_transcribe(file_path: str, model_key="large-v3", language="yue", diarize
 # ═══════════════════════════════════════════════════════════════
 # ANALYZE — AI-powered transcript summary
 # ═══════════════════════════════════════════════════════════════
-def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
-    """Read a transcript TXT, send to LLM for structured summary, save to summaries/."""
+def cmd_analyze(file_path: str, provider="nvidia", model_override="", recording_type=""):
+    """Read a transcript TXT, send to LLM for structured summary, save to summaries/.
+    
+    If recording_type is provided (not empty), skip auto-detection and use type-specific prompt.
+    """
     src = Path(file_path)
     if not src.exists(): jout({"error":f"File not found: {file_path}"}); return
     if src.suffix.lower() not in (".txt",):
@@ -212,26 +215,274 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
         jout({"error":f"No API key for provider '{provider}'. Set in .env.local"}); return
 
     # ── Build prompt ──
-    system_prompt = """你是一位專業的會議記錄分析師。請根據提供的逐字稿，生成結構化摘要。使用繁體中文。
+    # Type-specific focused prompts (used when user selects a type)
+    TYPE_PROMPTS = {
+        "會議": """# Role
+你是一位資深機構秘書，專精於會議記錄與行動追蹤。你熟悉院舍/宿舍機構（家社制、RW/AS職級、宿生管理）。
 
-輸出格式 (JSON):
-{
-  "title": "會議標題（從內容推斷）",
-  "date_guess": "推斷的會議日期",
-  "duration_summary": "會議時長概述",
-  "participants": ["參與者1", "參與者2"],
+# Analysis Focus（會議）
+- 提取議程結構、各議題討論過程、正反意見
+- 重點：決議事項、行動清單、待釐清事項
+- 記錄具體數字（預算金額、日期、人數）、表決結果
+
+# Constraints
+1. **去蕪存菁**：忽略發聲詞（呃、即係、咁）、重複句子及閒聊。
+2. **客觀準確**：不捏造事實。不明確處標註「待確認」。
+3. **完整覆蓋**：不遺漏後半段任何獨立議題。
+4. **具體引用**：引用具體數字、姓名、職位、機構術語。
+5. **語言**：繁體中文。保留粵語關鍵詞（家社、宿生、RW、AS、PA）。
+6. **隱私敏感**：宿生全名用「[宿生A]」代替。""",
+
+        "對話": """# Role
+你是一位專業的對話分析師，擅長從非正式交流中提取關係動態、情感基調與潛在資訊。
+
+# Analysis Focus（對話）
+- 提取話題流轉過程、情感基調（輕鬆/緊張/關懷/衝突）
+- 重點：關鍵交流片段、雙方立場、弦外之音
+- 記錄關係動態（上對下/平等/求助）
+
+# Constraints
+1. **去蕪存菁**：忽略發聲詞、寒暄。保留有意義的情感表達。
+2. **客觀準確**：區分「事實」與「推斷」。不明確處標註「待確認」。
+3. **情感敏感**：捕捉語氣變化、停頓暗示、未說出口的擔憂。
+4. **語言**：繁體中文。保留原文語氣詞。
+5. **隱私敏感**：人名用代號。""",
+
+        "訪問": """# Role
+你是一位專業的訪談分析師，擅長從一問一答中提取核心觀點與受訪者態度。
+
+# Analysis Focus（訪問）
+- 提取問答結構、受訪者核心觀點
+- 重點：關鍵問答摘要、受訪者態度（合作/迴避/開放）
+- 記錄訪問目的是否達成
+
+# Constraints
+1. **去蕪存菁**：忽略寒暄、無關閒聊。
+2. **客觀準確**：區分受訪者「原話」與「你的概括」。
+3. **態度標註**：記錄受訪者語氣變化（如「起初防備，後段開放」）。
+4. **語言**：繁體中文。
+5. **隱私敏感**：人名用代號。""",
+
+        "演講": """# Role
+你是一位專業的演講分析師，擅長提取演講結構、核心論點與說服策略。
+
+# Analysis Focus（演講）
+- 提取演講結構（開場/主體/總結）、核心論點
+- 重點：主要論點及支撐證據、呼籲行動（call to action）
+- 記錄聽眾反應、演講風格
+
+# Constraints
+1. **結構提取**：標註演講段落轉折。
+2. **論點分級**：主論點 vs 支撐論點。
+3. **語言**：繁體中文。保留關鍵修辭手法。""",
+
+        "培訓": """# Role
+你是一位專業的培訓記錄分析師，擅長提取學習目標、教學方法與實務應用。
+
+# Analysis Focus（培訓）
+- 提取學習目標、關鍵概念、實例/示範
+- 重點：學到的具體技能/知識、學員提問與講者回應
+- 記錄培訓成效指標
+
+# Constraints
+1. **教學結構**：提取知識點層級。
+2. **實務導向**：標註可立即應用的技能。
+3. **語言**：繁體中文。""",
+
+        "個案討論": """# Role
+你是一位專業的個案分析師，熟悉院舍/宿舍機構的個案管理流程。
+
+# Analysis Focus（個案討論）
+- 提取個案背景、各方評估、風險因素
+- 重點：處遇建議、分工安排、跟進計劃
+- 記錄專業判斷依據
+
+# Constraints
+1. **去蕪存菁**：忽略與個案無關的閒聊。
+2. **客觀準確**：區分「已確認事實」與「待查證資訊」。
+3. **隱私敏感**：個案身份用「[個案A]」代替。
+4. **語言**：繁體中文。""",
+
+        "督導": """# Role
+你是一位專業的督導記錄分析師，熟悉社福機構的督導流程與專業發展框架。
+
+# Analysis Focus（督導）
+- 提取被督導者工作匯報、督導者指導意見
+- 重點：改進方向、具體行動計劃、下次檢視時間
+- 記錄督導風格、被督導者接受度
+
+# Constraints
+1. **成長導向**：記錄具體改進建議而非單純批評。
+2. **客觀準確**：區分「督導者建議」與「被督導者承諾」。
+3. **隱私敏感**：人名用職位代號。
+4. **語言**：繁體中文。""",
+
+        "檢討": """# Role
+你是一位專業的檢討報告分析師，擅長從事件回顧中提取根因與改善措施。
+
+# Analysis Focus（檢討）
+- 提取事件經過、問題根因、改善措施
+- 重點：不符合標準之處、糾正行動、防止再犯機制
+- 記錄責任歸屬
+
+# Constraints
+1. **事實為本**：依時間線陳述，不跳躍推斷。
+2. **根因分析**：區分「直接原因」與「系統性問題」。
+3. **行動導向**：每項問題對應具體改善措施。
+4. **語言**：繁體中文。""",
+    }
+
+    if recording_type and recording_type in TYPE_PROMPTS:
+        # Use type-specific focused prompt
+        system_prompt = TYPE_PROMPTS[recording_type]
+        system_prompt += f"""
+
+# Output Format (純 JSON，無 markdown fence)
+{{
+  "recording_type": "{recording_type}",
+  "title": "...",
+  "date_guess": "YYYY-MM-DD",
+  "duration_summary": "概述",
+  "context": "一句話說明錄音背景",
+  "keywords": ["5個以內"],
+  "participants": [
+    {{"name": "姓名", "role": "職位/身份", "speaking_frequency": "主要發言者 | 偶爾發言 | 極少發言"}}
+  ],
+  "core_points": ["3-5點精簡摘要，每點≤50字"],
   "key_topics": [
-    {"topic": "主題", "discussion": "討論內容摘要", "decisions": ["決議1","決議2"]}
+    {{
+      "topic": "主題",
+      "discussion": "詳細內容",
+      "decisions": ["如有決議"],
+      "insights": ["如有洞察"],
+      "timestamp_ref": "約 mm:ss"
+    }}
   ],
   "action_items": [
-    {"item": "待辦事項", "assignee": "負責人（如有提及）", "deadline": "期限（如有提及）"}
+    {{"item": "事項", "assignee": "負責人", "deadline": "期限", "status": "待開始/進行中/待確認"}}
   ],
-  "overall_summary": "整體摘要（2-3段）"
-}"""
+  "pending_items": ["未解決事項"],
+  "overall_summary": "2-3段整體摘要",
+  "tone_analysis": "語調與氣氛（對話/訪問/督導必填）"
+}}"""
+    else:
+        # Full auto-detect prompt (fallback when recording_type not specified)
+        system_prompt = """# Role
+你是一位資深的機構行政秘書與分析師，擅長處理各類語音記錄——包括正式會議、非正式對話、督導面談、外部訪問、員工培訓、個案討論等。你能準確判斷錄音類型，並根據不同場景採用最適合的分析框架。你熟悉院舍/宿舍機構（家社制、RW/AS職級、宿生管理）的運作模式。
 
-    user_prompt = f"""以下是會議逐字稿，請分析並生成結構化摘要：
+# Step 1: 判斷錄音類型
+在分析內容前，先根據以下特徵判斷錄音類型：
 
-{content[:12000]}
+| 類型 | 典型特徵 |
+|------|---------|
+| `會議` | 多人輪流發言、有議程/主席主持、討論多個行政/營運議題、有表決或共識 |
+| `對話` | 2-3人非正式交流、話題自然流轉、無明確議程、語調輕鬆 |
+| `訪問` | 一問一答模式、一方主導提問、另一方為資訊提供者 |
+| `演講` | 一人長時間發言、結構清晰（開場-主體-總結）、聽眾被動 |
+| `培訓` | 講者講解+學員提問、有教學目標、包含案例/示範 |
+| `個案討論` | 圍繞一個特定人物/事件、多角度分析、含評估與建議 |
+| `督導` | 上級對下級、檢視工作+給予指導、有明確的改進方向 |
+| `檢討` | 回顧某事件/項目、找出問題+改善措施、有標準對照 |
+
+# Step 2: 依類型採用對應分析框架
+
+## 若為「會議」
+- 提取議程結構、各議題討論過程、正反意見
+- 重點：決議事項（decisions）、行動清單（action_items）、待釐清（pending_items）
+- 記錄具體數字（預算金額、日期、人數）、表決結果
+
+## 若為「對話」
+- 提取話題流轉過程、對話中的情感基調（輕鬆/緊張/關懷/衝突）
+- 重點：關鍵交流片段（key_exchanges）、雙方立場、未說出口的弦外之音
+- 記錄關係動態（上對下/平等/求助）
+
+## 若為「訪問」
+- 提取問答結構、受訪者的核心觀點
+- 重點：關鍵問答（qa_highlights）、受訪者態度（合作/迴避/開放）
+- 記錄訪問目的、是否達成預期
+
+## 若為「演講」
+- 提取演講結構（開場/主體/總結）、核心論點
+- 重點：主要論點及支撐證據、呼籲行動（call to action）
+- 記錄聽眾反應（如有）、演講風格
+
+## 若為「培訓」
+- 提取學習目標、關鍵概念、實例/示範
+- 重點：學到的具體技能/知識、學員提問與講者回應
+- 記錄培訓成效指標（如有）
+
+## 若為「個案討論」
+- 提取個案背景、各方評估、風險因素
+- 重點：處遇建議、分工安排、跟進計劃
+- 記錄專業判斷依據
+
+## 若為「督導」
+- 提取被督導者的工作匯報、督導者的指導意見
+- 重點：改進方向、具體行動計劃、下次檢視時間
+- 記錄督導風格、被督導者接受度
+
+## 若為「檢討」
+- 提取事件經過、問題根因、改善措施
+- 重點：不符合標準之處、糾正行動、防止再犯機制
+- 記錄責任歸屬（如有）
+
+# Constraints
+1. **去蕪存菁**：忽略發聲詞（呃、即係、咁、跟住、啦）、重複句子及與主題無關的閒聊。
+2. **客觀準確**：不要捏造事實。若某結論/數字不明確，標註「待確認」。區分「逐字稿中有記載的事實」與「你的推斷」。
+3. **完整覆蓋**：仔細閱讀整份逐字稿，確保不遺漏後半段的任何獨立話題。
+4. **具體引用**：盡可能引用具體數字（金額、日期、人數）、姓名、職位、機構術語。
+5. **語言**：繁體中文。保留原文粵語關鍵詞（家社、宿生、RW、AS、PA、CIMS、M18、SQS）。
+6. **隱私敏感**：若內容涉及宿生個人隱私（全名、身份證號、病歷），用「[宿生A]」代替。
+
+# Output Format (純 JSON，無 markdown fence)
+{
+  "recording_type": "會議 | 對話 | 訪問 | 演講 | 培訓 | 個案討論 | 督導 | 檢討",
+  "title": "根據類型自訂標題格式。會議→「X月[會議名]：主題」；對話→「[人物A]與[人物B]對話：主題」；訪問→「[訪問者]訪[受訪者]：主題」",
+  "date_guess": "YYYY-MM-DD",
+  "duration_summary": "概述",
+  "context": "一句話說明錄音背景（例：機構每月內閣例會，討論營運及人事事項）",
+  "keywords": ["5個以內"],
+  "participants": [
+    {
+      "name": "姓名或代號",
+      "role": "職位/身份（如：主席、A社AS、宿生）",
+      "speaking_frequency": "主要發言者 | 偶爾發言 | 極少發言"
+    }
+  ],
+  "core_points": ["3-5點精簡摘要，每點≤50字"],
+  "key_topics": [
+    {
+      "topic": "主題",
+      "discussion": "詳細內容。依類型調整：會議→各方意見+數字；對話→情感+弦外之音；訪問→QA摘要；演講→論點+證據",
+      "decisions": ["決議（會議/檢討/督導適用）"],
+      "insights": ["洞察/收穫（培訓/訪問/演講適用）"],
+      "timestamp_ref": "約 mm:ss"
+    }
+  ],
+  "action_items": [
+    {
+      "item": "事項",
+      "assignee": "負責人",
+      "deadline": "期限",
+      "status": "待開始 | 進行中 | 待確認"
+    }
+  ],
+  "pending_items": ["未解決事項"],
+  "overall_summary": "2-3段。依類型調整語氣：會議→客觀陳述；對話→加入關係動態；訪問→加入受訪者態度；督導→加入成長脈絡",
+  "tone_analysis": "整體語調描述（可選，對話/訪問/督導類型強烈建議填寫）"
+}
+
+# Guidelines
+- **類型判斷要準**：若逐字稿特徵跨多個類型，選最主要的那個。在 `context` 中說明次要特徵。
+- **participants 含 speaking_frequency**：幫助讀者判斷誰是主導者。
+- **core_points 面向不同讀者**：會議→管理層；對話→關係洞察；培訓→學習要點；個案→關鍵判斷。
+- **action_items**：會議/檢討/督導必須提取；對話/演講可為空陣列。
+- **tone_analysis**：對話/訪問/督導必填，描述語調、情感、氣氛（如：「語調輕鬆但暗藏擔憂」、「受訪者起初防備，後段逐漸開放」）。
+- **數字分歧**：記錄最終確認的數字並在 discussion 中說明分歧過程。"""
+
+    user_prompt = f"""以下是粵語錄音逐字稿，請先判斷錄音類型，然後依對應框架進行分析：
+
+{content[:80000]}
 
 請以 JSON 格式回覆。"""
 
@@ -244,7 +495,7 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
             {"role":"user","content":user_prompt}
         ],
         "temperature": 0.3,
-        "max_tokens": 4096,
+        "max_tokens": 16384,
     }
     # response_format not supported by local models / some providers
     if not is_local and provider not in ("hermes",):
@@ -284,38 +535,85 @@ def cmd_analyze(file_path: str, provider="nvidia", model_override=""):
 
     # Build readable summary
     lines = []
-    lines.append(f"會議摘要 — AI 分析\n{'='*60}\n")
+    lines.append(f"語音分析摘要 — AI 生成\n{'='*60}\n")
     lines.append(f"來源檔案：{src.name}")
     lines.append(f"分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append(f"LLM Provider：{provider} / {model}\n")
+    if summary.get("recording_type"):
+        rtype = summary["recording_type"]
+        type_labels = {"會議":"📋 會議記錄","對話":"💬 對話分析","訪問":"🎤 訪問記錄","演講":"📢 演講摘要","培訓":"📚 培訓筆記","個案討論":"🔍 個案討論","督導":"📝 督導記錄","檢討":"🔎 檢討報告"}
+        lines.append(f"**類型**：{type_labels.get(rtype, rtype)}")
     if summary.get("title"): lines.append(f"## {summary['title']}\n")
+    if summary.get("context"): lines.append(f"*{summary['context']}*\n")
     if summary.get("date_guess"): lines.append(f"推斷日期：{summary['date_guess']}")
     if summary.get("duration_summary"): lines.append(f"時長：{summary['duration_summary']}\n")
 
+    # Keywords
+    if summary.get("keywords"):
+        lines.append(f"## 關鍵詞\n{', '.join(summary['keywords'])}\n")
+
+    # Core Points — management summary
+    if summary.get("core_points"):
+        lines.append(f"## 核心重點\n")
+        for i, pt in enumerate(summary["core_points"], 1):
+            lines.append(f"{i}. {pt}")
+        lines.append("")
+
+    # Overall summary
     if summary.get("overall_summary"):
         lines.append(f"## 整體摘要\n{summary['overall_summary']}\n")
 
+    # Participants (now supports object format with name/role/speaking_frequency)
     if summary.get("participants"):
-        lines.append(f"## 參與者\n" + "\n".join(f"- {p}" for p in summary["participants"]) + "\n")
+        lines.append("## 參與者")
+        for p in summary["participants"]:
+            if isinstance(p, str):
+                lines.append(f"- {p}")
+            else:
+                name = p.get("name", "?")
+                role = f"（{p['role']}）" if p.get("role") else ""
+                freq = p.get("speaking_frequency", "")
+                freq_icon = {"主要發言者":"🔊","偶爾發言":"🔉","極少發言":"🔈"}.get(freq, "")
+                lines.append(f"- {name} {role} {freq_icon} {freq}".rstrip())
+        lines.append("")
 
     if summary.get("key_topics"):
-        lines.append("## 主要議題")
-        for t in summary["key_topics"]:
-            lines.append(f"\n### {t.get('topic','')}")
-            if t.get("discussion"): lines.append(f"{t['discussion']}")
+        rtype = summary.get("recording_type", "會議")
+        section_title = {"會議":"詳細討論","對話":"話題流轉","訪問":"關鍵問答","演講":"演講結構","培訓":"教學內容","個案討論":"個案分析","督導":"督導要點","檢討":"檢討項目"}.get(rtype, "內容分析")
+        lines.append(f"## {section_title}")
+        for i, t in enumerate(summary["key_topics"], 1):
+            topic_title = t.get('topic', f'段落 {i}')
+            lines.append(f"\n### {i}. {topic_title}")
+            if t.get("timestamp_ref"): lines.append(f"（{t['timestamp_ref']}）")
+            if t.get("discussion"): lines.append(f"\n{t['discussion']}")
             if t.get("decisions"):
-                lines.append("決議：")
-                for d in t["decisions"]: lines.append(f"  - {d}")
+                lines.append("\n✓ 決議：")
+                for d in t["decisions"]: lines.append(f"  • {d}")
+            if t.get("insights"):
+                # Non-meeting types: insights instead of decisions
+                lines.append("\n💡 洞察：")
+                for ins in t["insights"]: lines.append(f"  • {ins}")
         lines.append("")
 
     if summary.get("action_items"):
-        lines.append("## 待辦事項")
+        lines.append("## 行動清單 (Action Items)")
         for a in summary["action_items"]:
             extra = ""
-            if a.get("assignee"): extra += f" — {a['assignee']}"
-            if a.get("deadline"): extra += f" (期限: {a['deadline']})"
-            lines.append(f"- {a['item']}{extra}")
+            if a.get("assignee"): extra += f" | 負責人：{a['assignee']}"
+            if a.get("deadline"): extra += f" | 期限：{a['deadline']}"
+            if a.get("status"): extra += f" | 狀態：{a['status']}"
+            lines.append(f"- [ ] {a['item']}{extra}")
         lines.append("")
+
+    if summary.get("pending_items"):
+        lines.append("## 待釐清 / 後續追蹤")
+        for p in summary["pending_items"]:
+            lines.append(f"- ❓ {p}")
+        lines.append("")
+
+    # Tone analysis (for dialogue/interview/supervision types)
+    if summary.get("tone_analysis"):
+        lines.append(f"## 語調與氣氛\n{summary['tone_analysis']}\n")
 
     full_text = "\n".join(lines)
     txt_path.write_text(full_text, encoding="utf-8")
@@ -412,7 +710,8 @@ if __name__ == "__main__":
         cmd_analyze(
             args[0],
             provider=flag("--provider","nvidia"),
-            model_override=flag("--model","")
+            model_override=flag("--model",""),
+            recording_type=flag("--recording-type","")
         )
 
     else:

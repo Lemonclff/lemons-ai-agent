@@ -68,6 +68,47 @@ export async function GET(req: NextRequest) {
   if (sub === "list-summaries")    return NextResponse.json(await runPython(["list-summaries"]));
   if (sub === "tasks")             return NextResponse.json(await runPython(["tasks"]));
 
+  // ── DOWNLOAD file ──
+  if (sub === "download") {
+    const filePath = searchParams.get("path");
+    if (!filePath) return NextResponse.json({ error: "Missing path" }, { status: 400 });
+
+    // Security: only allow paths under TempRecords
+    const resolved = path.resolve(filePath);
+    const allowedRoot = path.resolve(`${process.env.HOME || "/home/lemon"}/TempRecords`);
+    if (!resolved.startsWith(allowedRoot)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    if (!fs.existsSync(resolved)) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    const content = fs.readFileSync(resolved);
+    const fileName = path.basename(resolved);
+    const ext = path.extname(resolved).toLowerCase();
+
+    const mimeTypes: Record<string, string> = {
+      ".txt": "text/plain; charset=utf-8",
+      ".json": "application/json; charset=utf-8",
+      ".m4a": "audio/mp4",
+      ".mp4": "video/mp4",
+      ".mp3": "audio/mpeg",
+      ".wav": "audio/wav",
+      ".webm": "audio/webm",
+    };
+    const contentType = mimeTypes[ext] || "application/octet-stream";
+
+    return new NextResponse(content, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+        "Content-Length": String(content.length),
+      },
+    });
+  }
+
   return NextResponse.json({ error: "Unknown sub-action" }, { status: 400 });
 }
 
@@ -119,6 +160,9 @@ export async function POST(req: NextRequest) {
     if (!filePath) return NextResponse.json({ error: "Missing file_path" }, { status: 400 });
     const args = ["analyze", filePath, "--provider", body.provider || "nvidia"];
     if (body.llm_model) args.push("--model", body.llm_model);
+    if (body.recording_type && body.recording_type !== "auto") {
+      args.push("--recording-type", body.recording_type);
+    }
     return NextResponse.json(await runPython(args));
   }
 

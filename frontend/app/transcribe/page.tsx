@@ -78,6 +78,7 @@ export default function TranscribePage() {
   // ── Analyze State ──
   const [analyzeFile, setAnalyzeFile] = useState("");
   const [llmProvider, setLlmProvider] = useState("nvidia");
+  const [recordingType, setRecordingType] = useState("auto");
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<any>(null);
   const [analyzeError, setAnalyzeError] = useState("");
@@ -161,7 +162,7 @@ export default function TranscribePage() {
     if (!analyzeFile) { setAnalyzeError("請先選擇轉錄檔案"); return; }
     setAnalyzing(true); setAnalyzeError(""); setAnalyzeResult(null);
     try {
-      const r = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "analyze", file_path: analyzeFile, provider: llmProvider }) });
+      const r = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "analyze", file_path: analyzeFile, provider: llmProvider, recording_type: recordingType }) });
       const d = await r.json();
       if (d.error) { setAnalyzeError(d.error); } else { setAnalyzeResult(d); fetchFiles(); }
     } catch (e: any) { setAnalyzeError(e.message); }
@@ -334,6 +335,19 @@ export default function TranscribePage() {
                 <div><label className="text-[10px] text-zinc-500">LLM 模型</label>
                   <select value={llmProvider} onChange={e => setLlmProvider(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs mt-1">
                     {LLM_PROVIDERS.map(p => <option key={p.key} value={p.key}>{p.label} — {p.desc}</option>)}</select>
+                </div>
+                <div><label className="text-[10px] text-zinc-500">錄音類型</label>
+                  <select value={recordingType} onChange={e => setRecordingType(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs mt-1">
+                    <option value="auto">🤖 自動偵測</option>
+                    <option value="會議">📋 會議</option>
+                    <option value="對話">💬 對話</option>
+                    <option value="訪問">🎤 訪問</option>
+                    <option value="演講">📢 演講</option>
+                    <option value="培訓">📚 培訓</option>
+                    <option value="個案討論">🔍 個案討論</option>
+                    <option value="督導">📝 督導</option>
+                    <option value="檢討">🔎 檢討</option>
+                  </select>
                 </div>
                 <Button className="w-full" disabled={!analyzeFile || analyzing} onClick={runAnalyze}>
                   {analyzing ? <><Loader2 size={14} className="mr-2 animate-spin" />分析中...</> : <><Sparkles size={14} className="mr-2" />開始 AI 分析</>}</Button>
