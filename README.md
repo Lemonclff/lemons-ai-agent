@@ -633,11 +633,16 @@ Frontend polls: POST /api/transcribe {action:"status", task_id} every 2 seconds
 | Method | Endpoint | Body | Auth | Returns |
 |--------|----------|------|------|---------|
 | GET | `/api/transcribe?sub=scan` | — | Admin | Audio file list with metadata |
+| GET | `/api/transcribe?sub=list-transcripts` | — | Admin | Transcript file list |
+| GET | `/api/transcribe?sub=list-summaries` | — | Admin | Summary file list |
 | GET | `/api/transcribe?sub=tasks` | — | Auth | All task history |
+| GET | `/api/transcribe?sub=download&path=...` | — | Auth | File download |
 | POST | `/api/transcribe` | `{action:"transcribe", file_path, model?, language?, diarize?, num_speakers?}` | Admin | `{task_id}` |
 | POST | `/api/transcribe` | `{action:"status", task_id}` | Auth | `{status, progress, step}` |
 | POST | `/api/transcribe` | `{action:"result", task_id}` | Auth | Full transcript JSON |
 | POST | `/api/transcribe` | `{action:"upload", fileName, content(base64)}` | Admin | `{success, path}` |
+| POST | `/api/transcribe` | `{action:"analyze", file_path, provider, recording_type?}` | Admin | `{success, summary, txt_path, json_path}` |
+| POST | `/api/transcribe` | `{action:"read-file", file_path}` | Auth | `{name, content}` |
 
 #### Output Format
 
@@ -662,6 +667,108 @@ Frontend polls: POST /api/transcribe {action:"status", task_id} every 2 seconds
   "json_path": "/home/lemon/TempRecords/五月內閣會_轉錄.json"
 }
 ```
+
+#### AI 摘要分析（AI Summary）
+
+> **Page**: `/transcribe` → AI 分析 tab &nbsp;|&nbsp; **API**: `POST /api/transcribe {action:"analyze"}`
+
+After transcription, send the transcript to an LLM for structured meeting/conversation summary. Supports 8 recording types with tailored analysis frameworks.
+
+##### 🎯 Dynamic Recording Type Selection
+
+| Type | Icon | Analysis Focus | Key Output Fields |
+|------|------|---------------|-------------------|
+| `會議` | 📋 | Agenda → decisions → action items | `decisions`, `action_items`, `pending_items` |
+| `對話` | 💬 | Topic flow → emotional tone → subtext | `insights`, `tone_analysis` (required) |
+| `訪問` | 🎤 | Q&A structure → interviewee stance | `insights`, `tone_analysis` (required) |
+| `演講` | 📢 | Structure → arguments → call to action | `insights` |
+| `培訓` | 📚 | Learning objectives → key concepts → examples | `insights` |
+| `個案討論` | 🔍 | Case background → assessments → care plan | `decisions`, `action_items` |
+| `督導` | 📝 | Work review → guidance → improvement plan | `action_items`, `tone_analysis` |
+| `檢討` | 🔎 | Event timeline → root cause → corrective actions | `decisions`, `pending_items` |
+| `auto` | 🤖 | LLM auto-detects from content | All fields (fallback) |
+
+##### Two-Mode Prompt System
+
+```
+User selects type ──→ Type-specific prompt (~500 tokens)
+                         ↓
+                    Only that type's Role + Analysis Focus + Constraints
+                         ↓
+                    recording_type pre-filled → 0% mis-detection risk
+
+User selects "auto" ──→ Full auto-detect prompt (~2,500 tokens)
+                         ↓
+                    LLM first identifies type, then applies framework
+                         ↓
+                    Good for unknown/mixed content types
+```
+
+##### API Reference
+
+| Method | Endpoint | Body | Auth | Returns |
+|--------|----------|------|------|---------|
+| POST | `/api/transcribe` | `{action:"analyze", file_path, provider, recording_type?}` | Admin | `{success, summary, txt_path, json_path}` |
+| GET | `/api/transcribe?sub=download&path=...` | — | Auth | File download (Content-Disposition: attachment) |
+
+##### Analysis JSON Output
+
+```json
+{
+  "recording_type": "會議",
+  "title": "五月內閣會：活動預算、防疫管理與人事調動",
+  "date_guess": "2026-05-28",
+  "context": "機構每月內閣例會，討論營運及人事事項",
+  "keywords": ["活動預算", "防疫措施", "人事調動", "錢箱管理", "排班制度"],
+  "participants": [
+    {"name": "Emily", "role": "主席", "speaking_frequency": "主要發言者"},
+    {"name": "Wincy", "role": "AS", "speaking_frequency": "偶爾發言"}
+  ],
+  "core_points": [
+    "各家社年度活動預算定為 $9,200，已從會議記錄核實",
+    "即日起強制戴口罩，發出正式防疫通告",
+    "Wally 5/31 離職，E 家社暫代支援 D 家社至新人入職"
+  ],
+  "key_topics": [
+    {
+      "topic": "活動預算與文件管理",
+      "discussion": "主席強調活動前必須先提交預算...",
+      "decisions": ["嚴格執行活動前提交預算規定"],
+      "timestamp_ref": "約 00:00"
+    }
+  ],
+  "action_items": [
+    {
+      "item": "發布宿舍口罩及防疫通告",
+      "assignee": "Eugenie",
+      "deadline": "即日",
+      "status": "待開始"
+    }
+  ],
+  "pending_items": ["CC 1-3 月賬目尚未清理"],
+  "overall_summary": "本次內閣會聚焦...",
+  "tone_analysis": "正式但開放，討論具體數字時有爭論但最終達成共識"
+}
+```
+
+##### LLM Providers (same as AI Analysis page)
+
+| Provider | Model | Speed |
+|----------|-------|-------|
+| `nvidia` | `deepseek-ai/deepseek-v4-pro` | ~60-90s |
+| `deepseek` | `deepseek-chat` | ~30s |
+| `openrouter` | `openai/gpt-4o` | ~20s |
+| `openai` | `gpt-4o` | ~20s |
+| `hermes` | Hermes agent's LLM config | varies |
+| `lmstudio` | Local LM Studio model | ~5-10 min |
+
+##### Performance Tuning
+
+| Parameter | Old | New | Impact |
+|-----------|-----|-----|--------|
+| Input truncation | 12,000 chars | 80,000 chars | 6.7× more transcript context |
+| Output max_tokens | 4,096 | 16,384 | 4× longer summaries |
+| Prompt tokens (type-specific) | — | ~500 | 5× smaller than auto-detect (~2,500) |
 
 ---
 
