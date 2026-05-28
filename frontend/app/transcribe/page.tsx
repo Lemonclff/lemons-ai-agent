@@ -24,9 +24,9 @@ interface TransResult {
 }
 
 const MODELS = [
-  { key: "cantonese", label: "粵語專用 (large-v3-turbo)", desc: "推薦 · 粵語+英語微調" },
-  { key: "large-v3", label: "Large-v3", desc: "最高準確度，較慢" },
+  { key: "large-v3", label: "Large-v3 (推薦)", desc: "最高準確度，粵語表現佳，已驗證" },
   { key: "large-v3-turbo", label: "Large-v3-turbo", desc: "8x 加速，略低準確度" },
+  { key: "cantonese", label: "粵語專用 (實驗性)", desc: "粵語微調，長音檔可能不穩" },
   { key: "medium", label: "Medium", desc: "平衡速度與準確度" },
   { key: "small", label: "Small", desc: "快速，適合簡短對話" },
   { key: "tiny", label: "Tiny", desc: "最快，適合即時預覽" },
@@ -69,7 +69,7 @@ export default function TranscribePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Transcription options
-  const [model, setModel] = useState("cantonese");
+  const [model, setModel] = useState("large-v3");
   const [language, setLanguage] = useState("yue");
   const [diarize, setDiarize] = useState(false);
   const [numSpeakers, setNumSpeakers] = useState(0);
