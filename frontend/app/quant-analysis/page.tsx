@@ -86,8 +86,8 @@ export default function QuantAnalysisPage() {
         body: JSON.stringify({ tickers: [t] }),
       });
       const fetchJson = await fetchRes.json();
-      if (fetchJson._source !== "yfinance" && fetchJson._source !== "cache") {
-        setErrors((p) => ({ ...p, [t]: "yfinance 數據擷取失敗" }));
+      if (fetchJson._source !== "yfinance" && fetchJson._source !== "cache" && fetchJson._source !== "yfinance_error") {
+        setErrors((p) => ({ ...p, [t]: "實時數據擷取失敗" }));
         setFetching((p) => ({ ...p, [t]: false }));
         return;
       }

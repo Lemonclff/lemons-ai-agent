@@ -4,7 +4,7 @@
  * POST /api/options  { tickers: ["NVDA","TSLA",...] }
  *
  * Spawns the Python options_api.py worker which fetches real-time
- * options chain data from Yahoo Finance (yfinance).
+ * options chain data from Futunn OpenAPI.
  *
  * Server-side cache: 60-second TTL per ticker set.
  * Falls back to deterministic mock data if Python is unavailable.
@@ -22,7 +22,7 @@ let cache: { key: string; data: unknown; ts: number } | null = null;
 
 async function callPythonWorker(tickers: string[]): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(PYTHON, [SCRIPT], {
+    const proc = spawn(PYTHON_BIN, [SCRIPT], {
       stdio: ["pipe", "pipe", "pipe"],
       timeout: 45_000, // 45s total timeout
     });
@@ -114,7 +114,7 @@ function generateFallbackData(tickers: string[]): unknown[] {
       unusual_activity: unusual,
       ai_alert: unusual ? `⚠️ ${t} IV spread=${spread.toFixed(1)}%` : undefined,
       last_updated: new Date().toISOString(),
-      _source: "mock",
+      _source: "mock_fallback",
     };
   });
 }
@@ -150,7 +150,10 @@ export async function POST(req: NextRequest) {
     let source = "unknown";
     try {
       data = await callPythonWorker(tickers);
-      source = "yfinance";
+      // Extract source from the first item in the response
+      if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+        source = (data[0] as any)._source || "unknown";
+      }
       // Update cache
       cache = { key: cacheKey, data, ts: Date.now() };
     } catch (err) {

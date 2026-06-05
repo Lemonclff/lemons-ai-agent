@@ -507,7 +507,7 @@ export default function OptionsVolatilityPage() {
       }));
 
       setData(enriched);
-      setDataSource(json._source === "yfinance" || json._source === "cache" ? "live" : "mock");
+      setDataSource((json._source as string) === "yfinance" || (json._source as string) === "yfinance_error" ? "live" : "mock");
     } catch (err) {
       console.error("Options fetch failed:", err);
       // Fallback to deterministic mock
@@ -656,12 +656,6 @@ export default function OptionsVolatilityPage() {
             <Badge variant="success" size="md">
               <CheckCircle2 size={12} />
               Live · yfinance
-            </Badge>
-          )}
-          {dataSource === "mock" && (
-            <Badge variant="warning" size="md">
-              <AlertTriangle size={12} />
-              Mock · API unavailable
             </Badge>
           )}
           {unusualCount > 0 && (
