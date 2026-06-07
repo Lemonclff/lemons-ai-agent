@@ -7,6 +7,8 @@ import {
   Loader2, ArrowUp, ArrowDown, Landmark, DollarSign, Percent, Home,
   TrendingUp, Download, FileText, Image, FileSpreadsheet,
   Building2, RefreshCw,
+  Brain,
+  Cpu,
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -310,6 +312,8 @@ export default function MarketMonitorPage() {
   // Macro risk
   const [macroRisk, setMacroRisk] = useState<any>(null);
   const [mrLoading, setMrLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiProvider, setAiProvider] = useState<string>("nvidia");
 
   // Refresh
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -363,6 +367,18 @@ export default function MarketMonitorPage() {
       .catch(() => {})
       .finally(() => setMrLoading(false));
   }, []);
+
+  const fetchMacroRiskAI = useCallback(async () => {
+    setAiLoading(true);
+    try {
+      const r = await fetch(`/api/macro-risk?ai=true&provider=${aiProvider}`);
+      const json = await r.json();
+      if (!json.error) {
+        setMacroRisk((prev: any) => ({ ...prev, ai_analysis: json.ai_analysis }));
+      }
+    } catch {}
+    finally { setAiLoading(false); }
+  }, [aiProvider]);
 
   const fetchMortgageHistory = useCallback(() => {
     setMhLoading(true);
@@ -481,7 +497,47 @@ export default function MarketMonitorPage() {
                   macroRisk.built_in.risk_level === "YELLOW" ? "bg-[#eab308]/20 text-[#eab308]" :
                   "bg-[#22c55e]/20 text-[#22c55e]"
                 )}>{macroRisk.built_in.risk_level} ({macroRisk.built_in.score}/100)</span>
+                <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] uppercase tracking-wider border border-[var(--color-border)]">Built-in Engine</span>
               </div>
+
+              {/* AI controls */}
+              {!macroRisk.ai_analysis ? (
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[var(--color-border)]/30">
+                  <Cpu size={12} className="text-[var(--color-text-muted)]" />
+                  <select
+                    value={aiProvider}
+                    onChange={(e) => setAiProvider(e.target.value)}
+                    className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-2 py-1 text-[var(--color-text-secondary)] outline-none"
+                  >
+                    <option value="nvidia">NVIDIA NIM (DeepSeek-V4)</option>
+                    <option value="deepseek">DeepSeek (deepseek-chat)</option>
+                    <option value="openrouter">OpenRouter (GPT-4o)</option>
+                    <option value="openai">OpenAI (GPT-4o)</option>
+                  </select>
+                  <button
+                    onClick={fetchMacroRiskAI}
+                    disabled={aiLoading}
+                    className="flex items-center gap-1 px-3 py-1 text-[11px] font-medium rounded bg-[var(--color-accent)]/15 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25 transition-colors disabled:opacity-50"
+                  >
+                    {aiLoading ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} />}
+                    {aiLoading ? "Analyzing..." : "Run AI Analysis"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[var(--color-accent)]/20">
+                  <Brain size={12} className="text-[var(--color-accent)]" />
+                  <span className="text-[10px] text-[var(--color-accent)] uppercase tracking-wider font-semibold">AI Analysis</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[var(--color-accent)]/15 text-[var(--color-accent)] uppercase tracking-wider">
+                    {macroRisk.ai_analysis._provider || "LLM"}
+                  </span>
+                  <button
+                    onClick={() => setMacroRisk((prev: any) => ({ ...prev, ai_analysis: null }))}
+                    className="ml-auto text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
               <p className="text-[12px] text-[var(--color-text-secondary)] mb-2 font-medium">{macroRisk.built_in.risk_label}</p>
               <p className="text-[11px] text-[var(--color-text-muted)] mb-2">{macroRisk.built_in.data_summary}</p>
               <p className="text-[11px] text-[var(--color-text-muted)] mb-2 leading-relaxed">{macroRisk.built_in.scenario}</p>
@@ -489,15 +545,20 @@ export default function MarketMonitorPage() {
                 <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Action:</span>
                 <p className="text-[12px] text-[var(--color-text-primary)] mt-1 font-medium">{macroRisk.built_in.action}</p>
               </div>
+
+              {/* AI result */}
               {macroRisk.ai_analysis && (
-                <div className="mt-3 pt-3 border-t border-[var(--color-accent)]/20">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] text-[var(--color-accent)] uppercase tracking-wider">AI Analysis</span>
-                    <span className="text-[10px] text-[var(--color-text-muted)]">({macroRisk.ai_analysis.market_regime})</span>
+                <div className="mt-3 pt-3 border-t border-[var(--color-accent)]/20 bg-[var(--color-accent)]/[0.02] -mx-4 -mb-4 px-4 pb-4 rounded-b">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Market Regime</span>
+                    <span className="text-[12px] text-[var(--color-text-primary)] font-semibold">{macroRisk.ai_analysis.market_regime}</span>
                   </div>
-                  <p className="text-[11px] text-[var(--color-text-secondary)]">{macroRisk.ai_analysis.actionable_insight}</p>
+                  <p className="text-[11px] text-[var(--color-text-secondary)] mb-2 leading-relaxed">{macroRisk.ai_analysis.actionable_insight}</p>
                   {macroRisk.ai_analysis.key_warning && (
-                    <p className="text-[11px] text-[#ef4444] mt-1">Warning: {macroRisk.ai_analysis.key_warning}</p>
+                    <div className="mt-2 p-2 rounded border border-[#ef4444]/30 bg-[#ef4444]/5">
+                      <span className="text-[10px] text-[#ef4444] uppercase tracking-wider font-semibold">⚠ Warning</span>
+                      <p className="text-[11px] text-[#ef4444] mt-1">{macroRisk.ai_analysis.key_warning}</p>
+                    </div>
                   )}
                 </div>
               )}

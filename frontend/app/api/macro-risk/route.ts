@@ -158,12 +158,12 @@ function computeBuiltIn(snap: MarketSnapshot): BuiltInAnalysis {
 
 /* ── AI analysis (LLM) ────────────────────────────────────── */
 
-async function callLLM(snap: MarketSnapshot, builtIn: BuiltInAnalysis): Promise<Record<string, unknown> | null> {
+async function callLLM(snap: MarketSnapshot, builtIn: BuiltInAnalysis, providerName?: string): Promise<{ analysis: Record<string, unknown>; provider_used: string } | null> {
   const providers = [
-    { key: process.env.NVIDIA_API_KEY, model: process.env.NVIDIA_MODEL || "deepseek-ai/deepseek-v4-pro", base: "https://integrate.api.nvidia.com/v1" },
-    { key: process.env.DEEPSEEK_API_KEY, model: "deepseek-chat", base: "https://api.deepseek.com/v1" },
-    { key: process.env.OPENROUTER_API_KEY, model: "openai/gpt-4o", base: "https://openrouter.ai/api/v1" },
-    { key: process.env.OPENAI_API_KEY, model: "gpt-4o", base: "https://api.openai.com/v1" },
+    { name: "nvidia", key: process.env.NVIDIA_API_KEY, model: process.env.NVIDIA_MODEL || "deepseek-ai/deepseek-v4-pro", base: "https://integrate.api.nvidia.com/v1", label: "NVIDIA NIM" },
+    { name: "deepseek", key: process.env.DEEPSEEK_API_KEY, model: "deepseek-chat", base: "https://api.deepseek.com/v1", label: "DeepSeek" },
+    { name: "openrouter", key: process.env.OPENROUTER_API_KEY, model: "openai/gpt-4o", base: "https://openrouter.ai/api/v1", label: "OpenRouter" },
+    { name: "openai", key: process.env.OPENAI_API_KEY, model: "gpt-4o", base: "https://api.openai.com/v1", label: "OpenAI" },
   ];
 
   const systemPrompt = `You are a quantitative macro risk assessment model deployed in an institutional backend.
@@ -193,7 +193,12 @@ Output format:
 Built-in assessment: ${builtIn.risk_level} (score ${builtIn.score}/100)
 Inflation: ${builtIn.inflation_pressure} | Curve: ${builtIn.yield_curve_status} | Credit: ${builtIn.credit_risk}`;
 
-  for (const provider of providers) {
+  // Determine which providers to try
+  const toTry = providerName
+    ? providers.filter(p => p.name === providerName)
+    : providers;
+
+  for (const provider of toTry) {
     if (!provider.key) continue;
     try {
       const controller = new AbortController();
@@ -224,7 +229,7 @@ Inflation: ${builtIn.inflation_pressure} | Curve: ${builtIn.yield_curve_status} 
 
       let parsed: Record<string, unknown>;
       try { parsed = JSON.parse(content); } catch { continue; }
-      return parsed;
+      return { analysis: parsed, provider_used: provider.name };
     } catch {
       continue;
     }
@@ -235,6 +240,10 @@ Inflation: ${builtIn.inflation_pressure} | Curve: ${builtIn.yield_curve_status} 
 /* ── Route handler ─────────────────────────────────────────── */
 
 export async function GET(_req: NextRequest) {
+  const { searchParams } = new URL(_req.url);
+  const enableAI = searchParams.get("ai") === "true";
+  const aiProvider = searchParams.get("provider") || undefined;
+
   const apiKey = process.env.FRED_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "FRED_API_KEY not configured" }, { status: 500 });
@@ -245,7 +254,14 @@ export async function GET(_req: NextRequest) {
     const builtIn = computeBuiltIn(snap);
 
     let ai: Record<string, unknown> | null = null;
-    try { ai = await callLLM(snap, builtIn); } catch { /* optional */ }
+    if (enableAI) {
+      try {
+        const result = await callLLM(snap, builtIn, aiProvider);
+        if (result) {
+          ai = { ...result.analysis, _provider: result.provider_used };
+        }
+      } catch { /* optional */ }
+    }
 
     return NextResponse.json({
       built_in: builtIn,
