@@ -6,6 +6,10 @@ const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/logout",
+  "/api/fred",
+  "/api/fred/inflation",
+  "/api/fred/mortgage-history",
+  "/api/macro-risk",
 ];
 
 export function middleware(req: NextRequest) {

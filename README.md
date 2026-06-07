@@ -24,6 +24,7 @@
    - [3.5 語音轉文字](#35-語音轉文字) — Cantonese STT + diarization
    - [3.6 Macro Impact Matrix](#36-macro-impact-matrix) — Economic calendar + AI flow
    - [3.7 Database Explorer](#37-database-explorer) — Admin CRUD interface
+   - [3.8 US Market Monitor](#38-us-market-monitor) — FRED rates, inflation, macro risk
 4. [Auth System](#-auth-system) — Login flow, token structure, security
 5. [Database Schema](#-database-schema) — Full DDL, indexes, relationships
 6. [Tech Stack](#-tech-stack) — Complete technology inventory
@@ -48,6 +49,7 @@ Lemon's AI Agent is a **local-first, privacy-respecting dashboard** that runs en
 | Domain | Capability |
 |--------|-----------|
 | 📈 **Markets** | Real-time options IV/HV/PCR, multi-ticker quant engine, 30+ stock radar |
+| 📊 **FRED** | US Treasury yields, mortgage rates, corporate bonds, CPI inflation, macro risk scoring |
 | 🤖 **AI** | LLM-powered stock analysis (zh-TW), AI OCR receipt parsing, 7-sector macro impact |
 | 💰 **Finance** | Bank statement OCR → structured transactions → dashboard with 4 chart types |
 | 🎤 **Voice** | Cantonese-optimized speech-to-text with speaker diarization |
@@ -833,6 +835,44 @@ Full CRUD interface for all 7 PostgreSQL tables.
 
 ## 🔐 Auth System
 
+### 3.8 US Market Monitor
+
+> **Page**: `/market-monitor` &nbsp;|&nbsp; **API**: `GET /api/fred`, `GET /api/fred/inflation`, `GET /api/fred/mortgage-history`, `GET /api/macro-risk`
+
+Real-time US macro data dashboard pulling from the Federal Reserve Economic Data (FRED) API. Five-tab layout: Overview, Treasury Yields, Mortgage Rates, Bond Rates, and US Inflation.
+
+#### Tabs
+
+| Tab | Content | Source |
+|-----|---------|--------|
+| **Overview** | Macro Risk Assessment (scored + AI analysis), all three rate tables, CPI summary, other indicators | — |
+| **Treasury Yields** | 4-week to 30-year constant maturity rates + other indicators table | US Treasury via FRED |
+| **Mortgage Rates** | 30Y/15Y fixed + 5/1 ARM, plus 5-year 30Y fixed chart | Freddie Mac PMMS via FRED |
+| **Bond Rates** | Treasury bonds overview + corporate bonds (AAA, BAA, spread) | Moody's via FRED |
+| **US Inflation** | Current YoY CPI rate, 12-month trend, MoM bar chart, annual bars (2013-2026), historical table | BLS via FRED |
+
+#### Features
+
+| Feature | Detail |
+|---------|--------|
+| Macro Risk Assessment | Scored 0-100 (RED/ORANGE/YELLOW/GREEN) with scenario narrative + action recommendation |
+| AI Analysis | LLM-driven market regime classification + actionable insight + key warning |
+| Download | Every chart supports SVG, PNG, and CSV export |
+| Refresh | Single-click refresh all data sources |
+| Rate changes | Displayed in bp (Treasury) or % (others) with color-coded arrows |
+| Lazy loading | Inflation and mortgage history fetched on tab switch |
+
+#### API Endpoints
+
+| Endpoint | Returns |
+|----------|---------|
+| `GET /api/fred` | `{ treasury[], mortgage[], bonds[], others[] }` — current rates with change |
+| `GET /api/fred/inflation` | `{ latest, monthly[], mom[], yearly[], historical[] }` — CPI data |
+| `GET /api/fred/mortgage-history` | `{ data: [{ date, value }] }` — 5-year 30Y fixed history |
+| `GET /api/macro-risk` | `{ built_in: { score, risk_level, risk_label, scenario, action }, ai_analysis }` |
+
+---
+
 ### Login Flow
 
 ```
@@ -1289,6 +1329,7 @@ lemons-ai-agent/
 │   │   ├── quant-analysis/page.tsx     # 🧠 Multi-ticker quant engine
 │   │   ├── ai-analysis/page.tsx        # 🤖 AI stock analysis (LLM)
 │   │   ├── macro-impact/page.tsx       # 📅 Economic calendar
+│   │   ├── market-monitor/page.tsx     # 📊 US Market Monitor (FRED)
 │   │   ├── finance/page.tsx            # 💰 AI OCR + 記帳
 │   │   ├── transcribe/page.tsx         # 🎤 語音轉文字 (STT)
 │   │   ├── data/page.tsx               # 🗄️ Database Explorer (admin)
@@ -1306,6 +1347,8 @@ lemons-ai-agent/
 │   │       ├── finance/route.ts        # Finance CRUD + OCR
 │   │       ├── transcribe/route.ts     # STT scan/transcribe/status
 │   │       ├── cron/route.ts           # Cron job control
+│   │       ├── fred/                   # FRED rates + inflation + mortgage history
+│   │       ├── macro-risk/route.ts     # Macro risk scoring + AI analysis
 │   │       └── admin/                  # Admin-only endpoints
 │   │
 │   ├── components/
