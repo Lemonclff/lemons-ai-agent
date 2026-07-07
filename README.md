@@ -1,6 +1,6 @@
 # 🍋 Lemon's AI Agent
 
-> **Local-First Multi-Module Dashboard — Quantitative Analysis, AI Research, Personal Finance, Speech-to-Text**
+> **Local-First Multi-Module Dashboard — Quantitative Analysis, AI Research, Personal Finance, Nutrition, Speech-to-Text**
 >
 > Next.js 14 &middot; PostgreSQL 16 &middot; Python 3.12 &middot; Tailwind CSS &middot; Cloudflare Tunnel
 
@@ -25,6 +25,7 @@
    - [3.6 Macro Impact Matrix](#36-macro-impact-matrix) — Economic calendar + AI flow
    - [3.7 Database Explorer](#37-database-explorer) — Admin CRUD interface
    - [3.8 US Market Monitor](#38-us-market-monitor) — FRED rates, inflation, macro risk
+   - [3.9 NutriSnap (營養追蹤)](#39-nutrisnap-營養追蹤) — Food logging, exercise tracking, calorie budget
 4. [Auth System](#-auth-system) — Login flow, token structure, security
 5. [Database Schema](#-database-schema) — Full DDL, indexes, relationships
 6. [Tech Stack](#-tech-stack) — Complete technology inventory
@@ -52,6 +53,7 @@ Lemon's AI Agent is a **local-first, privacy-respecting dashboard** that runs en
 | 📊 **FRED** | US Treasury yields, mortgage rates, corporate bonds, CPI inflation, macro risk scoring |
 | 🤖 **AI** | LLM-powered stock analysis (zh-TW), AI OCR receipt parsing, 7-sector macro impact |
 | 💰 **Finance** | Bank statement OCR → structured transactions → dashboard with 4 chart types |
+| 🍎 **Nutrition** | Food logging + exercise tracking + AI photo analysis + dual-ring calorie budget |
 | 🎤 **Voice** | Cantonese-optimized speech-to-text with speaker diarization |
 | 📅 **Macro** | Economic calendar with auto BEAT/MISS detection, Telegram push |
 | 🔐 **Auth** | bcrypt login, HMAC-SHA256 tokens, httpOnly cookies, admin role |
@@ -93,13 +95,14 @@ Lemon's AI Agent is a **local-first, privacy-respecting dashboard** that runs en
 │                             │  └──────────┬─────────────────┘  │ │
 │                             │             │                     │ │
 │                             │  ┌──────────▼─────────────────┐  │ │
-│                             │  │ API Routes (17 endpoints)   │  │ │
+│                             │  │ API Routes (27 endpoints)   │  │ │
 │                             │  │ /api/auth/*  /api/db/*      │  │ │
 │                             │  │ /api/options /api/quant/*   │  │ │
 │                             │  │ /api/ai/*   /api/sentiment  │  │ │
 │                             │  │ /api/radar  /api/macro      │  │ │
 │                             │  │ /api/finance /api/transcribe│  │ │
 │                             │  │ /api/cron   /api/admin/*    │  │ │
+│                             │  │ /api/nutrition/*             │  │ │
 │                             │  └──────────┬─────────────────┘  │ │
 │                             └─────────────┼────────────────────┘ │
 │                                           │                       │
@@ -873,6 +876,82 @@ Real-time US macro data dashboard pulling from the Federal Reserve Economic Data
 
 ---
 
+### 3.9 NutriSnap (營養追蹤)
+
+> **Page**: `/nutrition` &nbsp;|&nbsp; **API**: `GET|POST /api/nutrition/*` &nbsp;|&nbsp; **DB**: `db/nutrition_schema.sql`
+
+Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, and dual-ring calorie budget visualization.
+
+#### Features
+
+| Feature | Detail |
+|---------|--------|
+| **Onboarding Wizard** | 3-step guided setup (body data → activity/goal → TDEE) on first visit |
+| **Dual-Ring Budget** | Green ring (calories eaten) + Orange ring (calories burned) + remaining bar |
+| **Food Search** | Search 120+ curated Taiwanese foods + Open Food Facts API |
+| **AI Photo** | Upload food photo → GPT-4o identifies dishes, estimates weights→ add to log |
+| **Exercise Tracking** | 26 built-in exercises with MET values → auto-calculate calories burned |
+| **7-Day Chart** | Recharts bar chart with calorie trend + mini calendar with log indicators |
+| **Custom Foods** | Add your own foods with custom macros |
+| **Copy Yesterday** | One-click copy of yesterday's food log |
+| **Mobile Optimized** | Bottom nav bar, touch swipe date, expandable food rows, 2x2 stats grid |
+
+#### 5-Tab Layout
+
+| Tab | Icon | Function |
+|-----|------|----------|
+| Dashboard | Gauge | Dual-ring budget, macro rings, food log, exercise section |
+| Search | Search | Food lookup + add to log with weight/meal controls |
+| AI Photo | Sparkles | Drag-drop food image → AI analysis → confirm & add |
+| Profile | Settings | Body metrics, TDEE calculator, activity level, goal |
+| History | Calendar | 7-day bar chart + mini calendar + day detail |
+
+#### API Endpoints
+
+| Endpoint | Method | Returns |
+|----------|--------|---------|
+| `GET /api/nutrition/profile` | GET | `{ profile }` or `null` (triggers onboarding) |
+| `POST /api/nutrition/profile` | POST | Saves user body data + auto-calculates TDEE |
+| `GET /api/nutrition/logs?date=` | GET | `{ logs, summary: { calories, protein, carbs, fat, count, exercise_calories } }` |
+| `POST /api/nutrition/logs` | POST | Add food entry (looks up nutrition from cache) |
+| `PUT /api/nutrition/logs?id=` | PUT | Update weight/meal_type |
+| `DELETE /api/nutrition/logs?id=` | DELETE | Remove food entry |
+| `GET /api/nutrition/exercise?date=` | GET | `{ exercises[], total_burned }` |
+| `POST /api/nutrition/exercise` | POST | Add exercise (calories = MET × weight(kg) × hours) |
+| `DELETE /api/nutrition/exercise?id=` | DELETE | Remove exercise entry |
+| `GET /api/nutrition/exercises` | GET | 26-exercise MET reference table |
+| `GET /api/nutrition/search?q=` | GET | Search foods (local DB → custom → Open Food Facts) |
+| `POST /api/nutrition/custom` | POST | Add custom food |
+| `POST /api/nutrition/analyze-image` | POST | GPT-4o food photo analysis (FormData: image + user_text) |
+| `POST /api/nutrition/confirm-analysis` | POST | Confirm AI dishes → insert into daily_food_logs |
+| `GET /api/nutrition/stats/weekly?date=` | GET | 7-day aggregated calorie/protein/carbs/fat |
+| `POST /api/nutrition/copy-yesterday` | POST | Copy yesterday's food log entries to today |
+
+#### Calorie Budget Logic
+
+```
+BMR = Mifflin-St Jeor(gender, weight, height, age)
+TDEE = BMR × activity_multiplier (1.2 - 1.9)
+Target = TDEE + goal_adjustment (-500 lose / 0 maintain / +500 gain)
+
+Net = calories_eaten - calories_burned
+Remaining = Target - Net  (red if negative → over budget)
+```
+
+#### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `user_profiles` | Body metrics, activity level, goal, TDEE targets |
+| `food_nutrition_cache` | 120+ curated Taiwanese/Asian foods + API cache |
+| `user_custom_foods` | User-defined foods |
+| `daily_food_logs` | Every food entry per user per day |
+| `exercise_logs` | Exercise records with MET-based calorie calculation |
+
+Setup: `psql -U admin -d ai_dashboard_db -f db/nutrition_schema.sql`
+
+---
+
 ### Login Flow
 
 ```
@@ -1053,11 +1132,70 @@ CREATE TABLE parse_task_history (
 );
 ```
 
+#### Nutrition Tables (`db/nutrition_schema.sql`)
+
+```sql
+CREATE TABLE user_profiles (
+    user_id              INTEGER PRIMARY KEY REFERENCES users(id),
+    gender               VARCHAR(10) DEFAULT 'male',
+    age                  INTEGER DEFAULT 30,
+    height_cm            DECIMAL(5,1) DEFAULT 170,
+    weight_kg            DECIMAL(5,1) DEFAULT 70,
+    activity_level       VARCHAR(20) DEFAULT 'moderate',
+    goal                 VARCHAR(20) DEFAULT 'maintain',
+    daily_calorie_target INTEGER DEFAULT 2000,
+    daily_protein_target INTEGER DEFAULT 100,
+    daily_carbs_target   INTEGER DEFAULT 250,
+    daily_fat_target     INTEGER DEFAULT 65,
+    updated_at           TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE food_nutrition_cache (
+    id                SERIAL PRIMARY KEY,
+    food_name         VARCHAR(200) NOT NULL,
+    calories_per_100g DECIMAL(10,4),
+    protein_per_100g  DECIMAL(10,4),
+    carbs_per_100g    DECIMAL(10,4),
+    fat_per_100g      DECIMAL(10,4),
+    source            VARCHAR(20) NOT NULL,
+    UNIQUE(food_name, source)
+);
+
+CREATE TABLE daily_food_logs (
+    id           SERIAL PRIMARY KEY,
+    user_id      INTEGER NOT NULL REFERENCES users(id),
+    log_date     DATE NOT NULL,
+    meal_type    VARCHAR(20) DEFAULT 'snack',
+    food_name    VARCHAR(200) NOT NULL,
+    weight_grams DECIMAL(10,4),
+    calories     DECIMAL(10,4),
+    protein      DECIMAL(10,4),
+    carbs        DECIMAL(10,4),
+    fat          DECIMAL(10,4),
+    source       VARCHAR(20) DEFAULT 'manual'
+);
+CREATE INDEX idx_dfl_user_date ON daily_food_logs(user_id, log_date DESC);
+
+CREATE TABLE exercise_logs (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES users(id),
+    log_date        DATE NOT NULL,
+    exercise_name   VARCHAR(100) NOT NULL,
+    duration_min    INTEGER NOT NULL,
+    met_value       DECIMAL(5,1) NOT NULL,
+    calories_burned DECIMAL(8,1) NOT NULL
+);
+CREATE INDEX idx_exercise_user_date ON exercise_logs(user_id, log_date DESC);
+```
+
 ### Entity Relationships
 
 ```
 users ──< transactions (user_id)
 users ──< parse_task_history (user_id)
+users ──< user_profiles (user_id)
+users ──< daily_food_logs (user_id)
+users ──< exercise_logs (user_id)
 
 stock_price_daily ───┐
 options_volatility_log├── ticker (logical FK, not enforced)
@@ -1390,7 +1528,9 @@ lemons-ai-agent/
 │   └── cron_control.py                 # Cron state management
 │
 ├── db/
-│   └── schema.sql                      # Full PostgreSQL DDL
+│   ├── schema.sql                      # Core PostgreSQL DDL
+│   ├── finance_schema.sql              # Finance transactions DDL
+│   └── nutrition_schema.sql            # NutriSnap DDL (food, exercise)
 │
 ├── .gitignore
 └── README.md
