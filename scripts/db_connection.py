@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Lemon's AI Agent — Database Connection Layer
 =============================================
@@ -188,7 +188,52 @@ def get_ddl() -> str:
         is_admin        {bl} DEFAULT {'0' if DB_TYPE == 'sqlite' else 'FALSE'},
         created_at      TEXT DEFAULT {ts}
     );
-    """
+    
+    -- Nutrition: food cache
+    CREATE TABLE IF NOT EXISTS food_nutrition_cache (
+        id                {pk},
+        food_name         VARCHAR(200) NOT NULL,
+        display_name      VARCHAR(200),
+        calories_per_100g {rl},
+        protein_per_100g  {rl},
+        carbs_per_100g    {rl},
+        fat_per_100g      {rl},
+        fiber_per_100g    {rl},
+        source            VARCHAR(20) NOT NULL,
+        source_id         VARCHAR(100),
+        created_at        TEXT DEFAULT {ts},
+        UNIQUE(food_name, source)
+    );
+    
+    -- Nutrition: user custom foods
+    CREATE TABLE IF NOT EXISTS user_custom_foods (
+        id                {pk},
+        user_id           INTEGER NOT NULL REFERENCES users(id),
+        food_name         VARCHAR(200) NOT NULL,
+        calories_per_100g {rl},
+        protein_per_100g  {rl},
+        carbs_per_100g    {rl},
+        fat_per_100g      {rl},
+        created_at        TEXT DEFAULT {ts}
+    );
+    
+    -- Nutrition: daily food logs
+    CREATE TABLE IF NOT EXISTS daily_food_logs (
+        id            {pk},
+        user_id       INTEGER NOT NULL REFERENCES users(id),
+        log_date      DATE NOT NULL,
+        meal_type     VARCHAR(20) DEFAULT 'snack',
+        food_name     VARCHAR(200) NOT NULL,
+        weight_grams  {rl},
+        calories      {rl},
+        protein       {rl},
+        carbs         {rl},
+        fat           {rl},
+        source        VARCHAR(20) DEFAULT 'manual',
+        created_at    TEXT DEFAULT {ts}
+    );
+    CREATE INDEX IF NOT EXISTS idx_dfl_user_date ON daily_food_logs (user_id, log_date DESC);
+        """
 
 
 # ============================================================================

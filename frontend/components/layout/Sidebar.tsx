@@ -23,6 +23,7 @@ import {
   Mic,
   CalendarDays,
   BarChart3,
+  Apple,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ const mainNav: NavItem[] = [
   { label: "Schedule & Automation", href: "/schedule", icon: Clock },
   { label: "AI 資產分析", href: "/ai-analysis", icon: Brain, badge: "LLM" },
   { label: "Market Monitor", href: "/market-monitor", icon: BarChart3, badge: "FRED" },
+  { label: "Nutrition", href: "/nutrition", icon: Apple, badge: "New" },
   { label: "Quant Analysis", href: "/quant-analysis", icon: TrendingUp, badge: "AI" },
   { label: "Options & Volatility", href: "/options-volatility", icon: TrendingUp, badge: "New" },
   { label: "Macro Impact Matrix", href: "/macro-impact", icon: Calendar, badge: "AI" },

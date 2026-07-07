@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
   "/api/fred/inflation",
   "/api/fred/mortgage-history",
   "/api/macro-risk",
+  "/api/nutrition",
 ];
 
 export function middleware(req: NextRequest) {
