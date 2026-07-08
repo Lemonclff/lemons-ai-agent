@@ -561,6 +561,9 @@ export function DashboardTab({
           </div>
         </div>
       )}
+
+      {/* Mobile spacer — prevents BottomNav from covering last content */}
+      <div className="md:hidden h-28" />
     </div>
   );
 }
