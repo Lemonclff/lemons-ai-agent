@@ -887,24 +887,28 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | Feature | Detail |
 |---------|--------|
 | **Onboarding Wizard** | 3-step guided setup (body data → activity/goal → TDEE) on first visit |
-| **Dual-Ring Budget** | Green ring (calories eaten) + Orange ring (calories burned) + remaining bar |
+| **Dual Calories Cards** | Orange In card + Green Out card with progress bars + Net Calories pill |
+| **Quick Add Favorites** | Per-user curated In/Out favorites with tab switching, auto-suggest from logs |
 | **Food Search** | Search 120+ curated Taiwanese foods + Open Food Facts API |
 | **AI Photo** | Upload food photo → GPT-4o identifies dishes, estimates weights→ add to log |
 | **Exercise Tracking** | 26 built-in exercises with MET values → auto-calculate calories burned |
+| **Inline Editing** | Editable Cal/P/C/F macros in food log + editable Duration/Calories in exercise |
 | **7-Day Chart** | Recharts bar chart with calorie trend + mini calendar with log indicators |
 | **Custom Foods** | Add your own foods with custom macros |
 | **Copy Yesterday** | One-click copy of yesterday's food log |
-| **Mobile Optimized** | Bottom nav bar, touch swipe date, expandable food rows, 2x2 stats grid |
+| **Fullscreen Mode** | Mobile-only toggle — hides header/sidebar for immersive nutrition tracking |
+| **Mobile Optimized** | 80px bottom nav (24px icons), active dot indicator, safe-area padding |
 
-#### 5-Tab Layout
+#### 6-Tab Layout
 
 | Tab | Icon | Function |
 |-----|------|----------|
-| Dashboard | Gauge | Dual-ring budget, macro rings, food log, exercise section |
-| Search | Search | Food lookup + add to log with weight/meal controls |
-| AI Photo | Sparkles | Drag-drop food image → AI analysis → confirm & add |
+| Home | PieChart | Dual calories cards, Quick Add Favorites (In/Out), macro rings, food log, exercise |
+| Calories In | Search | Food lookup + add to log with weight/meal controls |
+| Calories Out | TrendingUp | Exercise log with MET calculator, custom calorie entry |
+| AI Photo | Camera | Drag-drop food image → AI analysis → confirm & add |
+| History | History | 7-day bar chart + mini calendar + day detail |
 | Profile | Settings | Body metrics, TDEE calculator, activity level, goal |
-| History | Calendar | 7-day bar chart + mini calendar + day detail |
 
 #### API Endpoints
 
@@ -914,11 +918,15 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | `POST /api/nutrition/profile` | POST | Saves user body data + auto-calculates TDEE |
 | `GET /api/nutrition/logs?date=` | GET | `{ logs, summary: { calories, protein, carbs, fat, count, exercise_calories } }` |
 | `POST /api/nutrition/logs` | POST | Add food entry (looks up nutrition from cache) |
-| `PUT /api/nutrition/logs?id=` | PUT | Update weight/meal_type |
+| `PUT /api/nutrition/logs?id=` | PUT | Update weight/meal_type, or direct macro override (calories/protein/carbs/fat) |
 | `DELETE /api/nutrition/logs?id=` | DELETE | Remove food entry |
 | `GET /api/nutrition/exercise?date=` | GET | `{ exercises[], total_burned }` |
 | `POST /api/nutrition/exercise` | POST | Add exercise (calories = MET × weight(kg) × hours) |
+| `PUT /api/nutrition/exercise?id=` | PUT | Update duration (auto-recalc from MET) or direct calorie override |
 | `DELETE /api/nutrition/exercise?id=` | DELETE | Remove exercise entry |
+| `GET /api/nutrition/favorites` | GET | `{ favorites: {in, out}, suggested: {in, out} }` — curated + auto-suggested |
+| `POST /api/nutrition/favorites` | POST | Pin a food/exercise to favorites (`type`, `name`, `calories`, ...) |
+| `DELETE /api/nutrition/favorites?id=` | DELETE | Remove from favorites |
 | `GET /api/nutrition/exercises` | GET | 26-exercise MET reference table |
 | `GET /api/nutrition/search?q=` | GET | Search foods (local DB → custom → Open Food Facts) |
 | `POST /api/nutrition/custom` | POST | Add custom food |
@@ -945,6 +953,7 @@ Remaining = Target - Net  (red if negative → over budget)
 | `user_profiles` | Body metrics, activity level, goal, TDEE targets |
 | `food_nutrition_cache` | 120+ curated Taiwanese/Asian foods + API cache |
 | `user_custom_foods` | User-defined foods |
+| `user_quick_favorites` | Per-user curated favorites (type: 'in' food / 'out' exercise) |
 | `daily_food_logs` | Every food entry per user per day |
 | `exercise_logs` | Exercise records with MET-based calorie calculation |
 
