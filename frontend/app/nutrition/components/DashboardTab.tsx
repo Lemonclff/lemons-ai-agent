@@ -133,7 +133,7 @@ export function DashboardTab({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-2 md:pb-0">
       {/* ============================================
           Dual Calories Cards — modern card layout
           ============================================ */}

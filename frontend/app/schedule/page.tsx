@@ -15,6 +15,9 @@ import {
   Check,
   ShieldAlert,
   Loader2,
+  Send,
+  Bot,
+  Edit3,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +36,11 @@ interface CronJob {
   status: "active" | "paused" | "failed" | "running";
   script: string;
   tags: string[];
+  // Hermes-specific fields
+  deliver?: string;
+  last_run_at?: string;
+  next_run_at?: string;
+  last_status?: string;
 }
 
 /* ===== Components ===== */
@@ -55,6 +63,153 @@ function DetailItem({ label, value, icon }: { label: string; value: string; icon
         <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">{label}</p>
         <p className="text-sm font-mono truncate">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function ScheduleEditor({
+  schedule,
+  scheduleLabel,
+  onSave,
+  loading,
+}: {
+  schedule: string;
+  scheduleLabel: string;
+  onSave: (newSchedule: string) => void;
+  loading: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [input, setInput] = useState(schedule);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { setInput(schedule); }, [schedule]);
+  useEffect(() => { if (saved) { const t = setTimeout(() => setSaved(false), 2000); return () => clearTimeout(t); } }, [saved]);
+
+  const presets = [
+    { label: "Every 15 min (all days)", value: "*/15 * * * *" },
+    { label: "Every 30 min (all days)", value: "*/30 * * * *" },
+    { label: "Every hour (all days)", value: "0 * * * *" },
+    { label: "Daily 9am (all days)", value: "0 9 * * *" },
+    { label: "Daily 9am+9pm (all days)", value: "0 9,21 * * *" },
+    { label: "Weekdays 8-17", value: "30 8-17 * * 1-5" },
+    { label: "Weekdays 8-17 every 15m", value: "*/15 8-17 * * 1-5" },
+    { label: "Disabled", value: "0 0 30 2 *" },
+  ];
+
+  const handleSave = () => {
+    onSave(input);
+    setSaved(true);
+    setEditing(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Clock size={14} className="text-[var(--color-text-muted)] shrink-0" />
+        <span className="text-xs text-[var(--color-text-muted)]">Schedule:</span>
+        {editing ? (
+          <div className="flex items-center gap-1 flex-1">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 px-2 py-1 text-xs font-mono rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+              placeholder="cron expression"
+            />
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={handleSave} disabled={loading || input.trim() === schedule}>
+              {saved ? <Check size={12} className="text-emerald-400" /> : <Check size={12} />}
+            </Button>
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setEditing(false)} disabled={loading}>
+              ✕
+            </Button>
+          </div>
+        ) : (
+          <>
+            <code className="text-xs font-mono bg-[var(--color-surface-elevated)] px-2 py-0.5 rounded">{schedule}</code>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setEditing(true)} disabled={loading} title="Edit schedule">
+              <Edit3 size={12} />
+            </Button>
+          </>
+        )}
+      </div>
+      {editing && (
+        <div className="flex flex-wrap gap-1 pl-6">
+          {presets.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setInput(p.value)}
+              className={cn(
+                "px-2 py-0.5 text-[10px] rounded-full border transition-all",
+                input === p.value
+                  ? "bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)]"
+                  : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]"
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {!editing && scheduleLabel && scheduleLabel !== schedule && (
+        <p className="text-[10px] text-[var(--color-text-muted)] pl-6">{scheduleLabel}</p>
+      )}
+    </div>
+  );
+}
+
+function DeliverToggle({
+  deliver,
+  jobId,
+  onChange,
+  loading,
+}: {
+  deliver?: string;
+  jobId: string;
+  onChange: (target: string) => void;
+  loading: boolean;
+}) {
+  const hasTg = deliver === "telegram" || deliver === "telegram,origin" || deliver === "all";
+  const hasOrigin = deliver === "origin" || deliver === "telegram,origin";
+
+  return (
+    <div className="flex items-center gap-2">
+      <Bot size={14} className="text-[var(--color-text-muted)] shrink-0" />
+      <span className="text-xs text-[var(--color-text-muted)]">Push:</span>
+      <button
+        onClick={() => onChange("telegram")}
+        disabled={loading || hasTg}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 text-[10px] rounded-full border transition-all",
+          hasTg
+            ? "bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)]"
+            : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]"
+        )}
+      >
+        <Send size={10} /> Telegram
+      </button>
+      <button
+        onClick={() => onChange("origin")}
+        disabled={loading || hasOrigin}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 text-[10px] rounded-full border transition-all",
+          hasOrigin
+            ? "bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)]"
+            : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]"
+        )}
+      >
+        <Send size={10} /> Origin (current chat)
+      </button>
+      <button
+        onClick={() => onChange("")}
+        disabled={loading}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 text-[10px] rounded-full border transition-all",
+          !deliver || deliver === ""
+            ? "bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)]"
+            : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]"
+        )}
+      >
+        <Send size={10} /> None
+      </button>
     </div>
   );
 }
@@ -119,7 +274,6 @@ export default function SchedulePage() {
     });
   };
 
-  // Check admin on mount
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -127,7 +281,6 @@ export default function SchedulePage() {
       .catch(() => setIsAdmin(false));
   }, []);
 
-  // Fetch jobs
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
@@ -150,7 +303,6 @@ export default function SchedulePage() {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Control action
   async function handleAction(jobId: string, action: "pause" | "resume" | "run") {
     setActionLoading(jobId);
     setFeedback("");
@@ -161,7 +313,6 @@ export default function SchedulePage() {
         const labels = { pause: "已暫停", resume: "已恢復", run: "已觸發執行" };
         setFeedback(`${jobId}: ${labels[action]}`);
         setTimeout(() => setFeedback(""), 3000);
-        // Refresh list
         const refresh = await fetch("/api/cron?action=list");
         const refreshData = await refresh.json();
         if (refreshData.ok) setJobs(refreshData.jobs || []);
@@ -175,7 +326,55 @@ export default function SchedulePage() {
     }
   }
 
-  // Loading state
+  async function handleUpdateSchedule(jobId: string, newSchedule: string) {
+    setActionLoading(jobId);
+    setFeedback("");
+    try {
+      // Determine current status from jobs list
+      const job = jobs.find((j) => j.id === jobId);
+      const localStatus = job?.status === "paused" ? "paused" : "active";
+      const res = await fetch(`/api/cron?action=update_schedule&schedule=${encodeURIComponent(newSchedule)}&job_id=${jobId}&local_status=${localStatus}`);
+      const data = await res.json();
+      if (data.ok) {
+        const msg = `已更新排程: ${newSchedule}`;
+        setFeedback(msg);
+        setTimeout(() => setFeedback(""), 3000);
+        const refresh = await fetch("/api/cron?action=list");
+        const refreshData = await refresh.json();
+        if (refreshData.ok) setJobs(refreshData.jobs || []);
+      } else {
+        setError(data.error || "更新失敗");
+      }
+    } catch {
+      setError("連線失敗");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpdateDeliver(jobId: string, deliver: string) {
+    setActionLoading(jobId);
+    setFeedback("");
+    try {
+      const res = await fetch(`/api/cron?action=update_deliver&deliver=${encodeURIComponent(deliver)}&job_id=${jobId}`);
+      const data = await res.json();
+      if (data.ok) {
+        const label = deliver === "" ? "已關閉推送" : `推送已設為 ${deliver}`;
+        setFeedback(label);
+        setTimeout(() => setFeedback(""), 3000);
+        const refresh = await fetch("/api/cron?action=list");
+        const refreshData = await refresh.json();
+        if (refreshData.ok) setJobs(refreshData.jobs || []);
+      } else {
+        setError(data.error || "更新失敗");
+      }
+    } catch {
+      setError("連線失敗");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   if (isAdmin === null) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -184,7 +383,6 @@ export default function SchedulePage() {
     );
   }
 
-  // Non-admin
   if (!isAdmin) {
     return (
       <div className="max-w-lg mx-auto py-20 text-center">
@@ -196,14 +394,14 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between max-sm:flex-col max-sm:gap-3 max-sm:items-start">
         <div>
           <h1 className="text-2xl font-bold">Schedule & Automation</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Manage cron jobs for quantitative analysis and automated reporting.</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Manage cron jobs — pause, resume, schedule, and Telegram delivery.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchJobs} disabled={loading}>
+        <Button variant="secondary" size="sm" onClick={fetchJobs} disabled={loading}>
           <RefreshCw size={14} className={cn(loading && "animate-spin")} />
           <span className="ml-2">Refresh</span>
         </Button>
@@ -225,16 +423,13 @@ export default function SchedulePage() {
         ))}
       </div>
 
-      {/* Feedback toast */}
+      {/* Feedback */}
       {feedback && (
         <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400 animate-[slideIn_0.3s_ease-out]">{feedback}</div>
       )}
-
       {error && (
         <div className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>
       )}
-
-      {/* Content */}
       {tab === "jobs" ? (
         loading ? (
           <div className="flex items-center justify-center py-16">
@@ -245,6 +440,8 @@ export default function SchedulePage() {
             {jobs.map((job) => {
               const isBusy = actionLoading === job.id;
               const expanded = expandedIds.has(job.id);
+              const isMacro = job.id === "macro-economic";
+              const hasTelegram = job.deliver === "telegram" || job.deliver === "telegram,origin" || job.deliver === "all";
 
               return (
                 <Card key={job.id} className={cn("group transition-all duration-200", expanded && "border-[var(--color-accent)]/50")}>
@@ -254,6 +451,7 @@ export default function SchedulePage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-semibold truncate">{job.name}</h3>
+                        {isMacro && <Badge variant="accent" size="sm">Hermes</Badge>}
                         <Badge
                           variant={job.status === "active" ? "success" : job.status === "paused" ? "warning" : job.status === "failed" ? "danger" : "info"}
                           size="sm"
@@ -264,36 +462,18 @@ export default function SchedulePage() {
                       <p className="text-xs text-[var(--color-text-muted)] mt-1 truncate">{job.schedule_label}</p>
                     </div>
 
-                    {/* Action buttons */}
+                    {/* Quick action buttons */}
                     <div className="flex items-center gap-1 shrink-0">
                       {job.status !== "active" ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleAction(job.id, "resume")}
-                          disabled={isBusy}
-                          title="Resume"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleAction(job.id, "resume")} disabled={isBusy} title="Resume">
                           {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} className="text-emerald-400" />}
                         </Button>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleAction(job.id, "pause")}
-                          disabled={isBusy}
-                          title="Pause"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleAction(job.id, "pause")} disabled={isBusy} title="Pause">
                           {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Pause size={14} className="text-amber-400" />}
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleAction(job.id, "run")}
-                        disabled={isBusy}
-                        title="Run now"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleAction(job.id, "run")} disabled={isBusy} title="Run now">
                         {isBusy ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => toggleExpand(job.id)}>
@@ -307,10 +487,35 @@ export default function SchedulePage() {
                     <div className="mt-4 pt-4 border-t border-[var(--color-border)] space-y-4">
                       <p className="text-sm text-[var(--color-text-secondary)]">{job.description || "No description"}</p>
 
+                      {/* Schedule Editor (macro-economic only, since only Hermes cron supports real-time schedule changes) */}
+                      {isMacro && (
+                        <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                          <ScheduleEditor
+                            schedule={job.schedule || "*/15 * * * *"}
+                            scheduleLabel={job.schedule_label}
+                            onSave={(newSchedule) => handleUpdateSchedule(job.id, newSchedule)}
+                            loading={isBusy}
+                          />
+                        </div>
+                      )}
+
+                      {/* Deliver Toggle (macro-economic only) */}
+                      {isMacro && (
+                        <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                          <DeliverToggle
+                            deliver={job.deliver || ""}
+                            jobId={job.id}
+                            onChange={(deliver) => handleUpdateDeliver(job.id, deliver)}
+                            loading={isBusy}
+                          />
+                        </div>
+                      )}
+
+                      {/* Time info */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <DetailItem label="Cron Expression" value={job.schedule || "—"} icon={<Clock size={14} />} />
-                        <DetailItem label="Last Run" value={job.last_run ? timeAgo(job.last_run) : "Never"} icon={<RefreshCw size={14} />} />
-                        <DetailItem label="Next Run" value={job.next_run || "—"} icon={<Calendar size={14} />} />
+                        <DetailItem label="Cron" value={job.schedule || "—"} icon={<Clock size={14} />} />
+                        <DetailItem label="Last Run" value={job.last_run || job.last_run_at ? (job.last_run_at || job.last_run || "") : "Never"} icon={<RefreshCw size={14} />} />
+                        <DetailItem label="Next Run" value={job.next_run || job.next_run_at || "—"} icon={<Calendar size={14} />} />
                       </div>
 
                       {/* Script */}

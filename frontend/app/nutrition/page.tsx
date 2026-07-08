@@ -517,7 +517,7 @@ export default function NutritionPage() {
   /* ---- Render ---- */
   return (
     <>
-    <div className={`w-full max-w-[960px] mx-auto pb-[96px] md:pb-0 ${fullscreen ? 'hidden' : ''}`}>
+    <div className={`w-full max-w-[960px] mx-auto pb-[104px] md:pb-0 ${fullscreen ? 'hidden' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between mt-2 mb-4">
         <div className="flex items-center gap-2">
@@ -623,7 +623,7 @@ export default function NutritionPage() {
         </div>
 
         {/* Tab content — scrollable */}
-        <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="flex-1 overflow-y-auto px-3 pt-3 pb-4">
           {page === "dashboard" && (
             <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
               filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}

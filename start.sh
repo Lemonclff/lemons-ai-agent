@@ -15,16 +15,33 @@ echo "  $(date '+%Y-%m-%d %H:%M:%S')"
 echo "========================================"
 echo ""
 
-# ---- 1. PostgreSQL (Docker) ----
-echo "[1/3] PostgreSQL (Docker)..."
-if docker ps --format '{{.Names}}' | grep -q '^lemonhermes-postgres$'; then
-    echo "  → 已經運行中"
-else
-    echo "  → 啟動 container..."
-    docker start lemonhermes-postgres 2>/dev/null || {
-        echo "  ⚠ 無法啟動 PostgreSQL container，請確認 Docker Desktop 已運行"
-    }
+# ---- 1. Docker Desktop readiness ----
+echo "[1/3] Docker + PostgreSQL..."
+# Wait for Docker daemon to be ready (up to 30 seconds at boot)
+DOCKER_READY=false
+for i in $(seq 1 15); do
+    if docker ps >/dev/null 2>&1; then
+        DOCKER_READY=true
+        break
+    fi
+    [ $i -eq 1 ] && echo "  → 等候 Docker Desktop 就緒..."
+    printf "."
     sleep 2
+done
+echo ""
+if [ "$DOCKER_READY" = true ]; then
+    echo "  → Docker Desktop ✅"
+    if docker ps --format '{{.Names}}' | grep -q '^lemonhermes-postgres$'; then
+        echo "  → PostgreSQL 已經運行中 ✅"
+    else
+        echo "  → 啟動 PostgreSQL container..."
+        docker start lemonhermes-postgres 2>/dev/null || {
+            echo "  ⚠ 無法啟動 PostgreSQL container"
+        }
+        sleep 2
+    fi
+else
+    echo "  ⚠ Docker Desktop 未能啟動，PostgreSQL 跳過（Next.js 可能無法登入）"
 fi
 
 # ---- 2. Next.js (port 3000) ----
