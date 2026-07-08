@@ -69,24 +69,84 @@ export async function POST(req: NextRequest) {
   await ensureTable();
   try {
     const body = await req.json();
-    const { exercise_name, duration_min, log_date } = body;
-    if (!exercise_name || !duration_min) {
-      return NextResponse.json({ error: "exercise_name and duration_min required" }, { status: 400 });
+    const { exercise_name, duration_min, log_date, calories_burned } = body;
+    if (!exercise_name || (!duration_min && !calories_burned)) {
+      return NextResponse.json({ error: "exercise_name and either duration_min or calories_burned required" }, { status: 400 });
     }
 
-    const met = MET_TABLE[exercise_name];
-    if (!met) {
-      return NextResponse.json({ error: `Unknown exercise: ${exercise_name}` }, { status: 400 });
-    }
-
-    const weightKg = await getUserWeight();
-    const calories = calcCalories(met, weightKg, Number(duration_min));
     const date = log_date || new Date().toISOString().slice(0, 10);
+    let met: number | null = null;
+    let calories: number;
+
+    if (calories_burned !== undefined && calories_burned !== null) {
+      // Custom calories — use directly
+      calories = Number(calories_burned);
+      met = 0; // custom, no MET
+    } else {
+      // Calculate from MET table
+      met = MET_TABLE[exercise_name] || null;
+      if (met === null) {
+        return NextResponse.json({ error: `Unknown exercise: ${exercise_name}. Provide calories_burned for custom exercises.` }, { status: 400 });
+      }
+      const weightKg = await getUserWeight();
+      calories = calcCalories(met, weightKg, Number(duration_min));
+    }
 
     const result = await query(
       `INSERT INTO exercise_logs (user_id, log_date, exercise_name, duration_min, met_value, calories_burned)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [UID, date, exercise_name, duration_min, met, calories]
+      [UID, date, exercise_name, duration_min || 0, met || 0, calories]
+    );
+
+    return NextResponse.json({ entry: result.rows[0] });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  try {
+    const body = await req.json();
+    const { duration_min, calories_burned } = body;
+
+    // Fetch current record
+    const existing = await query(
+      `SELECT * FROM exercise_logs WHERE id = $1 AND user_id = $2`,
+      [id, UID]
+    );
+    if (existing.rows.length === 0) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+
+    const rec = existing.rows[0];
+    const newDuration = duration_min !== undefined ? Number(duration_min) : rec.duration_min;
+    let newCalories = rec.calories_burned;
+    let newMet = rec.met_value;
+
+    if (calories_burned !== undefined && calories_burned !== null) {
+      // User directly set calories — use as-is, mark as custom (met=0)
+      newCalories = Number(calories_burned);
+      newMet = 0;
+    } else if (duration_min !== undefined) {
+      // Duration changed — recalculate from MET if known
+      const met = MET_TABLE[rec.exercise_name];
+      if (met) {
+        const weightKg = await getUserWeight();
+        newCalories = calcCalories(met, weightKg, newDuration);
+        newMet = met;
+      } else {
+        // Custom exercise without MET — keep existing calories
+        newCalories = rec.calories_burned;
+      }
+    }
+
+    const result = await query(
+      `UPDATE exercise_logs SET duration_min=$1, met_value=$2, calories_burned=$3
+       WHERE id=$4 AND user_id=$5 RETURNING *`,
+      [newDuration, newMet, newCalories, id, UID]
     );
 
     return NextResponse.json({ entry: result.rows[0] });

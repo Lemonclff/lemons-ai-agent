@@ -141,6 +141,19 @@ const SEED_FOODS: Array<[string, string, number, number, number, number]> = [
   ["牛奶", "Milk", 65, 3.2, 4.8, 3.5],
   ["拿鐵咖啡", "Caffe latte", 45, 2.5, 4.0, 2.0],
   ["珍珠奶茶(中杯)", "Bubble milk tea medium", 90, 0.8, 18.0, 2.0],
+
+  // Desserts & Sweets
+  ["麻糬", "Mochi", 230, 4.0, 50.0, 1.5],
+  ["刨冰", "Shaved ice", 120, 0.5, 28.0, 0.2],
+  ["冰淇淋", "Ice cream", 210, 3.5, 24.0, 11.0],
+  ["抹茶拿鐵", "Matcha latte", 60, 3.0, 8.0, 2.0],
+  ["鮮奶油", "Whipped cream", 340, 2.0, 3.0, 36.0],
+  ["芒果", "Mango", 60, 0.8, 15.0, 0.4],
+  ["奶茶", "Milk tea", 70, 1.0, 12.0, 2.0],
+  ["桂花", "Osmanthus", 0, 0, 0, 0],
+  ["黑芝麻", "Black sesame", 570, 18.0, 23.0, 50.0],
+  ["花生", "Peanut", 567, 26.0, 16.0, 49.0],
+  ["抹茶粉", "Matcha powder", 320, 30.0, 37.0, 5.0],
 ];
 
 async function seedLocalFoods() {

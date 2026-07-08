@@ -5,7 +5,7 @@ const UID = 1;
 
 export async function GET(req: NextRequest) {
   const dateStr = req.nextUrl.searchParams.get("date") || new Date().toISOString().slice(0, 10);
-  const endDate = new Date(dateStr + "T00:00:00");
+  const endDate = new Date(dateStr + "T12:00:00");
   const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - 6);
 
@@ -27,7 +27,15 @@ export async function GET(req: NextRequest) {
       daily[key] = { calories: 0, protein: 0, carbs: 0, fat: 0 };
     }
     for (const row of result.rows) {
-      const d = typeof row.log_date === "string" ? row.log_date.slice(0, 10) : String(row.log_date).slice(0, 10);
+      const raw = row.log_date;
+      let d: string;
+      if (typeof raw === "string") {
+        d = raw.slice(0, 10);
+      } else if (raw instanceof Date) {
+        d = `${raw.getFullYear()}-${String(raw.getMonth()+1).padStart(2,"0")}-${String(raw.getDate()).padStart(2,"0")}`;
+      } else {
+        d = String(raw).slice(0, 10);
+      }
       daily[d] = {
         calories: Math.round(Number(row.total_cal) || 0),
         protein: parseFloat((Number(row.total_protein) || 0).toFixed(1)),

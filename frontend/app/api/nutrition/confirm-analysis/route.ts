@@ -46,6 +46,17 @@ export async function POST(req: NextRequest) {
       }
 
       if (!nutrition) {
+        // Use AI estimate if provided
+        if (dish.ai_calories !== undefined) {
+          await query(
+            `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, weight_grams, calories, protein, carbs, fat, source)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ai_photo')`,
+            [UID, date, meal_type || "lunch", name, weight,
+             dish.ai_calories || 0, dish.ai_protein || 0, dish.ai_carbs || 0, dish.ai_fat || 0]
+          );
+          added.push({ name, status: "added_ai", weight });
+          continue;
+        }
         // Unknown food — insert with zero nutrition
         await query(
           `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, weight_grams, calories, protein, carbs, fat, source)

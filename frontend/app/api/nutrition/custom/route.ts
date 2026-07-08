@@ -2,10 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
 /* ================================================================
-   Custom Foods API
-   POST /api/nutrition/custom
-   Body: { food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g }
+   Custom Foods API — Full CRUD
+   GET    /api/nutrition/custom              — list all custom foods
+   POST   /api/nutrition/custom              — create custom food
+   PUT    /api/nutrition/custom?id=1         — update custom food
+   DELETE /api/nutrition/custom?id=1         — delete custom food
    ================================================================ */
+
+const UID = 1;
+
+export async function GET() {
+  try {
+    const result = await query(
+      `SELECT * FROM user_custom_foods WHERE user_id = $1 ORDER BY food_name`,
+      [UID]
+    );
+    return NextResponse.json({ foods: result.rows });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,15 +32,81 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "food_name is required" }, { status: 400 });
     }
 
-    // Default user_id=1 for now (auth not enforced yet; see plan)
-    const result = await query(
-      `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [1, food_name, calories_per_100g ?? 0, protein_per_100g ?? 0, carbs_per_100g ?? 0, fat_per_100g ?? 0]
+    // Check if food already exists for this user
+    const existing = await query(
+      `SELECT id FROM user_custom_foods WHERE user_id = $1 AND food_name ILIKE $2`,
+      [UID, food_name]
     );
 
+    let result;
+    if (existing.rows.length > 0) {
+      // Update existing
+      result = await query(
+        `UPDATE user_custom_foods SET
+           calories_per_100g = $1, protein_per_100g = $2, carbs_per_100g = $3, fat_per_100g = $4
+         WHERE id = $5 AND user_id = $6
+         RETURNING *`,
+        [calories_per_100g ?? 0, protein_per_100g ?? 0, carbs_per_100g ?? 0, fat_per_100g ?? 0, existing.rows[0].id, UID]
+      );
+    } else {
+      // Insert new
+      result = await query(
+        `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [UID, food_name, calories_per_100g ?? 0, protein_per_100g ?? 0, carbs_per_100g ?? 0, fat_per_100g ?? 0]
+      );
+    }
+
     return NextResponse.json({ food: result.rows[0] });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const id = req.nextUrl.searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+    const body = await req.json();
+    const { food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g } = body;
+
+    const result = await query(
+      `UPDATE user_custom_foods SET
+         food_name = COALESCE($1, food_name),
+         calories_per_100g = COALESCE($2, calories_per_100g),
+         protein_per_100g = COALESCE($3, protein_per_100g),
+         carbs_per_100g = COALESCE($4, carbs_per_100g),
+         fat_per_100g = COALESCE($5, fat_per_100g)
+       WHERE id = $6 AND user_id = $7
+       RETURNING *`,
+      [food_name || null, calories_per_100g ?? null, protein_per_100g ?? null, carbs_per_100g ?? null, fat_per_100g ?? null, id, UID]
+    );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({ food: result.rows[0] });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const id = req.nextUrl.searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+    const result = await query(
+      `DELETE FROM user_custom_foods WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [id, UID]
+    );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({ deleted: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
