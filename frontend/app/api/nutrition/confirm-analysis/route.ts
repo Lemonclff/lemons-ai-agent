@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
 
     for (const dish of dishes) {
       const name: string = dish.name;
-      const unit: string = dish.serving_unit || 'g';
-      const amount: number = dish.amount ?? dish.estimated_weight_grams ?? 100;
-      const gramsPerServing: number = dish.estimated_weight_grams || 100;
+      const unit: string = dish.unit || dish.serving_unit || 'g';
+      const amount: number = dish.amount ?? dish.grams_per_serving ?? dish.estimated_weight_grams ?? 100;
+      const gramsPerServing: number = dish.grams_per_serving || dish.estimated_weight_grams || 100;
       const isWeightUnit = unit === 'g' || unit === 'ml';
       // Nutrition calc always uses grams
       const calcGrams = isWeightUnit ? amount : amount * gramsPerServing;

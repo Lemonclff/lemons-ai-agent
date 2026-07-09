@@ -12,64 +12,88 @@ const SYSTEM_PROMPT_TEXT = `You are a precise food nutrition analyzer for a calo
   "dishes": [
     {
       "name": "白飯",
-      "estimated_weight_grams": 150,
-      "suggested_unit": "碗",
+      "amount": 1,
+      "unit": "碗",
+      "grams_per_serving": 150,
       "confidence": 95,
       "note": "約一碗標準白飯",
       "calories": 195,
       "protein_g": 4.0,
       "carbs_g": 43.0,
       "fat_g": 0.4
+    },
+    {
+      "name": "乳清蛋白粉",
+      "amount": 2,
+      "unit": "匙",
+      "grams_per_serving": 30,
+      "confidence": 95,
+      "note": "兩平匙份量",
+      "calories": 240,
+      "protein_g": 44.0,
+      "carbs_g": 8.0,
+      "fat_g": 3.0
     }
   ],
-  "overall_note": "這餐約600大卡，蛋白質偏低，建議增加肉類或豆製品"
+  "overall_note": "這餐約600大卡，蛋白質充足，建議增加蔬菜攝取"
 }
 
 CRITICAL RULES — follow exactly:
-1. estimated_weight_grams = the WEIGHT IN GRAMS of what you see in the photo.
-   - For a bowl of rice: ~150g (one bowl)
-   - For a piece of chicken breast: ~150g
-   - For a can of soda: ~355g (standard can)
-   - For a scoop of protein powder: ~30g (one scoop)
-   This is ALWAYS grams. Never enter a serving count here.
 
-2. suggested_unit — pick the most natural way to describe this portion:
-   - g/ml: for items poured/weighed (rice by weight, oil, sauces, liquids)
-   - 碗: bowl-sized portions (rice, noodles, soup)
-   - 杯: cup/glass (drinks, smoothies, ice cream)
-   - 個: countable whole items (apple, egg, bread roll, dumpling)
-   - 份: generic serving (set meals, combo plates)
-   - 碟: plate-sized portions
-   - 包: packaged items (snack bag, instant noodles)
-   - 罐/瓶: canned/bottled items
-   - 匙: spoon-sized (powder, sugar, sauce by spoon)
-   - 片/塊: sliced/piece items (bread slice, pizza slice, meat chunk)
+1. name: Food name in Traditional Chinese. Be specific (e.g. "炒青菜" not just "菜").
 
-3. Nutrition values (calories, protein_g, carbs_g, fat_g):
-   Estimate for the TOTAL weight in estimated_weight_grams.
-   Be accurate — use your food knowledge. Common references:
-   - Rice (cooked): ~130 kcal/100g
-   - Chicken breast (cooked): ~165 kcal/100g, 31g protein
-   - Egg (1個≈50g): ~78 kcal, 6g protein
-   - Cooking oil: ~900 kcal/100g (account for oil used in cooking!)
-   - Vegetables: ~25-40 kcal/100g
-   - For mixed/takeout dishes, estimate ingredients and add 10-20% for oil/sauce.
+2. amount + unit: The portion you see, expressed naturally.
+   - For a bowl of rice: amount=1, unit="碗"
+   - For 200g of chicken: amount=200, unit="g"
+   - For 2 scoops of powder: amount=2, unit="匙"
+   - For a can of soda: amount=1, unit="罐"
+   - For 3 slices of bread: amount=3, unit="片"
+   Use the unit that makes the amount most intuitive.
 
-4. confidence (0-100): How sure are you?
-   - 90-100: clearly identifiable single food
-   - 70-89: recognizable dish with some uncertainty
-   - 50-69: partially visible or mixed dish
-   - <50: don't include this dish
+3. grams_per_serving: How many GRAMS is ONE unit of this amount?
+   - 1碗 rice ≈ 150g → grams_per_serving=150
+   - 1匙 protein powder ≈ 30g → grams_per_serving=30
+   - 200g chicken (unit="g") → grams_per_serving=200
+   - 1罐 soda ≈ 355g → grams_per_serving=355
+   - 1個 egg ≈ 50g → grams_per_serving=50
+   - 1片 bread ≈ 30g → grams_per_serving=30
+   This lets us calculate: total_grams = amount × grams_per_serving (for non-g/ml units)
+   For g/ml units, grams_per_serving = amount (same value).
 
-5. note: Brief Traditional Chinese note (≤20 chars). Mention portion size, cooking method, or key observation.
-   E.g. "標準一碗" "炸物含油較高" "約兩湯匙份量"
+4. Unit guide — pick the most natural:
+   - g: weighed items (meat, vegetables by weight)
+   - ml: liquids poured (milk, juice, oil)
+   - 碗: bowl-sized (rice, noodles, soup)
+   - 杯: cup/glass (drinks, smoothies)
+   - 個: whole items (egg, apple, bun, dumpling)
+   - 份: set meal / combo plate
+   - 碟: plate-sized (stir-fry, main dish)
+   - 包: packaged (snack bag, instant noodles)
+   - 罐/瓶: canned/bottled
+   - 匙: spoon-sized (powder, sauce, sugar)
+   - 片/塊: sliced/chunk (bread, pizza, meat chunk)
 
-6. overall_note: 1-2 sentence Traditional Chinese summary of the meal. Include:
-   - Estimated total calories
-   - Key nutrition observation (high protein? high carb? lacking vegetables?)
-   - Practical suggestion if relevant
+5. Nutrition (calories, protein_g, carbs_g, fat_g):
+   Calculate for the TOTAL grams (amount × grams_per_serving).
+   Reference values per 100g:
+   - Rice (cooked): 130 kcal, 2.7g protein, 28g carbs, 0.3g fat
+   - Chicken breast: 165 kcal, 31g protein, 0g carbs, 3.6g fat
+   - Egg (whole): 155 kcal, 13g protein, 1g carbs, 11g fat
+   - Cooking oil: 900 kcal/100g — ALWAYS account for oil in cooking!
+   - Vegetables: 25-40 kcal, 1-3g protein, 3-7g carbs
+   - For takeout/mixed dishes, add 10-20% extra for oil/sauce.
 
-IMPORTANT: Return ONLY the JSON object. No markdown code blocks, no explanations.`;
+6. confidence (0-100):
+   - 90-100: clearly identifiable, portion clear
+   - 70-89: recognizable, portion estimated
+   - 50-69: partially visible or mixed
+   - <50: skip this dish
+
+7. note: Brief Traditional Chinese (≤20 chars). Portion, cooking method, or key observation.
+
+8. overall_note: Traditional Chinese summary. Include estimated total calories, nutrition highlight, and a practical suggestion.
+
+IMPORTANT: Return ONLY the JSON object. No markdown, no explanations.`;
 
 export function PhotoTab({
   photoFile, setPhotoFile, photoPreview, setPhotoPreview,
@@ -263,8 +287,8 @@ export function PhotoTab({
             </div>
             {photoResult.dishes?.map((d: any, i: number) => {
               const nutrition = photoNutrition[d.name];
-              const rawWeight = d.estimated_weight_grams || 100;
-              const unit = photoUnits?.[i] || d.suggested_unit || 'g';
+              const rawWeight = d.grams_per_serving || d.estimated_weight_grams || 100;
+              const unit = photoUnits?.[i] || d.unit || d.suggested_unit || 'g';
               const isWeightUnit = unit === 'g' || unit === 'ml';
               // For serving units (碗/杯/匙/etc), default to 1 serving; weight shows in note
               const weight = photoEditedWeights[i] || (isWeightUnit ? rawWeight : 1);
