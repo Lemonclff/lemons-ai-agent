@@ -359,17 +359,26 @@ export function PhotoTab({
             })}
           </div>
 
-          {/* Totals */}
+          {/* Totals — prefer AI nutrition values, fall back to database search */}
           {(() => {
             let totCal = 0, totP = 0, totC = 0, totF = 0;
             photoResult.dishes.forEach((d: any, i: number) => {
-              const n = photoNutrition[d.name];
-              const rawGrams = d.grams_per_serving || d.estimated_weight_grams || 100;
-              const displayUnit = photoUnits?.[i] || d.unit || d.suggested_unit || 'g';
-              const displayWeight = photoEditedWeights[i] || ((displayUnit === 'g' || displayUnit === 'ml') ? rawGrams : 1);
-              // Nutrition always uses grams — if user entered servings, convert back
-              const calcGrams = (displayUnit === 'g' || displayUnit === 'ml') ? displayWeight : displayWeight * rawGrams;
-              if (n) { const f = calcGrams / 100; totCal += n.calories_per_100g * f; totP += n.protein_per_100g * f; totC += n.carbs_per_100g * f; totF += n.fat_per_100g * f; }
+              if (!selectedDishes.has(i)) return; // only count selected dishes
+              const aiNut = editedNutrition?.[i];
+              if (aiNut && (aiNut.cal || aiNut.p || aiNut.c || aiNut.f)) {
+                // Use AI-provided per-serving nutrition directly
+                totCal += aiNut.cal || 0;
+                totP += aiNut.p || 0;
+                totC += aiNut.c || 0;
+                totF += aiNut.f || 0;
+              } else {
+                const n = photoNutrition[d.name];
+                const rawGrams = d.grams_per_serving || d.estimated_weight_grams || 100;
+                const displayUnit = photoUnits?.[i] || d.unit || d.suggested_unit || 'g';
+                const displayWeight = photoEditedWeights?.[i] || ((displayUnit === 'g' || displayUnit === 'ml') ? rawGrams : 1);
+                const calcGrams = (displayUnit === 'g' || displayUnit === 'ml') ? displayWeight : displayWeight * rawGrams;
+                if (n) { const f = calcGrams / 100; totCal += n.calories_per_100g * f; totP += n.protein_per_100g * f; totC += n.carbs_per_100g * f; totF += n.fat_per_100g * f; }
+              }
             });
             return totCal > 0 ? (
               <div key="totals" className="flex items-center gap-3 p-2 rounded bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20">
