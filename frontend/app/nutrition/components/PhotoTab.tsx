@@ -243,7 +243,12 @@ export function PhotoTab({
                     <span className="text-[13px] font-medium text-[var(--color-text-primary)] truncate flex-1">{d.name}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${d.confidence >= 80 ? "bg-green-500/20 text-green-400" : d.confidence >= 60 ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"}`}>{d.confidence}%</span>
                   </div>
-                  <div className="text-[11px] text-[var(--color-text-muted)] ml-6 mt-1">{d.note}</div>
+                  <div className="text-[11px] text-[var(--color-text-muted)] ml-6 mt-1">
+                    {d.note}
+                    {!isWeightUnit && rawWeight > 0 && (
+                      <span className="ml-1 text-[var(--color-text-muted)]/60">({rawWeight}g per {unit})</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 ml-6 mt-2">
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, weight - 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">−</button>

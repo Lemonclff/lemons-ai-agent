@@ -554,10 +554,16 @@ export default function NutritionPage() {
     try {
       const selectedDishesList = photoResult.dishes.filter((_:any,i:number)=>selectedDishes.has(i)).map((d:any,i:number)=>{
         const aiNut=editedNutrition[i];
+        const rawGrams = d.estimated_weight_grams || 100;
+        const unit = photoUnits[i] || d.suggested_unit || 'g';
+        const isWeight = unit === 'g' || unit === 'ml';
+        // Use display weight for serving units (1匙, not 47匙)
+        const amount = photoEditedWeights[i] ?? (isWeight ? rawGrams : 1);
         return {
           name: d.name,
-          estimated_weight_grams: photoEditedWeights[i] || d.estimated_weight_grams || 100,
-          serving_unit: photoUnits[i] || d.suggested_unit || 'g',
+          amount: amount,
+          serving_unit: unit,
+          estimated_weight_grams: rawGrams,
           ...(aiNut ? { ai_calories: aiNut.cal, ai_protein: aiNut.p, ai_carbs: aiNut.c, ai_fat: aiNut.f } : {}),
         };
       });

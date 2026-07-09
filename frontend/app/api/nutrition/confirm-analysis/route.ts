@@ -12,8 +12,12 @@ export async function POST(req: NextRequest) {
 
     for (const dish of dishes) {
       const name: string = dish.name;
-      const weight: number = dish.estimated_weight_grams || 100;
       const unit: string = dish.serving_unit || 'g';
+      const amount: number = dish.amount ?? dish.estimated_weight_grams ?? 100;
+      const gramsPerServing: number = dish.estimated_weight_grams || 100;
+      const isWeightUnit = unit === 'g' || unit === 'ml';
+      // Nutrition calc always uses grams
+      const calcGrams = isWeightUnit ? amount : amount * gramsPerServing;
 
       // Look up nutrition from cache or custom foods
       const per100 = await query(
@@ -38,23 +42,23 @@ export async function POST(req: NextRequest) {
           await query(
             `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ai_photo')`,
-            [UID, date, meal_type || "lunch", name, weight, unit,
+            [UID, date, meal_type || "lunch", name, amount, unit,
              dish.ai_calories || 0, dish.ai_protein || 0, dish.ai_carbs || 0, dish.ai_fat || 0]
           );
-          added.push({ name, status: "added_ai", weight });
+          added.push({ name, status: "added_ai", amount, unit });
           continue;
         }
         // Unknown food — insert with zero nutrition
         await query(
           `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
            VALUES ($1,$2,$3,$4,$5,$6,0,0,0,0,'ai_unknown')`,
-          [UID, date, meal_type || "lunch", name, weight, unit]
+          [UID, date, meal_type || "lunch", name, amount, unit]
         );
-        added.push({ name, status: "unknown", weight });
+        added.push({ name, status: "unknown", amount, unit });
         continue;
       }
 
-      const factor = Number(weight) / 100;
+      const factor = calcGrams / 100;
       const calories = parseFloat((Number(nutrition.calories_per_100g) * factor).toFixed(1));
       const protein = parseFloat((Number(nutrition.protein_per_100g) * factor).toFixed(1));
       const carbs = parseFloat((Number(nutrition.carbs_per_100g) * factor).toFixed(1));
@@ -63,9 +67,9 @@ export async function POST(req: NextRequest) {
       await query(
         `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ai_photo')`,
-        [UID, date, meal_type || "lunch", name, weight, unit, calories, protein, carbs, fat]
+        [UID, date, meal_type || "lunch", name, amount, unit, calories, protein, carbs, fat]
       );
-      added.push({ name, status: "added", weight });
+      added.push({ name, status: "added", amount, unit });
     }
 
     return NextResponse.json({ added });
