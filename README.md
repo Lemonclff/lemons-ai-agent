@@ -893,9 +893,10 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Auto-Fullscreen (Mobile)** | Opens directly in immersive fullscreen mode on phones (<768px) with bottom tab bar |
 | **Dual Calories Cards** | Orange In card + Green Out card with progress bars + Net Calories pill |
 | **Quick Add Favorites** | Per-user curated In/Out favorites with tab switching, auto-suggest from logs |
-| **Serving Units** | 10 unit types (g/ml/份/碗/杯/罐/瓶/個/包/碟), auto-adjusted weight on unit switch |
+| **Serving Units** | Dynamic from DB (`GET /api/nutrition/logs?action=units`); free-text input for custom units via datalist |
 | **Food Search** | Search 120+ curated Taiwanese foods + Open Food Facts API + unit selector |
-| **AI Photo** | Upload food photo → AI identifies dishes, suggests units, estimates nutrition |
+| **AI Photo Analysis** | Upload food photo → AI identifies dishes with `amount` + `unit` + `grams_per_serving` → per-item nutrition + totals |
+| **AI Photo Prompt** | Optimized prompt with food reference DB (rice ~130kcal, chicken 165kcal, egg 155kcal per 100g); oil/sauce adjustment |
 | **Exercise Tracking** | Simple form: name + duration + calories(optional) → logs to API; card-row exercise list |
 | **Inline Editing** | Editable Cal/P/C/F + serving unit in food log; editable Duration in exercise |
 | **Custom Foods** | Add custom foods with nutrition per 100g; auto-log with unit |
