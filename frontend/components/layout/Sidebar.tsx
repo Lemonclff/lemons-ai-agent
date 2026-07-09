@@ -26,6 +26,7 @@ import {
   Apple,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface NavItem {
   label: string;
@@ -62,23 +63,12 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [_dark, _setDark] = useState(true);
+  const { theme, toggleTheme } = useTheme();
 
   // Close mobile sidebar on route change
   useEffect(() => {
     onMobileClose();
-  }, [pathname]);
-
-  const toggleDark = () => {
-    const html = document.documentElement;
-    const isDark = html.classList.contains("light");
-    if (isDark) {
-      html.classList.remove("light");
-    } else {
-      html.classList.add("light");
-    }
-    _setDark(!isDark);
-  };
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sidebarContent = (
     <aside
@@ -100,12 +90,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <Terminal size={16} className="text-white" />
         </div>
         {!collapsed && (
-          <span className="text-lg font-bold gradient-text">Lemon's AI Agent</span>
+          <span className="text-lg font-bold gradient-text">Lemon&apos;s AI Agent</span>
         )}
         {/* Mobile close button */}
         <button
           onClick={onMobileClose}
           className="md:hidden ml-auto p-2 rounded-lg hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"
+          aria-label="Close menu"
         >
           <X size={18} />
         </button>
@@ -126,7 +117,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
                 isActive
-                  ? "bg-indigo-500/10 text-indigo-400"
+                  ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
                   : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
                 collapsed && "justify-center px-0"
               )}
@@ -136,7 +127,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 <span className="flex-1">{item.label}</span>
               )}
               {!collapsed && item.badge && (
-                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-indigo-500/20 text-indigo-400">
+                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-[var(--color-accent-muted)] text-[var(--color-accent)]">
                   {item.badge}
                 </span>
               )}
@@ -162,18 +153,24 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </Link>
         ))}
 
-        {/* Dark/Light toggle */}
+        {/* Theme toggle */}
         <button
-          onClick={toggleDark}
+          onClick={toggleTheme}
           className={cn(
             "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
             "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
             collapsed && "justify-center px-0"
           )}
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <Sun size={20} className="dark:hidden" />
-          <Moon size={20} className="hidden dark:block" />
-          {!collapsed && <span>Toggle Theme</span>}
+          {theme === "dark" ? (
+            <Sun size={20} />
+          ) : (
+            <Moon size={20} />
+          )}
+          {!collapsed && (
+            <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+          )}
         </button>
 
         {/* Collapse toggle (desktop only) */}
@@ -184,6 +181,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
             collapsed && "justify-center px-0"
           )}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           {!collapsed && <span>Collapse</span>}
@@ -203,6 +201,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <div
             className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
             onClick={onMobileClose}
+            aria-hidden="true"
           />
           <div className="md:hidden">{sidebarContent}</div>
         </>

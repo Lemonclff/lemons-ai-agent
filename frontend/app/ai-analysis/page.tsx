@@ -10,6 +10,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader } from "@/components/ui/layout-components";
 import { cn } from "@/lib/utils";
 
 /* ========================================================================
@@ -227,7 +228,12 @@ export default function AIAnalysisPage() {
 
   // ── UI ──
   return (
-    <div className="space-y-4">
+    <PageContainer>
+      <PageHeader
+        title="AI Market Analysis"
+        description="Market sentiment radar · AI trading opportunities · technical & fundamental analysis"
+      />
+
       {/* ═══════════════════════ TOP INDEX BAR ═══════════════════════ */}
       <div className="flex items-center gap-2 p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
         {/* Fear & Greed */}
@@ -722,6 +728,6 @@ export default function AIAnalysisPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

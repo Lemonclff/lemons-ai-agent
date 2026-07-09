@@ -8,6 +8,8 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader } from "@/components/ui/layout-components";
+import { Tabs } from "@/components/ui/components";
 import { cn } from "@/lib/utils";
 
 /* ===== Table metadata ===== */
@@ -190,19 +192,17 @@ export default function DataPage() {
   const editableCols = EDITABLE_COLS[activeTable] || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between max-sm:flex-col max-sm:gap-3 max-sm:items-start">
-        <div>
-          <h1 className="text-2xl font-bold">Database Explorer</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            PostgreSQL · {tables.length} tables · Admin access
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => setActiveTable((t) => { fetch(`/api/db?table=${t}&limit=200`).then((r) => r.json()).then(setData); return t; })}>
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Database Explorer"
+        description={`PostgreSQL · ${tables.length} tables · Admin access`}
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => { fetch(`/api/db?table=${activeTable}&limit=200`).then((r) => r.json()).then(setData); }}>
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            <span className="ml-2 max-sm:hidden">Refresh</span>
+          </Button>
+        }
+      />
 
       {/* Table Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -238,17 +238,13 @@ export default function DataPage() {
       )}
 
       {/* Tab Switcher */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-surface-elevated)] w-fit flex-wrap">
-        {tables.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTable(t)}
-            className={cn("px-3 py-1.5 text-xs rounded-lg transition-all whitespace-nowrap", activeTable === t ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-medium" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")}
-          >
-            {t.replace(/_/g, " ")}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={tables.map((t) => ({ id: t, label: t.replace(/_/g, " ") }))}
+        activeTab={activeTable}
+        onChange={setActiveTable}
+        variant="pills"
+        className="flex-wrap"
+      />
 
       {/* Action Bar */}
       {activeTable && (
@@ -382,6 +378,6 @@ export default function DataPage() {
           )}
         </div>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

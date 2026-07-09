@@ -26,6 +26,8 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader, StatsGrid } from "@/components/ui/layout-components";
+import { Tabs } from "@/components/ui/components";
 import { cn } from "@/lib/utils";
 
 /* ===== Types ===== */
@@ -179,7 +181,7 @@ function EventRow({ event }: { event: MacroEvent }) {
                   { label: "大盤指數", icon: Layers, content: event.ai_impact_broad, color: "border-amber-500/20 bg-amber-500/5" },
                   { label: "能源板塊", icon: Flame, content: event.ai_impact_energy, color: "border-orange-500/20 bg-orange-500/5" },
                   { label: "消費板塊", icon: ShoppingCart, content: event.ai_impact_consumer, color: "border-pink-500/20 bg-pink-500/5" },
-                  { label: "工業/原材料", icon: Factory, content: event.ai_impact_industrial, color: "border-gray-400/20 bg-gray-500/5" },
+                  { label: "工業/原材料", icon: Factory, content: event.ai_impact_industrial, color: "border-[var(--color-text-muted)]/20 bg-[var(--color-text-muted)]/5" },
                 ].map((sector) => (
                   <div key={sector.label} className={cn("p-3 rounded-xl border text-xs", sector.color)}>
                     <div className="flex items-center gap-2 mb-1">
@@ -278,25 +280,20 @@ export default function MacroImpactPage() {
   const aiAnalyzedCount = events.filter((e) => e.ai_impact_summary || e.ai_impact_tech).length;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-[slideIn_0.4s_ease-out]">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Macro Impact Matrix</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Real economic calendar · auto-updating status · AI-generated sector flow projections
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <PageContainer className="animate-[slideIn_0.4s_ease-out]">
+      <PageHeader
+        title="Macro Impact Matrix"
+        description="Real economic calendar · auto-updating status · AI-generated sector flow projections"
+        actions={
           <Button variant="secondary" size="sm" onClick={fetchData} disabled={loading}>
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            {loading ? "Loading..." : "Refresh"}
+            <span className="ml-2 max-sm:hidden">{loading ? "Loading..." : "Refresh"}</span>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <StatsGrid cols={4}>
         {[
           { label: "即將發布", value: String(pendingCount), sub: "Pending releases", icon: Calendar, color: "text-sky-400", bg: "bg-sky-500/10" },
           { label: "優於預期", value: String(beatCount), sub: "Data above forecast", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
@@ -314,28 +311,20 @@ export default function MacroImpactPage() {
             <p className="text-[10px] text-[var(--color-text-muted)]">{card.sub}</p>
           </Card>
         ))}
-      </div>
+      </StatsGrid>
 
       {/* Filters */}
       <div className="flex items-center gap-2">
-        {([
-          { key: "all", label: "全部事件" },
-          { key: "high", label: "高重要性" },
-          { key: "beat-miss", label: "驚喜事件" },
-        ] as const).map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={cn(
-              "px-3 py-1.5 text-xs rounded-lg transition-all",
-              filter === f.key
-                ? "bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium"
-                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
+        <Tabs
+          tabs={[
+            { id: "all", label: "全部事件" },
+            { id: "high", label: "高重要性" },
+            { id: "beat-miss", label: "驚喜事件" },
+          ]}
+          activeTab={filter}
+          onChange={(t) => setFilter(t as "all" | "high" | "beat-miss")}
+          variant="pills"
+        />
         <span className="text-xs text-[var(--color-text-muted)] ml-auto">
           {filtered.length} 個事件 · auto-refresh 5min
         </span>
@@ -394,6 +383,6 @@ export default function MacroImpactPage() {
           <ExternalLink size={10} className="inline mr-0.5" />FRED
         </a>
       </div>
-    </div>
+    </PageContainer>
   );
 }

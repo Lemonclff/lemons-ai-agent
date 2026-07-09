@@ -15,6 +15,8 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader } from "@/components/ui/layout-components";
+import { Tabs } from "@/components/ui/components";
 import { cn } from "@/lib/utils";
 
 /* ===== Types ===== */
@@ -32,7 +34,7 @@ const CATEGORIES_EXPENSE = ["飲食","交通","娛樂","購物","投資","醫療
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
-  return (<div className="bg-zinc-800/95 backdrop-blur border border-zinc-700 rounded-xl px-3 py-2 text-xs shadow-xl"><p className="font-medium text-zinc-100 mb-0.5">{label}</p>{payload.map((p:any,i:number)=><p key={i} style={{color:p.color}}>{p.name}: {typeof p.value==="number"?f(p.value):p.value}</p>)}</div>);
+  return (<div className="bg-[var(--color-surface-overlay)] backdrop-blur border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs shadow-xl"><p className="font-medium text-[var(--color-text-primary)] mb-0.5">{label}</p>{payload.map((p:any,i:number)=><p key={i} style={{color:p.color}}>{p.name}: {typeof p.value==="number"?f(p.value):p.value}</p>)}</div>);
 };
 
 export default function FinancePage() {
@@ -155,49 +157,62 @@ export default function FinancePage() {
   const treemapData = useMemo(() => (stats?.top_subcategories||[]).slice(0,12).map(s => ({ name: s.sub_category, size: s.total, category: s.category })), [stats]);
   const trendData = useMemo(() => (stats?.monthly_trend||[]).map(m => ({ month: shortMonth(m.month), 支出: m.expense, 收入: m.income })), [stats]);
 
-  if(!auth) return <div className="flex items-center justify-center py-20"><RefreshCw size={24} className="animate-spin text-zinc-500" /></div>;
+  if(!auth) return <div className="flex items-center justify-center py-20"><RefreshCw size={24} className="animate-spin text-[var(--color-text-muted)]" /></div>;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 animate-[fadeIn_0.4s_ease-out]">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center">
-            <Wallet size={20} className="text-emerald-400" />
+    <PageContainer className="animate-[fadeIn_0.4s_ease-out]">
+      <PageHeader
+        title={
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center">
+              <Wallet size={20} className="text-emerald-400" />
+            </div>
+            <span>AI 智慧理財</span>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-zinc-100">AI 智慧理財</h1>
-            <p className="text-xs text-zinc-500">{auth.username} · {auth.isAdmin?"管理員模式":"個人記帳"}</p>
+        }
+        description={`${auth.username} · ${auth.isAdmin ? "管理員模式" : "個人記帳"}`}
+        actions={
+          <div className="flex items-center gap-2">
+            {auth.isAdmin && users.length > 0 && (
+              <select value={viewUserId || auth.userId} onChange={e => setViewUserId(e.target.value ? Number(e.target.value) : null)}
+                className="px-3 py-1.5 text-xs rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-500/50">
+                <option value={auth.userId}>🔒 我的帳戶</option>
+                {users.filter(u => u.id !== auth.userId).map(u => <option key={u.id} value={u.id}>{u.username}</option>)}
+              </select>)}
+            <Button variant="secondary" size="sm" onClick={() => { fetchFiles(); fetchTransactions(); fetchStats(); }}>
+              <RefreshCw size={13} />
+              <span className="ml-1.5 max-sm:hidden">刷新</span>
+            </Button>
+            <Button variant={manualForm ? "primary" : "secondary"} size="sm" onClick={() => setManualForm(!manualForm)}>
+              <Plus size={13} />
+              <span className="ml-1.5 max-sm:hidden">手動記帳</span>
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {auth.isAdmin && users.length>0 && (
-            <select value={viewUserId||auth.userId} onChange={e=>setViewUserId(e.target.value?Number(e.target.value):null)}
-              className="px-3 py-1.5 text-xs rounded-xl bg-zinc-800/80 border border-zinc-700/80 text-zinc-300 focus:outline-none focus:border-emerald-500/50">
-              <option value={auth.userId}>🔒 我的帳戶</option>
-              {users.filter(u=>u.id!==auth.userId).map(u=><option key={u.id} value={u.id}>{u.username}</option>)}
-            </select>)}
-          <button onClick={()=>{fetchFiles();fetchTransactions();fetchStats();}} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-all"><RefreshCw size={13} /> 刷新</button>
-          <button onClick={()=>setManualForm(!manualForm)} className={cn("flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all",manualForm?"bg-emerald-500/20 border border-emerald-500/40 text-emerald-400":"bg-zinc-800/60 border border-zinc-700/60 text-zinc-400 hover:text-zinc-200")}><Plus size={13} /> 手動記帳</button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* ── Tabs ── */}
-      <div className="flex items-center gap-1 p-1 rounded-2xl bg-zinc-800/50 border border-zinc-700/30 w-fit">
-        {[{key:"dashboard",icon:BarChart3,label:"儀表板"},{key:"files",icon:FolderOpen,label:"檔案處理",adminOnly:true},{key:"staging",icon:Edit3,label:staging.length?`待確認 (${staging.length})`:"待確認"}].filter(t => !t.adminOnly || auth.isAdmin).map(t=>(<button key={t.key} onClick={()=>setTab(t.key as typeof tab)} className={cn("flex items-center gap-1.5 px-4 py-2 text-xs rounded-xl transition-all",tab===t.key?"bg-zinc-700/80 text-zinc-100 shadow-sm":"text-zinc-500 hover:text-zinc-300")}><t.icon size={13}/>{t.label}{t.adminOnly&&<span className="text-[9px] text-amber-500 ml-0.5">ADMIN</span>}</button>))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: "dashboard", label: "儀表板", icon: BarChart3 },
+          ...(auth.isAdmin ? [{ id: "files" as const, label: "檔案處理", icon: FolderOpen }] : []),
+          { id: "staging", label: "待確認", icon: Edit3, badge: staging.length > 0 ? String(staging.length) : undefined },
+        ]}
+        activeTab={tab}
+        onChange={(t) => setTab(t as "dashboard" | "files" | "staging")}
+        variant="pills"
+      />
 
       {/* ── Manual Entry ── */}
       {manualForm && (
-        <div className="p-4 rounded-2xl bg-zinc-800/40 border border-emerald-500/20 space-y-3">
-          <p className="text-xs font-medium text-zinc-400 flex items-center gap-2"><Pencil size={13} className="text-emerald-400"/> 手動記帳</p>
+        <div className="p-4 rounded-2xl bg-[var(--color-surface-elevated)] border border-emerald-500/20 space-y-3">
+          <p className="text-xs font-medium text-[var(--color-text-secondary)] flex items-center gap-2"><Pencil size={13} className="text-emerald-400"/> 手動記帳</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            <input type="date" value={manualTx.transaction_date} onChange={e=>setManualTx(p=>({...p,transaction_date:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-300 focus:border-emerald-500/50 focus:outline-none" />
-            <select value={manualTx.type} onChange={e=>{const t=e.target.value;setManualTx(p=>({...p,type:t,category:t==="income"?"薪水":"飲食"}));}} className="px-3 py-2 text-xs rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-300 focus:border-emerald-500/50 focus:outline-none"><option value="expense">💸 支出</option><option value="income">💰 收入</option></select>
-            <select value={manualTx.category} onChange={e=>setManualTx(p=>({...p,category:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-300 focus:border-emerald-500/50 focus:outline-none">{(manualTx.type==="income"?CATEGORIES_INCOME:CATEGORIES_EXPENSE).map(c=><option key={c} value={c}>{c}</option>)}</select>
-            <input placeholder="次分類 (選填)" value={manualTx.sub_category} onChange={e=>setManualTx(p=>({...p,sub_category:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-300 focus:border-emerald-500/50 focus:outline-none placeholder:text-zinc-600" />
-            <input type="number" step="0.01" placeholder="金額 HKD" value={manualTx.amount||""} onChange={e=>setManualTx(p=>({...p,amount:parseFloat(e.target.value)||0}))} className="px-3 py-2 text-xs rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-300 focus:border-emerald-500/50 focus:outline-none placeholder:text-zinc-600" />
-            <input placeholder="描述 (選填)" value={manualTx.description} onChange={e=>setManualTx(p=>({...p,description:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-300 focus:border-emerald-500/50 focus:outline-none placeholder:text-zinc-600" />
+            <input type="date" value={manualTx.transaction_date} onChange={e=>setManualTx(p=>({...p,transaction_date:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-emerald-500/50 focus:outline-none" />
+            <select value={manualTx.type} onChange={e=>{const t=e.target.value;setManualTx(p=>({...p,type:t,category:t==="income"?"薪水":"飲食"}));}} className="px-3 py-2 text-xs rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-emerald-500/50 focus:outline-none"><option value="expense">💸 支出</option><option value="income">💰 收入</option></select>
+            <select value={manualTx.category} onChange={e=>setManualTx(p=>({...p,category:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-emerald-500/50 focus:outline-none">{(manualTx.type==="income"?CATEGORIES_INCOME:CATEGORIES_EXPENSE).map(c=><option key={c} value={c}>{c}</option>)}</select>
+            <input placeholder="次分類 (選填)" value={manualTx.sub_category} onChange={e=>setManualTx(p=>({...p,sub_category:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-emerald-500/50 focus:outline-none placeholder:text-[var(--color-text-muted)]" />
+            <input type="number" step="0.01" placeholder="金額 HKD" value={manualTx.amount||""} onChange={e=>setManualTx(p=>({...p,amount:parseFloat(e.target.value)||0}))} className="px-3 py-2 text-xs rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-emerald-500/50 focus:outline-none placeholder:text-[var(--color-text-muted)]" />
+            <input placeholder="描述 (選填)" value={manualTx.description} onChange={e=>setManualTx(p=>({...p,description:e.target.value}))} className="px-3 py-2 text-xs rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-emerald-500/50 focus:outline-none placeholder:text-[var(--color-text-muted)]" />
           </div>
           <div className="flex justify-end"><button onClick={submitManual} className="flex items-center gap-1.5 px-4 py-2 text-xs rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-all"><Save size={13}/> 儲存</button></div>
         </div>
@@ -206,8 +221,8 @@ export default function FinancePage() {
       {/* ═══════════ DASHBOARD ═══════════ */}
       {tab==="dashboard"&&(<div className="space-y-5">
         <div className="flex items-center gap-2">
-          <input type="month" value={statsMonth} onChange={e=>setStatsMonth(e.target.value)} className="px-3 py-1.5 text-xs rounded-xl bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 focus:outline-none focus:border-emerald-500/50" />
-          <button onClick={()=>setStatsMonth("")} className="px-3 py-1.5 text-xs rounded-xl text-zinc-500 hover:text-zinc-300 transition-colors">全部</button>
+          <input type="month" value={statsMonth} onChange={e=>setStatsMonth(e.target.value)} className="px-3 py-1.5 text-xs rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-500/50" />
+          <button onClick={()=>setStatsMonth("")} className="px-3 py-1.5 text-xs rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">全部</button>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -217,69 +232,69 @@ export default function FinancePage() {
             {label:"淨收支",value:`HKD ${f(totalIncome-totalExpense)}`,icon:PiggyBank,color:"from-violet-500/20 to-indigo-600/10",border:"border-violet-500/20",iconColor:"text-violet-400"},
             {label:"交易筆數",value:String((stats?.type_summary?.expense?.count||0)+(stats?.type_summary?.income?.count||0)),icon:CreditCard,color:"from-sky-500/20 to-cyan-600/10",border:"border-sky-500/20",iconColor:"text-sky-400"},
           ].map(c=>(<div key={c.label} className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 border",c.color,c.border)}>
-            <div className="flex items-center justify-between mb-3"><p className="text-[11px] uppercase tracking-wider text-zinc-500">{c.label}</p><c.icon size={16} className={c.iconColor}/></div>
-            <p className="text-xl font-bold text-zinc-100 tracking-tight">{c.value}</p>
+            <div className="flex items-center justify-between mb-3"><p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">{c.label}</p><c.icon size={16} className={c.iconColor}/></div>
+            <p className="text-xl font-bold text-[var(--color-text-primary)] tracking-tight">{c.value}</p>
           </div>))}
         </div>
 
-        {trendData.length>0&&(<div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 p-5"><h3 className="text-sm font-medium text-zinc-300 mb-4">每月收支趨勢</h3><ResponsiveContainer width="100%" height={200}><AreaChart data={trendData}><defs><linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f87171" stopOpacity={0.3}/><stop offset="100%" stopColor="#f87171" stopOpacity={0}/></linearGradient><linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#34d399" stopOpacity={0.3}/><stop offset="100%" stopColor="#34d399" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#27272a"/><XAxis dataKey="month" tick={{fontSize:10,fill:"#71717a"}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:10,fill:"#71717a"}} axisLine={false} tickLine={false}/><Tooltip content={<CustomTooltip/>}/><Area type="monotone" dataKey="支出" stroke="#f87171" fill="url(#expGrad)" strokeWidth={2}/><Area type="monotone" dataKey="收入" stroke="#34d399" fill="url(#incGrad)" strokeWidth={2}/></AreaChart></ResponsiveContainer></div>)}
+        {trendData.length>0&&(<div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] p-5"><h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-4">每月收支趨勢</h3><ResponsiveContainer width="100%" height={200}><AreaChart data={trendData}><defs><linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f87171" stopOpacity={0.3}/><stop offset="100%" stopColor="#f87171" stopOpacity={0}/></linearGradient><linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#34d399" stopOpacity={0.3}/><stop offset="100%" stopColor="#34d399" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#27272a"/><XAxis dataKey="month" tick={{fontSize:10,fill:"#71717a"}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:10,fill:"#71717a"}} axisLine={false} tickLine={false}/><Tooltip content={<CustomTooltip/>}/><Area type="monotone" dataKey="支出" stroke="#f87171" fill="url(#expGrad)" strokeWidth={2}/><Area type="monotone" dataKey="收入" stroke="#34d399" fill="url(#incGrad)" strokeWidth={2}/></AreaChart></ResponsiveContainer></div>)}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 p-5">
-            <h3 className="text-sm font-medium text-zinc-300 mb-2">支出類別佔比</h3>
+          <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] p-5">
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">支出類別佔比</h3>
             <ResponsiveContainer width="100%" height={260}><PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={4} dataKey="value">{donutData.map((d,i)=><Cell key={d.name} fill={d.color} stroke="transparent"/>)}</Pie><text x="50%" y="47%" textAnchor="middle" dominantBaseline="middle" className="fill-zinc-100" fontSize={16} fontWeight="bold">HKD {f(totalExpense/1000)}k</text><text x="50%" y="57%" textAnchor="middle" dominantBaseline="middle" className="fill-zinc-500" fontSize={10}>總支出</text></PieChart></ResponsiveContainer>
-            <div className="flex flex-wrap gap-2 mt-2 justify-center">{donutData.map(d=>(<div key={d.name} className="flex items-center gap-1.5 text-[10px] text-zinc-400"><span className="w-2 h-2 rounded-full" style={{backgroundColor:d.color}}/>{d.name} {((d.value/(totalExpense||1))*100).toFixed(0)}%</div>))}</div>
+            <div className="flex flex-wrap gap-2 mt-2 justify-center">{donutData.map(d=>(<div key={d.name} className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-secondary)]"><span className="w-2 h-2 rounded-full" style={{backgroundColor:d.color}}/>{d.name} {((d.value/(totalExpense||1))*100).toFixed(0)}%</div>))}</div>
           </div>
-          <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 p-5">
-            <h3 className="text-sm font-medium text-zinc-300 mb-2">主類別排行</h3>
+          <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] p-5">
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">主類別排行</h3>
             <ResponsiveContainer width="100%" height={260}><RBarChart data={expenseCats.slice(0,8)} layout="vertical" margin={{left:48,right:16}}><CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false}/><XAxis type="number" tick={{fontSize:10,fill:"#71717a"}} axisLine={false} tickLine={false}/><YAxis type="category" dataKey="category" tick={{fontSize:10,fill:"#a1a1aa"}} axisLine={false} tickLine={false} width={44}/><Tooltip content={<CustomTooltip/>}/><Bar dataKey="total" radius={[0,6,6,0]}>{expenseCats.slice(0,8).map((_,i)=><Cell key={i} fill={CHART_COLORS[i]} fillOpacity={0.8}/>)}</Bar></RBarChart></ResponsiveContainer>
           </div>
         </div>
 
-        {treemapData.length>0&&(<div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 p-5"><h3 className="text-sm font-medium text-zinc-300 mb-2">次分類分佈</h3><ResponsiveContainer width="100%" height={260}><RTreemap data={treemapData} dataKey="size" aspectRatio={1.5} stroke="#18181b"><Tooltip content={<CustomTooltip/>}/>{treemapData.map((_,i)=><Cell key={i} fill={CHART_COLORS[i%CHART_COLORS.length]} fillOpacity={0.75}/>)}</RTreemap></ResponsiveContainer></div>)}
+        {treemapData.length>0&&(<div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] p-5"><h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">次分類分佈</h3><ResponsiveContainer width="100%" height={260}><RTreemap data={treemapData} dataKey="size" aspectRatio={1.5} stroke="#18181b"><Tooltip content={<CustomTooltip/>}/>{treemapData.map((_,i)=><Cell key={i} fill={CHART_COLORS[i%CHART_COLORS.length]} fillOpacity={0.75}/>)}</RTreemap></ResponsiveContainer></div>)}
 
         {/* Transactions table — fixed 6 columns */}
-        <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 overflow-hidden">
-          <div className="px-5 py-4 border-b border-zinc-700/30"><h3 className="text-sm font-medium text-zinc-300">最近交易紀錄</h3></div>
+        <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--color-border)]"><h3 className="text-sm font-medium text-[var(--color-text-primary)]">最近交易紀錄</h3></div>
           <div className="overflow-x-auto max-h-96">
             <table className="w-full text-xs">
-              <thead><tr className="bg-zinc-800/60">
-                <th className="text-left py-2.5 px-4 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">日期</th>
-                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">類型</th>
-                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">類別</th>
-                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">次分類</th>
-                <th className="text-right py-2.5 px-4 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">金額</th>
-                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">描述</th>
-                <th className="text-right py-2.5 px-4 text-[10px] font-medium text-zinc-500 uppercase tracking-wider w-14"></th>
+              <thead><tr className="bg-[var(--color-surface-elevated)]">
+                <th className="text-left py-2.5 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">日期</th>
+                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">類型</th>
+                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">類別</th>
+                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">次分類</th>
+                <th className="text-right py-2.5 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">金額</th>
+                <th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">描述</th>
+                <th className="text-right py-2.5 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider w-14"></th>
               </tr></thead>
               <tbody>
                 {transactions.slice(0,50).map(tx => {
                   const isEditing = editingTxId === tx.transaction_id;
                   const isIncome = tx.type === "income";
                   return (
-                    <tr key={tx.transaction_id} className="border-b border-zinc-700/20 hover:bg-zinc-800/30 transition-colors">
-                      <td className="py-2.5 px-4 text-zinc-300 font-medium">{tx.transaction_date}</td>
+                    <tr key={tx.transaction_id} className="border-b border-[var(--color-border-light)] hover:bg-[var(--color-surface-elevated)]/30 transition-colors">
+                      <td className="py-2.5 px-4 text-[var(--color-text-primary)] font-medium">{tx.transaction_date}</td>
                       <td className="py-2.5 px-2">
                         {isIncome
                           ? <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400"><ArrowUpRight size={10}/>收入</span>
                           : <span className="inline-flex items-center gap-1 text-[11px] text-rose-400"><ArrowDownLeft size={10}/>支出</span>}
                       </td>
-                      <td className="py-2.5 px-2 text-zinc-300">{tx.category}</td>
-                      <td className="py-2.5 px-2 text-zinc-500">{tx.sub_category && tx.sub_category !== tx.category ? tx.sub_category : "—"}</td>
+                      <td className="py-2.5 px-2 text-[var(--color-text-primary)]">{tx.category}</td>
+                      <td className="py-2.5 px-2 text-[var(--color-text-muted)]">{tx.sub_category && tx.sub_category !== tx.category ? tx.sub_category : "—"}</td>
                       <td className={cn("py-2.5 px-4 text-right font-mono font-medium", isIncome ? "text-emerald-400" : "text-rose-400")}>{isIncome ? "+" : "−"}{f(tx.amount)}</td>
-                      <td className="py-2.5 px-2 text-zinc-500 max-w-[180px] truncate">{tx.description || "—"}</td>
+                      <td className="py-2.5 px-2 text-[var(--color-text-muted)] max-w-[180px] truncate">{tx.description || "—"}</td>
                       <td className="py-2.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-0.5">
                           <button onClick={() => setEditingTxId(isEditing ? null : tx.transaction_id)}
-                            className="p-1 rounded-lg hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300 transition-all"><Edit3 size={11}/></button>
+                            className="p-1 rounded-lg hover:bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all"><Edit3 size={11}/></button>
                           <button onClick={() => handleDelete(tx.transaction_id)}
-                            className="p-1 rounded-lg hover:bg-rose-500/10 text-zinc-500 hover:text-rose-400 transition-all"><Trash2 size={11}/></button>
+                            className="p-1 rounded-lg hover:bg-rose-500/10 text-[var(--color-text-muted)] hover:text-rose-400 transition-all"><Trash2 size={11}/></button>
                         </div>
                       </td>
                     </tr>
                   );
                 })}
-                {transactions.length===0&&<tr><td colSpan={7} className="py-12 text-center text-zinc-600">尚無交易紀錄 — 使用上方「手動記帳」或「AI 解析」新增</td></tr>}
+                {transactions.length===0&&<tr><td colSpan={7} className="py-12 text-center text-[var(--color-text-muted)]">尚無交易紀錄 — 使用上方「手動記帳」或「AI 解析」新增</td></tr>}
               </tbody>
             </table>
           </div>
@@ -288,54 +303,54 @@ export default function FinancePage() {
 
       {/* ═══════════ FILES TAB ═══════════ */}
       {tab==="files"&&(<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-2xl bg-zinc-800/40 border border-zinc-700/30 overflow-hidden">
-          <div className="px-5 py-4 border-b border-zinc-700/30"><h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2"><FolderOpen size={15}/>TempRecords 檔案瀏覽器</h3></div>
+        <div className="lg:col-span-2 rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--color-border)]"><h3 className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2"><FolderOpen size={15}/>TempRecords 檔案瀏覽器</h3></div>
           <div className="p-4 space-y-1.5 max-h-[50vh] overflow-y-auto">
             <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-              <button onClick={()=>setCurrentDir("")} className={cn("px-2.5 py-1 text-[11px] rounded-lg transition-all",!currentDir?"bg-zinc-700/80 text-zinc-200":"text-zinc-500 hover:text-zinc-300")}>📁 /</button>
-              {folders.map(fd=>(<button key={fd} onClick={()=>setCurrentDir(fd)} className={cn("px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1",currentDir===fd?"bg-zinc-700/80 text-zinc-200":"text-zinc-500 hover:text-zinc-300")}><FolderClosed size={11}/>{fd}</button>))}
+              <button onClick={()=>setCurrentDir("")} className={cn("px-2.5 py-1 text-[11px] rounded-lg transition-all",!currentDir?"bg-[var(--color-surface-overlay)] text-[var(--color-text-primary)]":"text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]")}>📁 /</button>
+              {folders.map(fd=>(<button key={fd} onClick={()=>setCurrentDir(fd)} className={cn("px-2.5 py-1 text-[11px] rounded-lg transition-all flex items-center gap-1",currentDir===fd?"bg-[var(--color-surface-overlay)] text-[var(--color-text-primary)]":"text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]")}><FolderClosed size={11}/>{fd}</button>))}
             </div>
-            {currentFiles.length===0&&<p className="text-xs text-zinc-600 py-6 text-center">目錄為空 — 拖放檔案上傳或放入 /home/lemon/TempRecords</p>}
-            {currentFiles.map(f=>(<div key={f.path} onClick={()=>setSelectedFile(f.path)} className={cn("flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all text-xs",selectedFile===f.path?"bg-emerald-500/10 border border-emerald-500/30":"hover:bg-zinc-700/30 border border-transparent")}>
-              {f.extension.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)?<Image size={14} className="text-sky-400"/>:f.extension===".pdf"?<FileText size={14} className="text-rose-400"/>:<FileText size={14} className="text-zinc-500"/>}
-              <div className="flex-1 min-w-0"><p className="truncate font-medium text-zinc-300">{f.name}</p><p className="text-[10px] text-zinc-600">{f.month_dir} · {(f.size/1024).toFixed(1)} KB</p></div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-700/50 text-zinc-500">{f.extension}</span>
+            {currentFiles.length===0&&<p className="text-xs text-[var(--color-text-muted)] py-6 text-center">目錄為空 — 拖放檔案上傳或放入 /home/lemon/TempRecords</p>}
+            {currentFiles.map(f=>(<div key={f.path} onClick={()=>setSelectedFile(f.path)} className={cn("flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all text-xs",selectedFile===f.path?"bg-emerald-500/10 border border-emerald-500/30":"hover:bg-[var(--color-surface-overlay)] border border-transparent")}>
+              {f.extension.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)?<Image size={14} className="text-sky-400"/>:f.extension===".pdf"?<FileText size={14} className="text-rose-400"/>:<FileText size={14} className="text-[var(--color-text-muted)]"/>}
+              <div className="flex-1 min-w-0"><p className="truncate font-medium text-[var(--color-text-primary)]">{f.name}</p><p className="text-[10px] text-[var(--color-text-muted)]">{f.month_dir} · {(f.size/1024).toFixed(1)} KB</p></div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)]">{f.extension}</span>
             </div>))}
           </div>
         </div>
         <div className="space-y-3">
-          <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-700/30"><h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2"><Upload size={15} className="text-sky-400"/>上傳檔案</h3></div>
+          <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--color-border)]"><h3 className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2"><Upload size={15} className="text-sky-400"/>上傳檔案</h3></div>
             <div className="p-4">
               <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={onDrop} onClick={()=>fileInputRef.current?.click()}
-                className={cn("border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer",dragOver?"border-emerald-500/60 bg-emerald-500/5":"border-zinc-700/50 hover:border-zinc-600")}>
-                <Upload size={22} className={cn("mx-auto mb-2",dragOver?"text-emerald-400":"text-zinc-600")}/>
-                <p className="text-xs text-zinc-500">{uploading?"上傳中...":dragOver?"放開以開始上傳":"拖放檔案，或點擊選擇"}</p>
-                <p className="text-[10px] text-zinc-600 mt-1">.jpg .png .pdf .txt</p>
+                className={cn("border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer",dragOver?"border-emerald-500/60 bg-emerald-500/5":"border-[var(--color-border)] hover:border-[var(--color-border-light)]")}>
+                <Upload size={22} className={cn("mx-auto mb-2",dragOver?"text-emerald-400":"text-[var(--color-text-muted)]")}/>
+                <p className="text-xs text-[var(--color-text-muted)]">{uploading?"上傳中...":dragOver?"放開以開始上傳":"拖放檔案，或點擊選擇"}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-1">.jpg .png .pdf .txt</p>
               </div>
               <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.txt,.csv" multiple className="hidden" onChange={onFileSelect}/>
             </div>
           </div>
-          <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-700/30"><h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2"><Sparkles size={15} className="text-amber-400"/>AI 解析</h3></div>
+          <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--color-border)]"><h3 className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2"><Sparkles size={15} className="text-amber-400"/>AI 解析</h3></div>
             <div className="p-4 space-y-3">
               {/* Provider selector */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-zinc-500">模型:</span>
+                <span className="text-[10px] text-[var(--color-text-muted)]">模型:</span>
                 <select value={aiProvider} onChange={e=>setAiProvider(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 text-xs rounded-lg bg-zinc-900 border border-zinc-700/60 text-zinc-300 focus:border-amber-500/50 focus:outline-none">
+                  className="flex-1 px-2.5 py-1.5 text-xs rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:border-amber-500/50 focus:outline-none">
                   <option value="nvidia">🚀 NVIDIA NIM (DeepSeek V4 Pro)</option>
                   <option value="hermes">🤖 Hermes (同聊天模型)</option>
                   <option value="lmstudio">💻 LM Studio (本地模型)</option>
                 </select>
               </div>
-              {selectedFile&&(<div className="p-2.5 rounded-xl bg-zinc-900/50 border border-zinc-700/30 text-xs"><p className="font-medium text-zinc-300 truncate">{selectedFile.split("/").pop()}</p><p className="text-[10px] text-zinc-600 truncate mt-0.5">{selectedFile}</p></div>)}
+              {selectedFile&&(<div className="p-2.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-xs"><p className="font-medium text-[var(--color-text-primary)] truncate">{selectedFile.split("/").pop()}</p><p className="text-[10px] text-[var(--color-text-muted)] truncate mt-0.5">{selectedFile}</p></div>)}
               <button onClick={parseFile} disabled={!selectedFile||parsing} className="w-full flex items-center justify-center gap-2 py-2.5 text-xs rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-medium">
                 {parsing ? <><RefreshCw size={13} className="animate-spin"/>{parseTaskId?"解析中... (可切換頁面)":"解析中..."}</> : <><Sparkles size={13}/>AI 解析檔案</>}
               </button>
-              {parsing && <p className="text-[10px] text-zinc-600 text-center">背景執行中，可自由切換頁面，完成後自動顯示於「待確認」</p>}
+              {parsing && <p className="text-[10px] text-[var(--color-text-muted)] text-center">背景執行中，可自由切換頁面，完成後自動顯示於「待確認」</p>}
               {parseError&&<p className="text-[11px] text-rose-400 bg-rose-500/5 rounded-lg px-3 py-2">{parseError}</p>}
-              <div className="text-[10px] text-zinc-600 space-y-1"><p>🤖 NVIDIA NIM · DeepSeek V4 Pro</p><p>📁 /home/lemon/TempRecords</p></div>
+              <div className="text-[10px] text-[var(--color-text-muted)] space-y-1"><p>🤖 NVIDIA NIM · DeepSeek V4 Pro</p><p>📁 /home/lemon/TempRecords</p></div>
             </div>
           </div>
         </div>
@@ -343,60 +358,60 @@ export default function FinancePage() {
 
       {/* ═══════════ STAGING TAB ═══════════ */}
       {tab==="staging"&&(<div className="space-y-4">
-        <div className="flex items-center justify-between"><h2 className="text-base font-semibold text-zinc-200">AI 解析結果 — 請確認後儲存</h2>
-          <div className="flex items-center gap-2"><button onClick={clearStaging} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-zinc-400 hover:text-zinc-200 transition-all"><Trash2 size={12}/>清除</button>
+        <div className="flex items-center justify-between"><h2 className="text-base font-semibold text-[var(--color-text-primary)]">AI 解析結果 — 請確認後儲存</h2>
+          <div className="flex items-center gap-2"><button onClick={clearStaging} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all"><Trash2 size={12}/>清除</button>
             <button onClick={saveStaging} disabled={saving||staging.length===0} className="flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-40 transition-all font-medium">{saving?<RefreshCw size={12} className="animate-spin"/>:<Save size={12}/>}{saving?"儲存中...":"確認並儲存"}</button></div></div>
-        {staging.length===0&&<div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 p-10 text-center"><FileWarning size={28} className="mx-auto text-zinc-600 mb-3"/><p className="text-sm text-zinc-500">尚無待確認的交易 — 請至「檔案處理」進行 AI 解析</p></div>}
+        {staging.length===0&&<div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] p-10 text-center"><FileWarning size={28} className="mx-auto text-[var(--color-text-muted)] mb-3"/><p className="text-sm text-[var(--color-text-muted)]">尚無待確認的交易 — 請至「檔案處理」進行 AI 解析</p></div>}
 
         {/* ── Task Control Panel ── */}
-        <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 overflow-hidden">
+        <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] overflow-hidden">
           <button onClick={()=>{setTaskPanelOpen(!taskPanelOpen);fetchTaskHistory();}}
-            className="w-full flex items-center justify-between px-5 py-3 hover:bg-zinc-800/60 transition-colors">
-            <span className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+            className="w-full flex items-center justify-between px-5 py-3 hover:bg-[var(--color-surface-elevated)] transition-colors">
+            <span className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
               <Activity size={15} className="text-amber-400"/> 任務管理
-              {taskHistory.length>0 && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-700/50 text-zinc-400">{taskHistory.length}</span>}
+              {taskHistory.length>0 && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--color-surface-overlay)] text-[var(--color-text-secondary)]">{taskHistory.length}</span>}
             </span>
             <span className="flex items-center gap-2">
               {taskHistory.some((t:any)=>t.status==="running"||t.status==="pending") && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"/>}
-              {taskPanelOpen ? <ChevronUp size={14} className="text-zinc-500"/> : <ChevronDown size={14} className="text-zinc-500"/>}
+              {taskPanelOpen ? <ChevronUp size={14} className="text-[var(--color-text-muted)]"/> : <ChevronDown size={14} className="text-[var(--color-text-muted)]"/>}
             </span>
           </button>
           {taskPanelOpen && (
-            <div className="border-t border-zinc-700/30 max-h-64 overflow-y-auto">
+            <div className="border-t border-[var(--color-border)] max-h-64 overflow-y-auto">
               {taskHistory.length===0 ? (
-                <p className="text-xs text-zinc-600 text-center py-6">尚無任務記錄</p>
+                <p className="text-xs text-[var(--color-text-muted)] text-center py-6">尚無任務記錄</p>
               ) : (
                 <table className="w-full text-[11px]">
-                  <thead><tr className="bg-zinc-800/60">
-                    <th className="text-left py-2 px-4 text-[10px] font-medium text-zinc-500 uppercase">檔案</th>
-                    <th className="text-left py-2 px-2 text-[10px] font-medium text-zinc-500 uppercase">模型</th>
-                    <th className="text-left py-2 px-2 text-[10px] font-medium text-zinc-500 uppercase">狀態</th>
-                    <th className="text-left py-2 px-2 text-[10px] font-medium text-zinc-500 uppercase">時間</th>
-                    <th className="text-right py-2 px-3 text-[10px] font-medium text-zinc-500 uppercase w-16"></th>
+                  <thead><tr className="bg-[var(--color-surface-elevated)]">
+                    <th className="text-left py-2 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">檔案</th>
+                    <th className="text-left py-2 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">模型</th>
+                    <th className="text-left py-2 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">狀態</th>
+                    <th className="text-left py-2 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">時間</th>
+                    <th className="text-right py-2 px-3 text-[10px] font-medium text-[var(--color-text-muted)] uppercase w-16"></th>
                   </tr></thead>
                   <tbody>
                     {taskHistory.slice(0,30).map((t:any) => {
                       const statusColors:Record<string,string> = {
                         pending: "text-amber-400 bg-amber-500/10", running: "text-sky-400 bg-sky-500/10 animate-pulse",
-                        completed: "text-emerald-400 bg-emerald-500/10", done: "text-zinc-400 bg-zinc-500/10",
-                        cancelled: "text-zinc-600 bg-zinc-500/5 line-through", error: "text-rose-400 bg-rose-500/10",
+                        completed: "text-emerald-400 bg-emerald-500/10", done: "text-[var(--color-text-secondary)] bg-[var(--color-text-muted)]/10",
+                        cancelled: "text-[var(--color-text-muted)] bg-[var(--color-text-muted)]/5 line-through", error: "text-rose-400 bg-rose-500/10",
                       };
                       const canKill = t.status === "pending" || t.status === "running";
                       const timeStr = t.created_at ? new Date(t.created_at).toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit"}) : "";
                       return (
-                        <tr key={t.task_id} className="border-b border-zinc-700/20 hover:bg-zinc-800/30">
-                          <td className="py-2 px-4 text-zinc-300 truncate max-w-[120px]">{t.file_name||"—"}</td>
-                          <td className="py-2 px-2 text-zinc-500">{t.provider||"—"}</td>
+                        <tr key={t.task_id} className="border-b border-[var(--color-border-light)] hover:bg-[var(--color-surface-elevated)]/30">
+                          <td className="py-2 px-4 text-[var(--color-text-primary)] truncate max-w-[120px]">{t.file_name||"—"}</td>
+                          <td className="py-2 px-2 text-[var(--color-text-muted)]">{t.provider||"—"}</td>
                           <td className="py-2 px-2">
-                            <span className={cn("px-1.5 py-0.5 rounded-md text-[10px] font-medium", statusColors[t.status]||"text-zinc-500")}>
+                            <span className={cn("px-1.5 py-0.5 rounded-md text-[10px] font-medium", statusColors[t.status]||"text-[var(--color-text-muted)]")}>
                               {t.status}{t.tx_count>0 ? ` · ${t.tx_count}筆` : ""}
                             </span>
                           </td>
-                          <td className="py-2 px-2 text-zinc-600">{timeStr}</td>
+                          <td className="py-2 px-2 text-[var(--color-text-muted)]">{timeStr}</td>
                           <td className="py-2 px-3 text-right">
                             {canKill && (
                               <button onClick={()=>handleKillTask(t.task_id)}
-                                className="p-1 rounded-md hover:bg-rose-500/10 text-zinc-500 hover:text-rose-400 transition-all"
+                                className="p-1 rounded-md hover:bg-rose-500/10 text-[var(--color-text-muted)] hover:text-rose-400 transition-all"
                                 title="強制終止"><X size={12}/></button>
                             )}
                           </td>
@@ -410,19 +425,19 @@ export default function FinancePage() {
           )}
         </div>
 
-        <div className="rounded-2xl bg-zinc-800/40 border border-zinc-700/30 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-xs">
-          <thead><tr className="bg-zinc-800/60"><th className="text-left py-2.5 px-4 text-[10px] font-medium text-zinc-500 uppercase">日期</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase">類型</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase">類別</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase">次分類</th><th className="text-right py-2.5 px-4 text-[10px] font-medium text-zinc-500 uppercase">金額</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-zinc-500 uppercase">描述</th><th className="text-right py-2.5 px-4 text-[10px] font-medium text-zinc-500 uppercase w-14"></th></tr></thead>
-          <tbody>{staging.map((tx,i)=>(<tr key={i} className={cn("border-b border-zinc-700/20",tx._corrected&&"bg-amber-500/5")}>
-            <td className="py-2.5 px-4 text-zinc-300">{stagingEditIdx===i?<input className="w-24 px-2 py-1 text-xs rounded-lg bg-zinc-900 border border-emerald-500/50 text-zinc-200" value={tx.transaction_date} onChange={e=>updateStaging(i,"transaction_date",e.target.value)}/>:tx.transaction_date}</td>
-            <td className="py-2.5 px-2">{stagingEditIdx===i?<select className="px-2 py-1 text-xs rounded-lg bg-zinc-900 border border-emerald-500/50 text-zinc-200" value={tx.type} onChange={e=>updateStaging(i,"type",e.target.value)}><option value="expense">支出</option><option value="income">收入</option></select>:<span className={tx.type==="income"?"text-emerald-400":"text-rose-400"}>{tx.type==="income"?"💰 收入":"💸 支出"}</span>}</td>
-            <td className="py-2.5 px-2 text-zinc-300">{stagingEditIdx===i?<input className="w-20 px-2 py-1 text-xs rounded-lg bg-zinc-900 border border-emerald-500/50 text-zinc-200" value={tx.category} onChange={e=>updateStaging(i,"category",e.target.value)}/>:tx.category}</td>
-            <td className="py-2.5 px-2 text-zinc-500">{stagingEditIdx===i?<input className="w-24 px-2 py-1 text-xs rounded-lg bg-zinc-900 border border-emerald-500/50 text-zinc-200" value={tx.sub_category} onChange={e=>updateStaging(i,"sub_category",e.target.value)}/>:(tx.sub_category&&tx.sub_category!==tx.category?tx.sub_category:"—")}</td>
-            <td className={cn("py-2.5 px-4 text-right font-mono font-medium",tx.type==="income"?"text-emerald-400":"text-rose-400")}>{stagingEditIdx===i?<input type="number" step="0.01" className="w-24 px-2 py-1 text-xs rounded-lg bg-zinc-900 border border-emerald-500/50 text-zinc-200 text-right" value={tx.amount} onChange={e=>updateStaging(i,"amount",parseFloat(e.target.value)||0)}/>:f(tx.amount)}</td>
-            <td className="py-2.5 px-2 text-zinc-500 truncate max-w-[140px]">{stagingEditIdx===i?<input className="w-32 px-2 py-1 text-xs rounded-lg bg-zinc-900 border border-emerald-500/50 text-zinc-200" value={tx.description} onChange={e=>updateStaging(i,"description",e.target.value)}/>:tx.description||"—"}</td>
-            <td className="py-2.5 px-4 text-right"><div className="flex items-center justify-end gap-0.5">{stagingEditIdx===i?<button onClick={()=>setStagingEditIdx(null)} className="p-1 rounded-lg hover:bg-emerald-500/10 text-emerald-400"><Check size={12}/></button>:<button onClick={()=>setStagingEditIdx(i)} className="p-1 rounded-lg hover:bg-zinc-700/50 text-zinc-500 hover:text-zinc-300"><Edit3 size={12}/></button>}<button onClick={()=>setStaging(p=>p.filter((_,j)=>j!==i))} className="p-1 rounded-lg hover:bg-rose-500/10 text-zinc-500 hover:text-rose-400"><X size={12}/></button></div></td>
+        <div className="rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-xs">
+          <thead><tr className="bg-[var(--color-surface-elevated)]"><th className="text-left py-2.5 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">日期</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">類型</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">類別</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">次分類</th><th className="text-right py-2.5 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">金額</th><th className="text-left py-2.5 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase">描述</th><th className="text-right py-2.5 px-4 text-[10px] font-medium text-[var(--color-text-muted)] uppercase w-14"></th></tr></thead>
+          <tbody>{staging.map((tx,i)=>(<tr key={i} className={cn("border-b border-[var(--color-border-light)]",tx._corrected&&"bg-amber-500/5")}>
+            <td className="py-2.5 px-4 text-[var(--color-text-primary)]">{stagingEditIdx===i?<input className="w-24 px-2 py-1 text-xs rounded-lg bg-[var(--color-surface)] border border-emerald-500/50 text-[var(--color-text-primary)]" value={tx.transaction_date} onChange={e=>updateStaging(i,"transaction_date",e.target.value)}/>:tx.transaction_date}</td>
+            <td className="py-2.5 px-2">{stagingEditIdx===i?<select className="px-2 py-1 text-xs rounded-lg bg-[var(--color-surface)] border border-emerald-500/50 text-[var(--color-text-primary)]" value={tx.type} onChange={e=>updateStaging(i,"type",e.target.value)}><option value="expense">支出</option><option value="income">收入</option></select>:<span className={tx.type==="income"?"text-emerald-400":"text-rose-400"}>{tx.type==="income"?"💰 收入":"💸 支出"}</span>}</td>
+            <td className="py-2.5 px-2 text-[var(--color-text-primary)]">{stagingEditIdx===i?<input className="w-20 px-2 py-1 text-xs rounded-lg bg-[var(--color-surface)] border border-emerald-500/50 text-[var(--color-text-primary)]" value={tx.category} onChange={e=>updateStaging(i,"category",e.target.value)}/>:tx.category}</td>
+            <td className="py-2.5 px-2 text-[var(--color-text-muted)]">{stagingEditIdx===i?<input className="w-24 px-2 py-1 text-xs rounded-lg bg-[var(--color-surface)] border border-emerald-500/50 text-[var(--color-text-primary)]" value={tx.sub_category} onChange={e=>updateStaging(i,"sub_category",e.target.value)}/>:(tx.sub_category&&tx.sub_category!==tx.category?tx.sub_category:"—")}</td>
+            <td className={cn("py-2.5 px-4 text-right font-mono font-medium",tx.type==="income"?"text-emerald-400":"text-rose-400")}>{stagingEditIdx===i?<input type="number" step="0.01" className="w-24 px-2 py-1 text-xs rounded-lg bg-[var(--color-surface)] border border-emerald-500/50 text-[var(--color-text-primary)] text-right" value={tx.amount} onChange={e=>updateStaging(i,"amount",parseFloat(e.target.value)||0)}/>:f(tx.amount)}</td>
+            <td className="py-2.5 px-2 text-[var(--color-text-muted)] truncate max-w-[140px]">{stagingEditIdx===i?<input className="w-32 px-2 py-1 text-xs rounded-lg bg-[var(--color-surface)] border border-emerald-500/50 text-[var(--color-text-primary)]" value={tx.description} onChange={e=>updateStaging(i,"description",e.target.value)}/>:tx.description||"—"}</td>
+            <td className="py-2.5 px-4 text-right"><div className="flex items-center justify-end gap-0.5">{stagingEditIdx===i?<button onClick={()=>setStagingEditIdx(null)} className="p-1 rounded-lg hover:bg-emerald-500/10 text-emerald-400"><Check size={12}/></button>:<button onClick={()=>setStagingEditIdx(i)} className="p-1 rounded-lg hover:bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><Edit3 size={12}/></button>}<button onClick={()=>setStaging(p=>p.filter((_,j)=>j!==i))} className="p-1 rounded-lg hover:bg-rose-500/10 text-[var(--color-text-muted)] hover:text-rose-400"><X size={12}/></button></div></td>
           </tr>))}</tbody>
         </table></div></div>
       </div>)}
-    </div>
+    </PageContainer>
   );
 }

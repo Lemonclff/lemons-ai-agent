@@ -22,6 +22,8 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader } from "@/components/ui/layout-components";
+import { Tabs } from "@/components/ui/components";
 import { cn, timeAgo } from "@/lib/utils";
 
 /* ===== Types ===== */
@@ -394,34 +396,27 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between max-sm:flex-col max-sm:gap-3 max-sm:items-start">
-        <div>
-          <h1 className="text-2xl font-bold">Schedule & Automation</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Manage cron jobs — pause, resume, schedule, and Telegram delivery.</p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={fetchJobs} disabled={loading}>
-          <RefreshCw size={14} className={cn(loading && "animate-spin")} />
-          <span className="ml-2">Refresh</span>
-        </Button>
-      </div>
+    <PageContainer className="max-w-4xl mx-auto">
+      <PageHeader
+        title="Schedule & Automation"
+        description="Manage cron jobs — pause, resume, schedule, and Telegram delivery."
+        actions={
+          <Button variant="secondary" size="sm" onClick={fetchJobs} disabled={loading}>
+            <RefreshCw size={14} className={cn(loading && "animate-spin")} />
+            <span className="ml-2 max-sm:hidden">Refresh</span>
+          </Button>
+        }
+      />
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-surface-elevated)] w-fit">
-        {(["jobs", "guide"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium rounded-lg transition-all",
-              tab === t ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            )}
-          >
-            {t === "jobs" ? `Active Jobs (${jobs.length})` : "Setup Guide"}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: "jobs", label: "Active Jobs", badge: String(jobs.length) },
+          { id: "guide", label: "Setup Guide" },
+        ]}
+        activeTab={tab}
+        onChange={(t) => setTab(t as "jobs" | "guide")}
+        variant="pills"
+      />
 
       {/* Feedback */}
       {feedback && (
@@ -553,6 +548,6 @@ export default function SchedulePage() {
       ) : (
         <SetupGuide />
       )}
-    </div>
+    </PageContainer>
   );
 }

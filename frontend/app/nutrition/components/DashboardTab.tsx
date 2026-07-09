@@ -443,18 +443,18 @@ export function DashboardTab({
                     </div>
                     <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.amount, undefined, entry.serving_unit || 'g')}
                       title="Add to Quick Favorites"
-                      className="p-1 rounded hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"><Star size={14} /></button>
-                    <button onClick={() => deleteLog(entry.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"><X size={14} /></button>
+                      className="p-2.5 rounded-lg hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] min-w-[44px] min-h-[44px] flex items-center justify-center"><Star size={16} /></button>
+                    <button onClick={() => deleteLog(entry.id)} className="p-2.5 rounded-lg hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 min-w-[44px] min-h-[44px] flex items-center justify-center"><X size={16} /></button>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))} className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Minus size={13} /></button>
+                      <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Minus size={16} /></button>
                       <input type="number" value={entry.amount} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
-                        className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none" inputMode="decimal" />
-                      <button onClick={() => updateWeight(entry.id, entry.amount + 10)} className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Plus size={13} /></button>
+                        className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[13px] tabular-nums outline-none" inputMode="decimal" />
+                      <button onClick={() => updateWeight(entry.id, entry.amount + 10)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Plus size={16} /></button>
                       <select value={entry.serving_unit || 'g'}
                         onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
-                        className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-1 outline-none text-[var(--color-text-muted)]">
+                        className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-2 outline-none text-[var(--color-text-muted)]">
                         <option value="g">g</option><option value="ml">ml</option>
                         <option value="份">份</option><option value="碗">碗</option>
                         <option value="杯">杯</option><option value="罐">罐</option>
@@ -465,26 +465,26 @@ export function DashboardTab({
                     <div className="flex gap-2 text-[12px] tabular-nums ml-auto items-center flex-wrap">
                       <div className="flex items-center gap-0.5">
                         <button onClick={() => updateLog(entry.id, { calories: Math.max(1, Math.round(entry.calories) - 10) })}
-                          className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Minus size={10} /></button>
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Minus size={16} /></button>
                         <input type="number" value={Math.round(entry.calories)}
                           onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
-                          className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none text-orange-400 font-semibold" inputMode="decimal" min="0" />
+                          className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none text-orange-400 font-semibold" inputMode="decimal" min="0" />
                         <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
-                          className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Plus size={10} /></button>
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Plus size={16} /></button>
                         <span className="text-[10px] text-[var(--color-text-muted)]">kcal</span>
                       </div>
                       <span className="text-[var(--color-text-muted)]">P:</span>
                       <input type="number" value={Math.round(entry.protein * 10) / 10}
                         onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
-                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
+                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
                       <span className="text-[var(--color-text-muted)]">C:</span>
                       <input type="number" value={Math.round(entry.carbs * 10) / 10}
                         onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
-                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
+                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
                       <span className="text-[var(--color-text-muted)]">F:</span>
                       <input type="number" value={Math.round(entry.fat * 10) / 10}
                         onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
-                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
+                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
                     </div>
                   </div>
                 </div>

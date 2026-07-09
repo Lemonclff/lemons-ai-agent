@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Zap, RotateCcw, Download, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader, StatsGrid } from "@/components/ui/layout-components";
 import { StaffPanel } from "./components/StaffPanel";
 import { LeavePanel } from "./components/LeavePanel";
 import { StatsPanel } from "./components/StatsPanel";
@@ -140,68 +141,64 @@ export default function Page() {
   }
 
   return (
-    <div className="p-4 max-w-full">
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-            <span className="text-2xl">📅</span> 智能排更
-          </h1>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            {activeStaff.length} staff &middot; {activeUnits.length} units &middot; {assignments.length} shifts
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg px-1 mr-1">
-            <button onClick={() => setCurrentMonth(m => {
-              const d = new Date(m + "-01");
-              d.setMonth(d.getMonth() - 1);
-              return d.toISOString().slice(0, 7);
-            })} className="p-1.5 hover:bg-zinc-700 rounded">
-              <ChevronLeft size={14} />
-            </button>
-            <span className="text-sm font-medium min-w-[120px] text-center text-zinc-200">{monthLabel}</span>
-            <button onClick={() => setCurrentMonth(m => {
-              const d = new Date(m + "-01");
-              d.setMonth(d.getMonth() + 1);
-              return d.toISOString().slice(0, 7);
-            })} className="p-1.5 hover:bg-zinc-700 rounded">
-              <ChevronRight size={14} />
-            </button>
+    <PageContainer>
+      <PageHeader
+        title={<><span className="text-2xl">📅</span> 智能排更</>}
+        description={`${activeStaff.length} staff · ${activeUnits.length} units · ${assignments.length} shifts`}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-[var(--color-surface-elevated)] rounded-lg px-1 mr-1">
+              <button onClick={() => setCurrentMonth(m => {
+                const d = new Date(m + "-01");
+                d.setMonth(d.getMonth() - 1);
+                return d.toISOString().slice(0, 7);
+              })} className="p-1.5 hover:bg-[var(--color-surface-overlay)] rounded">
+                <ChevronLeft size={14} />
+              </button>
+              <span className="text-sm font-medium min-w-[120px] text-center text-[var(--color-text-primary)]">{monthLabel}</span>
+              <button onClick={() => setCurrentMonth(m => {
+                const d = new Date(m + "-01");
+                d.setMonth(d.getMonth() + 1);
+                return d.toISOString().slice(0, 7);
+              })} className="p-1.5 hover:bg-[var(--color-surface-overlay)] rounded">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+            <Button variant="secondary" size="sm" onClick={handleClear}>
+              <RotateCcw size={13} className="mr-1" />清空
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleExportCSV}>
+              <Download size={13} className="mr-1" />匯出
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => { setShowSettings(true); setSettingsTab("units"); }}>
+              <Settings2 size={13} className="mr-1" />設定
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSolve} disabled={solving}>
+              {solving ? "計算中..." : <><Zap size={14} className="mr-1" />自動排更</>}
+            </Button>
           </div>
-          <Button variant="secondary" size="sm" onClick={handleClear}>
-            <RotateCcw size={13} className="mr-1" />清空
-          </Button>
-          <Button variant="secondary" size="sm" onClick={handleExportCSV}>
-            <Download size={13} className="mr-1" />匯出
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => { setShowSettings(true); setSettingsTab("units"); }}>
-            <Settings2 size={13} className="mr-1" />設定
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleSolve} disabled={solving}>
-            {solving ? "計算中..." : <><Zap size={14} className="mr-1" />自動排更</>}
-          </Button>
-        </div>
-      </div>
+        }
+      />
       {msg && (
         <div className="rounded-xl p-3 text-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-4">
           {msg}
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3">
-          <p className="text-lg font-bold text-zinc-100">{activeStaff.length}</p>
-          <p className="text-xs text-zinc-500">職員</p>
+      <StatsGrid cols={3} className="mb-4">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3">
+          <p className="text-lg font-bold text-[var(--color-text-primary)]">{activeStaff.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)]">職員</p>
         </div>
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3">
-          <p className="text-lg font-bold text-zinc-100">{activeUnits.length}</p>
-          <p className="text-xs text-zinc-500">家社</p>
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3">
+          <p className="text-lg font-bold text-[var(--color-text-primary)]">{activeUnits.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)]">家社</p>
         </div>
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3">
-          <p className="text-lg font-bold text-zinc-100">{assignments.length}</p>
-          <p className="text-xs text-zinc-500">更次</p>
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3">
+          <p className="text-lg font-bold text-[var(--color-text-primary)]">{assignments.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)]">更次</p>
         </div>
-      </div>
+      </StatsGrid>
 
       {showSettings && (
         <SettingsModal
@@ -342,6 +339,6 @@ export default function Page() {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

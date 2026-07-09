@@ -16,6 +16,8 @@ import {
 } from "recharts";
 import {
  cn } from "@/lib/utils";
+import { Tabs } from "@/components/ui/components";
+import { PageHeader, PageContainer } from "@/components/ui/layout-components";
 
 /* ================================================================
    Types
@@ -425,29 +427,28 @@ export default function MarketMonitorPage() {
   const corporateBonds = bonds.filter((r) => r.id === "AAA" || r.id === "BAA" || r.id === "BAA-AAA");
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto px-4 pb-10">
-      {/* Title + tabs + refresh */}
-      <div className="flex items-center justify-between flex-wrap gap-3 mt-4 mb-1">
-        <div>
-          <h1 className="text-[20px] font-bold text-[var(--color-text-primary)] tracking-tight">US Market Monitor</h1>
-          <p className="text-[11px] text-[var(--color-text-muted)]">Treasury &middot; Mortgage &middot; Bonds &middot; Inflation &middot; Credit</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-[var(--color-surface-elevated)]/50">
-            {PAGE_TABS.map((tab) => (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={cn("px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors whitespace-nowrap", activeTab === tab.key ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")}>{tab.label}</button>
-            ))}
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing || fredLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] rounded-md transition-colors border border-[var(--color-border)] disabled:opacity-50"
-            title="Refresh all data"
-          >
-            <RefreshCw size={13} className={cn(refreshing && "animate-spin")} />
-            Refresh
-          </button>
-        </div>
+    <PageContainer className="max-w-[1100px]">
+      {/* Title + tabs */}
+      <PageHeader
+        title="US Market Monitor"
+        description="Treasury · Mortgage · Bonds · Inflation · Credit"
+      />
+      <div className="flex items-center gap-2 flex-wrap">
+        <Tabs
+          tabs={PAGE_TABS}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          variant="pills"
+        />
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing || fredLoading}
+          className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-border)] disabled:opacity-50"
+          title="Refresh all data"
+        >
+          <RefreshCw size={13} className={cn(refreshing && "animate-spin")} />
+          <span className="max-sm:hidden">Refresh</span>
+        </button>
       </div>
 
       {/* Last updated indicator */}
@@ -736,6 +737,6 @@ export default function MarketMonitorPage() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

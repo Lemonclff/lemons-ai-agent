@@ -26,6 +26,7 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader } from "@/components/ui/layout-components";
 import { cn, fmtNum } from "@/lib/utils";
 
 /* ============================================================================
@@ -640,40 +641,35 @@ export default function OptionsVolatilityPage() {
   const unusualCount = data.filter((d) => d.unusual_activity).length;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-[slideIn_0.4s_ease-out]">
-      {/* ================================================================
-          Header
-          ================================================================ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Options & Volatility Monitor</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Track IV/HV spreads, Put/Call ratios, and unusual options activity.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {dataSource === "live" && (
-            <Badge variant="success" size="md">
-              <CheckCircle2 size={12} />
-              Live · yfinance
-            </Badge>
-          )}
-          {unusualCount > 0 && (
-            <Badge variant="danger" size="md">
-              <AlertTriangle size={12} />
-              {unusualCount} Alert{unusualCount > 1 ? "s" : ""}
-            </Badge>
-          )}
-          <Button variant="secondary" size="sm" onClick={fetchData} disabled={loading}>
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            {loading ? "Fetching..." : `Refresh (${countdown}s)`}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={exportCSV}>
-            <Download size={14} />
-            CSV
-          </Button>
-        </div>
-      </div>
+    <PageContainer className="animate-[slideIn_0.4s_ease-out]">
+      <PageHeader
+        title="Options & Volatility Monitor"
+        description="Track IV/HV spreads, Put/Call ratios, and unusual options activity."
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            {dataSource === "live" && (
+              <Badge variant="success" size="md">
+                <CheckCircle2 size={12} />
+                Live · yfinance
+              </Badge>
+            )}
+            {unusualCount > 0 && (
+              <Badge variant="danger" size="md">
+                <AlertTriangle size={12} />
+                {unusualCount} Alert{unusualCount > 1 ? "s" : ""}
+              </Badge>
+            )}
+            <Button variant="secondary" size="sm" onClick={fetchData} disabled={loading}>
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+              <span className="ml-2 max-sm:hidden">{loading ? "Fetching..." : `Refresh (${countdown}s)`}</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={exportCSV}>
+              <Download size={14} />
+              <span className="ml-1 max-sm:hidden">CSV</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* ================================================================
           Search / Add Ticker Bar
@@ -992,6 +988,6 @@ export default function OptionsVolatilityPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

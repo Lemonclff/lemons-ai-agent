@@ -5,9 +5,10 @@ import {
   Search, Plus, Minus, X, Camera, Apple, Loader2,
   ChevronLeft, ChevronRight, Utensils, TrendingUp,
   Settings, History, PieChart, UtensilsCrossed, Copy,
-  Maximize2, Minimize2,
+  Maximize2, Minimize2, LayoutDashboard, Dumbbell, UserCircle,
+  Flame, Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+
 
 import { Ring } from "./components/Ring";
 import { DashboardTab } from "./components/DashboardTab";
@@ -16,7 +17,8 @@ import { PhotoTab } from "./components/PhotoTab";
 import { ProfileTab } from "./components/ProfileTab";
 import { HistoryTab } from "./components/HistoryTab";
 import { CaloriesOutTab } from "./components/CaloriesOutTab";
-import { BottomNav } from "./components/BottomNav";
+import { Tabs } from "@/components/ui/components";
+import { cn } from "@/lib/utils";
 
 /* ================================================================
    Types
@@ -40,13 +42,15 @@ interface UserProfile {
 interface CustomFood { id: number; food_name: string; calories_per_100g: number; protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; }
 
 const PAGES = [
-  { key: "dashboard", label: "Home", icon: PieChart },
-  { key: "search", label: "Calories In", icon: Search },
-  { key: "calories-out", label: "Calories Out", icon: TrendingUp },
-  { key: "photo", label: "AI Photo", icon: Camera },
-  { key: "history", label: "History", icon: History },
-  { key: "profile", label: "Profile", icon: Settings },
+  { key: "dashboard", label: "Home", shortLabel: "Home", icon: LayoutDashboard, color: "text-sky-400" },
+  { key: "search", label: "Calories In", shortLabel: "In", icon: UtensilsCrossed, color: "text-orange-400" },
+  { key: "calories-out", label: "Calories Out", shortLabel: "Out", icon: Dumbbell, color: "text-green-400" },
+  { key: "photo", label: "AI Photo", shortLabel: "Photo", icon: Camera, color: "text-purple-400" },
+  { key: "history", label: "History", shortLabel: "Hist", icon: History, color: "text-amber-400" },
+  { key: "profile", label: "Profile", shortLabel: "Me", icon: UserCircle, color: "text-indigo-400" },
 ];
+
+const PAGE_ORDER = PAGES.map(p => p.key);
 
 /* ================================================================
    Main Page
@@ -54,7 +58,22 @@ const PAGES = [
 
 export default function NutritionPage() {
   const [page, setPage] = useState("dashboard");
+  const touchStartX = useRef(0);
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    const idx = PAGE_ORDER.indexOf(page);
+    if (diff > 50 && idx < PAGE_ORDER.length - 1) setPage(PAGE_ORDER[idx + 1]);
+    if (diff < -50 && idx > 0) setPage(PAGE_ORDER[idx - 1]);
+  };
   const [fullscreen, setFullscreen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    if (window.innerWidth < 768) setFullscreen(true);
+  }, []);
+  // On mobile, auto-enter fullscreen. Show nothing until mounted to avoid flash.
+  const showFullscreen = mounted ? fullscreen : false;
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   });
@@ -325,22 +344,19 @@ export default function NutritionPage() {
     } catch {}
   };
   const addExercise = async () => {
-    const name = exCustom ? exCustomName : exName;
+    const name = exName;
     if (!name) return;
     try {
-      const body: any = { exercise_name: name, log_date: currentDate };
-      if (exCustom) {
-        body.calories_burned = Number(exCustomCal) || 0;
-        body.duration_min = 0;
-      } else {
-        body.duration_min = exDuration;
+      const body: any = { exercise_name: name, log_date: currentDate, duration_min: exDuration };
+      if (exCustomCal) {
+        body.calories_burned = Number(exCustomCal);
       }
       await fetch("/api/nutrition/exercise", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      setExName(""); setExDuration(30); setExCustomName(""); setExCustomCal("");
+      setExName(""); setExDuration(30); setExCustomCal("");
       fetchExercises(); fetchLogs(currentDate);
       showToast(`Logged ${name}`);
     } catch {}
@@ -550,36 +566,77 @@ export default function NutritionPage() {
   const resetPhoto = () => { setPhotoFile(null); setPhotoPreview(""); setPhotoResult(null); setPhotoError(""); setPhotoNutrition({}); setPhotoEditedWeights({}); setPhotoUnits({}); setSelectedDishes(new Set()); setEditedNutrition({}); setPasteMode(false); setPasteText(""); };
 
   /* ---- Render ---- */
+  const currentPageIdx = PAGE_ORDER.indexOf(page);
+
   return (
     <>
-    <div className={`w-full max-w-[960px] mx-auto pb-[104px] md:pb-0 ${fullscreen ? 'hidden' : ''}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mt-2 mb-4">
-        <div className="flex items-center gap-2">
-          <Apple size={22} className="text-[var(--color-accent)]" />
-          <h1 className="text-[20px] font-bold text-[var(--color-text-primary)]">NutriSnap</h1>
-          <span className="text-[12px] text-[var(--color-text-muted)] mt-1 max-md:hidden">Food Nutrition Analysis</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => changeDate(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] hover:border-[var(--color-accent)]/30 hover:text-[var(--color-accent)] transition-all"><ChevronLeft size={16} /></button>
-          <span className="text-[14px] font-semibold text-[var(--color-text-primary)] min-w-[100px] text-center">{dateDisplay()}</span>
-          <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] hover:border-[var(--color-accent)]/30 hover:text-[var(--color-accent)] transition-all disabled:opacity-20 disabled:hover:border-[var(--color-border)]/50"><ChevronRight size={16} /></button>
-          <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? "Exit" : "Fullscreen"} className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:bg-[var(--color-accent)]/10 hover:border-[var(--color-accent)]/30 hover:text-[var(--color-accent)] transition-all ml-1"><Maximize2 size={15} /></button>
-        </div>
-      </div>
+    <div className={`w-full max-w-[960px] mx-auto pb-[140px] md:pb-0 ${showFullscreen ? 'hidden' : ''}`}
+      onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
-      {/* Sub-navigation — desktop only */}
-      <div className="hidden md:flex gap-1 mb-4 overflow-x-auto pb-1">
-        {PAGES.map(p => (
-          <button key={p.key} onClick={() => setPage(p.key)}
-            className={cn("flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-lg whitespace-nowrap transition-colors",
-              page === p.key ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-elevated)]")}>
-            <p.icon size={16} />{p.label}
-          </button>
+      {/* ═══ Sticky Header + Tab Bar ═══ */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 bg-[var(--color-surface)]/95 backdrop-blur-xl border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
+
+        {/* Date row */}
+        <div className="flex items-center justify-between py-2 md:py-0 md:mt-2 md:mb-4">
+          <div className="flex items-center gap-2">
+            <Apple size={22} className="text-[var(--color-accent)]" />
+            <h1 className="text-[18px] font-bold text-[var(--color-text-primary)]">NutriSnap</h1>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all"><ChevronLeft size={18} /></button>
+            <span className="text-[13px] font-semibold text-[var(--color-text-primary)] min-w-[90px] text-center tabular-nums">{dateDisplay()}</span>
+            <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all disabled:opacity-20"><ChevronRight size={18} /></button>
+            <button onClick={() => setFullscreen(true)} title="Fullscreen" className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 text-[var(--color-accent)] active:scale-95 transition-all"><Maximize2 size={16} /></button>
+          </div>
+        </div>
+
+        {/* ═══ Mobile Tab Bar — icon + short label ═══ */}
+        <div className="md:hidden flex items-center gap-0 pb-1.5 overflow-x-auto scrollbar-none">
+          {PAGES.map(p => {
+            const active = page === p.key;
+            const Icon = p.icon;
+            return (
+              <button
+                key={p.key}
+                onClick={() => setPage(p.key)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-[52px] px-1 rounded-xl transition-all duration-200 flex-shrink-0",
+                  active
+                    ? "text-[var(--color-accent)] bg-[var(--color-accent)]/8"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                )}
+              >
+                <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />
+                <span className="text-[10px] font-semibold leading-none">{p.shortLabel}</span>
+                {active && <span className="absolute bottom-0 w-5 h-0.5 rounded-full bg-[var(--color-accent)]" />}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ═══ Desktop Tab Bar ═══ */}
+        <div className="hidden md:block mb-4">
+          <Tabs
+            tabs={PAGES.map(p => ({ id: p.key, label: p.label, icon: p.icon }))}
+            activeTab={page}
+            onChange={setPage}
+            variant="pills"
+          />
+        </div>
+      </div>{/* end sticky */}
+
+      {/* ═══ Page indicator dots (mobile) ═══ */}
+      <div className="md:hidden flex items-center justify-center gap-1.5 py-2">
+        {PAGES.map((_, i) => (
+          <span key={i} className={cn(
+            "rounded-full transition-all duration-300",
+            i === currentPageIdx ? "w-4 h-1.5 bg-[var(--color-accent)]" : "w-1.5 h-1.5 bg-[var(--color-border)]"
+          )} />
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* ═══ Tab Content ═══ */}
+      <div className="animate-[fadeIn_200ms_ease]">
       {page === "dashboard" && (
         <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
           filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
@@ -606,10 +663,8 @@ export default function NutritionPage() {
 
       {page === "calories-out" && (
         <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
-          exDuration={exDuration} setExDuration={setExDuration} exDropdown={exDropdown} setExDropdown={setExDropdown}
-          exList={exList} exSearch={exSearch} setExSearch={setExSearch}
-          exCustom={exCustom} setExCustom={setExCustom} exCustomName={exCustomName} setExCustomName={setExCustomName}
-          exCustomCal={exCustomCal} setExCustomCal={setExCustomCal}
+          exDuration={exDuration} setExDuration={setExDuration}
+          exCalories={exCustomCal} setExCalories={setExCustomCal}
           addExercise={addExercise} deleteExercise={deleteExercise} />
       )}
 
@@ -638,27 +693,54 @@ export default function NutritionPage() {
           todayStr={todayStr} goals={goals} historyMonth={historyMonth} setHistoryMonth={setHistoryMonth} />
       )}
 
+      </div>{/* end fadeIn */}
+
     </div>
 
     {/* Fullscreen overlay — mobile only */}
-    {fullscreen && (
+    {showFullscreen && (
       <div className="md:hidden fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col overflow-hidden">
-        {/* Compact top bar */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]/30 shrink-0">
-          <div className="flex items-center gap-2">
-            <Apple size={18} className="text-[var(--color-accent)]" />
-            <span className="text-[14px] font-bold text-[var(--color-text-primary)]">NutriSnap</span>
+        {/* ═══ Top bar — gradient ═══ */}
+        <div className="shrink-0 px-4 pt-4 pb-3 bg-gradient-to-b from-[var(--color-accent)]/8 via-[var(--color-accent)]/3 to-transparent">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[var(--color-accent)]/15 flex items-center justify-center ring-1 ring-[var(--color-accent)]/20">
+                <Flame size={22} className="text-[var(--color-accent)]" />
+              </div>
+              <div>
+                <span className="text-[17px] font-bold text-[var(--color-text-primary)]">NutriSnap</span>
+                <p className="text-[11px] text-[var(--color-text-muted)]">{dateDisplay()}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] active:scale-[0.97] transition-all">
+                <ChevronLeft size={20} />
+              </button>
+              <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] active:scale-[0.97] transition-all disabled:opacity-20">
+                <ChevronRight size={20} />
+              </button>
+              <button onClick={() => setFullscreen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] active:scale-[0.97] transition-all ml-1">
+                <Minimize2 size={20} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => changeDate(-1)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)]"><ChevronLeft size={14} /></button>
-            <span className="text-[13px] font-semibold text-[var(--color-text-primary)] min-w-[80px] text-center">{dateDisplay()}</span>
-            <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)] disabled:opacity-20"><ChevronRight size={14} /></button>
-            <button onClick={() => setFullscreen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/30 text-[var(--color-accent)] ml-1"><Minimize2 size={14} /></button>
+          {/* Calorie summary strip */}
+          <div className="flex items-center gap-3 px-1">
+            <div className="flex items-center gap-1.5 bg-orange-500/10 rounded-xl px-3 py-2 flex-1">
+              <UtensilsCrossed size={14} className="text-orange-400" />
+              <span className="text-[12px] font-bold text-orange-400 tabular-nums">{Math.round(summary.calories)}</span>
+              <span className="text-[10px] text-[var(--color-text-muted)]">kcal in</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-green-500/10 rounded-xl px-3 py-2 flex-1">
+              <Zap size={14} className="text-green-400" />
+              <span className="text-[12px] font-bold text-green-400 tabular-nums">{Math.round(summary.exercise_calories)}</span>
+              <span className="text-[10px] text-[var(--color-text-muted)]">kcal out</span>
+            </div>
           </div>
         </div>
 
-        {/* Tab content — scrollable */}
-        <div className="flex-1 overflow-y-auto px-3 pt-3 pb-4">
+        {/* ═══ Content — scrollable ═══ */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
           {page === "dashboard" && (
             <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
               filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
@@ -683,10 +765,8 @@ export default function NutritionPage() {
           )}
           {page === "calories-out" && (
             <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
-              exDuration={exDuration} setExDuration={setExDuration} exDropdown={exDropdown} setExDropdown={setExDropdown}
-              exList={exList} exSearch={exSearch} setExSearch={setExSearch}
-              exCustom={exCustom} setExCustom={setExCustom} exCustomName={exCustomName} setExCustomName={setExCustomName}
-              exCustomCal={exCustomCal} setExCustomCal={setExCustomCal}
+              exDuration={exDuration} setExDuration={setExDuration}
+              exCalories={exCustomCal} setExCalories={setExCustomCal}
               addExercise={addExercise} deleteExercise={deleteExercise} />
           )}
           {page === "photo" && (
@@ -713,14 +793,41 @@ export default function NutritionPage() {
           )}
         </div>
 
-        {/* Bottom Nav inside fullscreen */}
-        <BottomNav page={page} setPage={setPage} />
+        {/* ═══ Bottom Tab Bar ═══ */}
+        <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)]/98 backdrop-blur-xl px-1 pb-[max(8px,env(safe-area-inset-bottom,0px))]">
+          <div className="flex items-center justify-around py-1.5">
+            {PAGES.map(p => {
+              const active = page === p.key;
+              const Icon = p.icon;
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => setPage(p.key)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-2xl transition-all duration-200 active:scale-[0.97]",
+                    active
+                      ? "text-white"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                  )}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300",
+                    active ? "bg-[var(--color-accent)] shadow-lg shadow-[var(--color-accent)]/30 scale-110" : "bg-transparent"
+                  )}>
+                    <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
+                  </div>
+                  <span className="text-[11px] font-bold leading-none">{p.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     )}
 
     {/* Toast — shared */}
     {toast && (
-      <div className="fixed bottom-24 md:bottom-6 right-6 z-[70] px-4 py-2.5 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg shadow-lg text-[13px] text-[var(--color-text-primary)]">
+      <div className="fixed bottom-[80px] md:bottom-6 right-6 z-[70] px-4 py-2.5 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg shadow-lg text-[13px] text-[var(--color-text-primary)]">
         {toast}
       </div>
     )}

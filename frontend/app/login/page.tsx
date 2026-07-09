@@ -3,7 +3,10 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Lock, Sun, Moon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function LoginPage() {
   return (
@@ -21,6 +24,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
+  const { theme, toggleTheme } = useTheme();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -51,13 +55,22 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface)] p-4">
+      {/* Theme toggle (top-right corner) */}
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 p-2.5 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] transition-all border border-[var(--color-border)]"
+        aria-label={theme === "dark" ? "切換至淺色模式" : "切換至深色模式"}
+      >
+        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 mb-4">
-            <Lock size={28} className="text-indigo-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-accent-muted)] mb-4">
+            <Lock size={28} className="text-[var(--color-accent)]" />
           </div>
           <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            Lemon&apos;s AI Agent
+            <span className="gradient-text">Lemon&apos;s AI Agent</span>
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
             請登入以繼續
@@ -65,43 +78,47 @@ function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
+          <Input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="使用者名稱"
             autoFocus
             autoComplete="username"
-            className="w-full px-4 py-3 rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            required
           />
 
-          <input
+          <Input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="密碼"
             autoComplete="current-password"
-            className="w-full px-4 py-3 rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            required
           />
 
           {error && (
-            <p className="text-sm text-red-400 text-center">{error}</p>
+            <p className="text-sm text-[var(--color-danger)] text-center animate-[fadeIn_150ms_ease]" role="alert">
+              {error}
+            </p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading || !username || !password}
-            className="w-full py-3 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            variant="primary"
+            size="lg"
+            className="w-full"
           >
             {loading ? "驗證中..." : "登入"}
-          </button>
+          </Button>
         </form>
 
         <p className="text-center text-sm text-[var(--color-text-muted)] mt-6">
           還沒有帳號？{" "}
           <Link
             href="/register"
-            className="text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors font-medium"
           >
             註冊
           </Link>

@@ -2,108 +2,471 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Lemon's AI Agent Dark Mode Theme (Default) ===== */
+/* ================================================================
+   Lemon's AI Agent — Design Token System
+   Style: Data-Dense Dashboard (Fintech/Crypto)
+   Supports: Light ☀️ + Dark 🌙 (class-based, persisted)
+   ================================================================ */
+
+/* ----- Dark Mode (Default) ----- */
 :root {
-  --color-surface:           #0a0a0f;
+  /* Surface */
+  --color-surface:           #0a0a12;
   --color-surface-secondary: #111118;
-  --color-surface-elevated:  #1a1a25;
-  --color-border:            #2a2a3a;
-  --color-text-primary:      #e4e4ef;
-  --color-text-secondary:    #8888a0;
-  --color-text-muted:        #5c5c72;
+  --color-surface-elevated:  #1a1a28;
+  --color-surface-overlay:   #252538;
+
+  /* Text */
+  --color-text-primary:      #e8eaf0;
+  --color-text-secondary:    #8b8fa8;
+  --color-text-muted:        #7e8198;
+
+  /* Brand / Accent */
   --color-accent:            #6366f1;
   --color-accent-hover:      #818cf8;
-  --color-success:           #22c55e;
-  --color-warning:           #f59e0b;
-  --color-danger:            #ef4444;
-  --color-info:              #3b82f6;
+  --color-accent-muted:      rgba(99, 102, 241, 0.12);
+  --color-accent-glow:       rgba(99, 102, 241, 0.25);
 
-  --sidebar-width: 260px;
+  /* Gold (fintech accent) */
+  --color-gold:              #f59e0b;
+  --color-gold-hover:        #fbbf24;
+  --color-gold-muted:        rgba(245, 158, 11, 0.12);
+
+  /* Border */
+  --color-border:            #252538;
+  --color-border-light:      #1e1e30;
+
+  /* Status */
+  --color-success:           #22c55e;
+  --color-success-muted:     rgba(34, 197, 94, 0.12);
+  --color-warning:           #f59e0b;
+  --color-warning-muted:     rgba(245, 158, 11, 0.12);
+  --color-danger:            #ef4444;
+  --color-danger-muted:      rgba(239, 68, 68, 0.12);
+  --color-info:              #3b82f6;
+  --color-info-muted:        rgba(59, 130, 246, 0.12);
+
+  /* Chart colors (data viz) */
+  --color-chart-1:           #6366f1;
+  --color-chart-2:           #22c55e;
+  --color-chart-3:           #f59e0b;
+  --color-chart-4:           #ef4444;
+  --color-chart-5:           #3b82f6;
+  --color-chart-6:           #a855f7;
+  --color-chart-7:           #06b6d4;
+  --color-chart-8:           #ec4899;
+
+  /* Shadows */
+  --shadow-sm:               0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:               0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:               0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow:             0 0 20px var(--color-accent-glow);
+
+  /* Radius */
+  --radius-sm:               6px;
+  --radius-md:               10px;
+  --radius-lg:               14px;
+  --radius-xl:               18px;
+  --radius-2xl:              24px;
+
+  /* Spacing scale (4pt grid) */
+  --space-1:                 4px;
+  --space-2:                 8px;
+  --space-3:                 12px;
+  --space-4:                 16px;
+  --space-5:                 20px;
+  --space-6:                 24px;
+  --space-8:                 32px;
+  --space-10:                40px;
+  --space-12:                48px;
+
+  /* Layout */
+  --sidebar-width:           260px;
   --sidebar-collapsed-width: 64px;
-  --navbar-height: 56px;
+  --navbar-height:           56px;
+  --bottom-nav-height:       64px;
+
+  /* Animation */
+  --transition-fast:         150ms ease;
+  --transition-normal:       200ms ease;
+  --transition-slow:         300ms ease;
 
   color-scheme: dark;
 }
 
-/* ===== Light Mode (opt-in via .light class) ===== */
+/* ----- Light Mode ----- */
 .light {
+  /* Surface */
   --color-surface:           #f8f9fc;
   --color-surface-secondary: #ffffff;
   --color-surface-elevated:  #f1f3f9;
-  --color-border:            #e2e4ea;
-  --color-text-primary:      #1a1a2e;
-  --color-text-secondary:    #6b7280;
-  --color-text-muted:        #9ca3af;
+  --color-surface-overlay:   #e8eaf0;
+
+  /* Text */
+  --color-text-primary:      #111827;
+  --color-text-secondary:    #4b5563;
+  --color-text-muted:        #6b7280;
+
+  /* Brand / Accent */
   --color-accent:            #4f46e5;
   --color-accent-hover:      #6366f1;
+  --color-accent-muted:      rgba(79, 70, 229, 0.08);
+  --color-accent-glow:       rgba(79, 70, 229, 0.15);
+
+  /* Gold (fintech accent) */
+  --color-gold:              #d97706;
+  --color-gold-hover:        #f59e0b;
+  --color-gold-muted:        rgba(217, 119, 6, 0.08);
+
+  /* Border */
+  --color-border:            #e5e7eb;
+  --color-border-light:      #f3f4f6;
+
+  /* Status (adjusted for 4.5:1 contrast on light bg) */
+  --color-success:           #15803d;
+  --color-success-muted:     rgba(21, 128, 61, 0.08);
+  --color-warning:           #b45309;
+  --color-warning-muted:     rgba(180, 83, 9, 0.08);
+  --color-danger:            #b91c1c;
+  --color-danger-muted:      rgba(185, 28, 28, 0.08);
+  --color-info:              #1d4ed8;
+  --color-info-muted:        rgba(29, 78, 216, 0.08);
+
+  /* Chart colors (same hues, adjusted for light bg) */
+  --color-chart-1:           #4f46e5;
+  --color-chart-2:           #16a34a;
+  --color-chart-3:           #d97706;
+  --color-chart-4:           #dc2626;
+  --color-chart-5:           #2563eb;
+  --color-chart-6:           #9333ea;
+  --color-chart-7:           #0891b2;
+  --color-chart-8:           #db2777;
+
+  /* Shadows (lighter for light mode) */
+  --shadow-sm:               0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md:               0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg:               0 8px 30px rgba(0, 0, 0, 0.10);
+  --shadow-glow:             0 0 20px var(--color-accent-glow);
 
   color-scheme: light;
 }
 
-/* ===== Base ===== */
-* {
-  box-sizing: border-box;
+/* ================================================================
+   Tailwind Extension: map CSS variables to Tailwind tokens
+   ================================================================ */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* ── Focus Ring System ──
+     Box-shadow ring (not outline) so border-radius is respected across all browsers.
+     Uses a double-ring: outer accent color, inner gap matching page background.
+     Fallback :focus for browsers that don't support :focus-visible. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg, #0f1117), 0 0 0 4px var(--color-accent);
+    border-radius: var(--radius-sm);
+  }
+  /* Reduced motion: remove ring animation if any */
+  @media (prefers-reduced-motion: reduce) {
+    :focus-visible {
+      transition: none;
+    }
+  }
+
+  /* Skip to content (hidden until focused) */
+  .skip-to-content {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    z-index: 9999;
+    padding: 8px 16px;
+    background: var(--color-accent);
+    color: white;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: transform var(--transition-fast);
+  }
+  .skip-to-content:focus {
+    transform: translate(-50%, 8px);
+  }
+
+  /* ── Reduced Motion ──
+     Respects OS-level accessibility setting.
+     Disables all animations, transitions, and transforms when user prefers reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background-color: var(--color-surface);
-  color: var(--color-text-primary);
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ================================================================
+   Scrollbar
+   ================================================================ */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
 }
 
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
-}
-
-/* ===== Utility Classes ===== */
+/* ================================================================
+   Utility Classes
+   ================================================================ */
 @layer components {
+  /* Glass effect */
   .glass {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
+  }
+  .light .glass {
+    background: rgba(255, 255, 255, 0.7);
   }
 
+  /* Gradient text (accent) */
   .gradient-text {
     background: linear-gradient(135deg, #6366f1, #818cf8, #a5b4fc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+  .light .gradient-text {
+    background: linear-gradient(135deg, #4f46e5, #6366f1, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
+  /* Gradient text (gold) */
+  .gradient-text-gold {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24, #fcd34d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Card hover effect */
   .card-hover {
-    transition: all 0.2s ease;
+    transition: all var(--transition-normal);
   }
   .card-hover:hover {
     border-color: var(--color-accent);
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12);
+    box-shadow: var(--shadow-glow);
   }
 
-  .animate-marquee {
-    animation: marquee 30s linear infinite;
+  /* Shimmer / Skeleton base */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-elevated) 25%,
+      var(--color-surface-overlay) 50%,
+      var(--color-surface-elevated) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-md);
+  }
+
+  /* Status dot */
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.online  { background: var(--color-success); }
+  .status-dot.offline { background: var(--color-text-muted); }
+  .status-dot.warning { background: var(--color-warning); }
+  .status-dot.error   { background: var(--color-danger); }
+
+  /* Pulse dot for live indicator */
+  .pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+    animation: pulse-dot 2s ease-in-out infinite;
   }
 }
 
+/* ================================================================
+   Keyframes
+   ================================================================ */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(1.3); }
+}
+
 @keyframes marquee {
-  0% { transform: translateX(0); }
+  0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+@keyframes slideIn {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ================================================================
+   Reduced Motion
+   ================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================================================================
+   Responsive Utilities
+   ================================================================ */
+@layer utilities {
+  /* Safe area padding for notched devices */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Composite safe-area: adds bottom padding for fixed bottom nav */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Min-height that accounts for dynamic viewport (iOS Safari) */
+  .min-h-safe {
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+  }
+
+  /* Hide scrollbar but keep scroll */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Responsive Table ──
+     On mobile (<640px), tables switch to card layout:
+     each row becomes a card with label-value pairs.
+     Apply .table-responsive to <table>, keep <thead> for labels. */
+  .table-responsive {
+    width: 100%;
+  }
+  @media (max-width: 639px) {
+    .table-responsive thead {
+      display: none;
+    }
+    .table-responsive tbody tr {
+      display: block;
+      padding: 12px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .table-responsive tbody td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      text-align: right;
+      white-space: normal;
+    }
+    .table-responsive tbody td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      text-align: left;
+      color: var(--color-text-muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+  }
+
+  /* ── Mobile-first Breakpoint Reference ──
+     sm:  640px   — large phones landscape, small tablets
+     md:  768px   — tablets portrait
+     lg:  1024px  — tablets landscape, small laptops
+     xl:  1280px  — desktops
+     2xl: 1536px  — large desktops
+
+     Usage: mobile-first — default styles = mobile, then scale up.
+       .class        → mobile (0–639px)
+       sm:.class     → 640px+
+       md:.class     → 768px+
+       lg:.class     → 1024px+
+       xl:.class     → 1280px+
+       2xl:.class    → 1536px+
+
+     For hiding on mobile: max-sm:hidden, max-md:hidden, etc.
+     Page container: PageContainer (space-y-6 + max-w-7xl mx-auto)
+     Page header:    PageHeader (title + description + actions)
+     Tab navigation: Tabs variant="pills" (unified sub-navigation)
+  */
 }

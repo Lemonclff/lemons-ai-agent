@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Search, ChevronRight, LogOut, Menu } from "lucide-react";
+import { Bell, Search, ChevronRight, LogOut, Menu, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ThemeProvider";
 
 function getBreadcrumbs(pathname: string): { label: string; href?: string }[] {
   const segments = pathname.split("/").filter(Boolean);
@@ -27,6 +28,7 @@ interface NavbarProps {
 export function Navbar({ onMenuClick }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const breadcrumbs = getBreadcrumbs(pathname);
 
   async function handleLogout() {
@@ -95,6 +97,15 @@ export function Navbar({ onMenuClick }: NavbarProps) {
         >
           <Bell size={18} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500" />
+        </button>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-elevated)] transition-all duration-200"
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
         {/* Logout */}

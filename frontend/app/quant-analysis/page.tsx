@@ -9,6 +9,7 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer, PageHeader } from "@/components/ui/layout-components";
 import { cn } from "@/lib/utils";
 
 /* ===== Types ===== */
@@ -157,16 +158,11 @@ export default function QuantAnalysisPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between max-sm:flex-col max-sm:gap-3 max-sm:items-start">
-        <div>
-          <h1 className="text-2xl font-bold">Quant Analysis — 波動率診斷</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Hermes AI 量化引擎 · IV/HV · PCR · RSI · Bollinger · 策略推演
-          </p>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Quant Analysis — 波動率診斷"
+        description="Hermes AI 量化引擎 · IV/HV · PCR · RSI · Bollinger · 策略推演"
+      />
 
       {/* Search + Add Bar */}
       <Card className="p-4">
@@ -362,6 +358,6 @@ export default function QuantAnalysisPage() {
       <p className="text-xs text-center text-[var(--color-text-muted)]">
         ⚠️ 以上分析基於公開市場數據與數學模型推演，不構成投資建議。選擇權交易存在重大風險，可能導致本金全部損失。
       </p>
-    </div>
+    </PageContainer>
   );
 }
