@@ -49,6 +49,7 @@ export function DashboardTab({
   exercises, deleteExercise, updateExercise,
   favorites, suggested, quickAddIn, quickAddOut,
   addToFavorites, removeFavorite,
+  servingUnits,
   userWeight,
 }: {
   summary: DaySummary; goals: {calories:number,protein:number,carbs:number,fat:number};
@@ -62,6 +63,7 @@ export function DashboardTab({
   quickAddIn: (f: FavoriteItem) => void; quickAddOut: (f: FavoriteItem) => void;
   addToFavorites: (type: 'in'|'out', name: string, calories?: number, default_weight?: number, default_duration?: number, serving_unit?: string) => void;
   removeFavorite: (type: 'in'|'out', id: number) => void;
+  servingUnits?: string[];
   userWeight?: number;
 }) {
   const [favTab, setFavTab] = useState<'in'|'out'>('in');
@@ -381,16 +383,9 @@ export function DashboardTab({
                           <select value={entry.serving_unit || 'g'}
                             onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
                             className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)] cursor-pointer">
-                            <option value="g">g</option>
-                            <option value="ml">ml</option>
-                            <option value="份">份</option>
-                            <option value="碗">碗</option>
-                            <option value="杯">杯</option>
-                            <option value="罐">罐</option>
-                            <option value="瓶">瓶</option>
-                            <option value="個">個</option>
-                            <option value="包">包</option>
-                            <option value="碟">碟</option>
+                            {(servingUnits || ["g","ml","份","碗","杯","罐","瓶","個","包","碟"]).map(u => (
+                              <option key={u} value={u}>{u}</option>
+                            ))}
                           </select>
                         </div>
                       </td>
@@ -455,11 +450,9 @@ export function DashboardTab({
                       <select value={entry.serving_unit || 'g'}
                         onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
                         className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-2 outline-none text-[var(--color-text-muted)]">
-                        <option value="g">g</option><option value="ml">ml</option>
-                        <option value="份">份</option><option value="碗">碗</option>
-                        <option value="杯">杯</option><option value="罐">罐</option>
-                        <option value="瓶">瓶</option><option value="個">個</option>
-                        <option value="包">包</option><option value="碟">碟</option>
+                        {(servingUnits || ["g","ml","份","碗","杯","罐","瓶","個","包","碟"]).map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="flex gap-2 text-[12px] tabular-nums ml-auto items-center flex-wrap">

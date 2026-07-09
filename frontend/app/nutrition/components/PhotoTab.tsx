@@ -34,6 +34,7 @@ export function PhotoTab({
   editedNutrition, setEditedNutrition,
   pasteMode, setPasteMode, pasteText, setPasteText,
   photoUnits, setPhotoUnits,
+  servingUnits,
   handlePhotoSelect, handlePhotoDrop, handleAnalyze,
   handleConfirmAnalysis, resetPhoto, showToast,
   onPasteResult,
@@ -53,6 +54,7 @@ export function PhotoTab({
   pasteMode: boolean; setPasteMode: (v:boolean) => void;
   pasteText: string; setPasteText: (v:string) => void;
   photoUnits?: Record<number, string>; setPhotoUnits?: (fn:(u:Record<number,string>)=>Record<number,string>) => void;
+  servingUnits?: string[];
   handlePhotoSelect: (f:File) => void; handlePhotoDrop: (e:React.DragEvent) => void;
   handleAnalyze: () => void; handleConfirmAnalysis: () => void;
   resetPhoto: () => void; showToast: (msg:string) => void;
@@ -251,11 +253,9 @@ export function PhotoTab({
                       <select value={photoUnits?.[i] || d.suggested_unit || 'g'}
                         onChange={e => setPhotoUnits?.(u => ({...u, [i]: e.target.value}))}
                         className="text-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)]">
-                        <option value="g">g</option><option value="ml">ml</option>
-                        <option value="份">份</option><option value="碗">碗</option>
-                        <option value="杯">杯</option><option value="罐">罐</option>
-                        <option value="瓶">瓶</option><option value="個">個</option>
-                        <option value="包">包</option><option value="碟">碟</option>
+                        {(servingUnits || ["g","ml","份","碗","杯","罐","瓶","個","包","碟"]).map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
                       </select>
                       <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.min(2000, weight + 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">+</button>
                     </div>

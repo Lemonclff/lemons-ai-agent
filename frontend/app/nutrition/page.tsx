@@ -94,6 +94,7 @@ export default function NutritionPage() {
   const [addWeight, setAddWeight] = useState(100);
   const [addMeal, setAddMeal] = useState("lunch");
   const [addServingUnit, setAddServingUnit] = useState("g");
+  const [servingUnits, setServingUnits] = useState<string[]>(["g", "ml", "份", "碗", "杯", "罐", "瓶", "個", "包", "碟"]);
   const [adding, setAdding] = useState(false);
   const [customFoods, setCustomFoods] = useState<CustomFood[]>([]);
   const [editCustId, setEditCustId] = useState<number | null>(null);
@@ -200,6 +201,11 @@ export default function NutritionPage() {
 
   useEffect(() => { fetchLogs(currentDate); fetchExercises(); fetchFavorites(); }, [currentDate, fetchLogs]);
   useEffect(() => { fetchGoals(); fetchExList(); }, [fetchGoals]);
+  useEffect(() => {
+    fetch("/api/nutrition/logs?action=units").then(r => r.json()).then(d => {
+      if (d.units?.length) setServingUnits(d.units);
+    }).catch(() => {});
+  }, []);
 
   /* ---- Update log entry ---- */
   const updateLog = async (id: number, fields: { amount?: number; serving_unit?: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
@@ -644,6 +650,7 @@ export default function NutritionPage() {
           favorites={favorites} suggested={suggested}
           quickAddIn={quickAddIn} quickAddOut={quickAddOut}
           addToFavorites={addToFavorites} removeFavorite={removeFavorite}
+          servingUnits={servingUnits}
           userWeight={profile.weight_kg} />
       )}
 
@@ -681,6 +688,7 @@ export default function NutritionPage() {
           handlePhotoSelect={handlePhotoSelect} handlePhotoDrop={handlePhotoDrop}
           handleAnalyze={handleAnalyze} handleConfirmAnalysis={handleConfirmAnalysis}
           resetPhoto={resetPhoto} showToast={showToast}
+          servingUnits={servingUnits}
           onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />
       )}
 
@@ -748,6 +756,7 @@ export default function NutritionPage() {
               favorites={favorites} suggested={suggested}
               quickAddIn={quickAddIn} quickAddOut={quickAddOut}
               addToFavorites={addToFavorites} removeFavorite={removeFavorite}
+              servingUnits={servingUnits}
               userWeight={profile.weight_kg} />
           )}
           {page === "search" && (
@@ -782,6 +791,7 @@ export default function NutritionPage() {
               handlePhotoSelect={handlePhotoSelect} handlePhotoDrop={handlePhotoDrop}
               handleAnalyze={handleAnalyze} handleConfirmAnalysis={handleConfirmAnalysis}
               resetPhoto={resetPhoto} showToast={showToast}
+              servingUnits={servingUnits}
               onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />
           )}
           {page === "profile" && (
