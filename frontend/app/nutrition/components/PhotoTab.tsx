@@ -13,7 +13,15 @@ const SYSTEM_PROMPT_TEXT = `You are a professional food nutrition analyzer. Anal
   ],
   "overall_note": "簡短總結"
 }
-Rules: Identify each dish. Estimate weight in grams. Suggest the most natural serving unit (g/ml/份/碗/杯/罐/瓶/個/包/碟). Estimate nutrition (calories/protein_g/carbs_g/fat_g). Confidence 0-100. Brief note. Return ONLY JSON, no markdown.`;
+Rules:
+1. Identify each dish. Estimate total weight in grams (this is always the GRAM weight, never servings).
+2. Choose suggested_unit from: g, ml, 份, 碗, 杯, 罐, 瓶, 個, 包, 碟, 匙, 片, 塊.
+   - Use g/ml for items measured by weight/volume (rice, meat, liquids).
+   - Use serving units (碗/杯/匙/etc) ONLY when the item naturally comes in discrete servings (e.g. 1 can of soda, 1 scoop of powder, 1 pack of noodles).
+   - When using a serving unit, estimated_weight_grams must be the weight of ONE serving.
+3. Estimate nutrition per the TOTAL weight in estimated_weight_grams.
+4. Confidence 0-100. Brief helpful note in Traditional Chinese.
+5. Return ONLY JSON, no markdown, no extra text.`;
 
 export function PhotoTab({
   photoFile, setPhotoFile, photoPreview, setPhotoPreview,
@@ -205,10 +213,16 @@ export function PhotoTab({
             </div>
             {photoResult.dishes?.map((d: any, i: number) => {
               const nutrition = photoNutrition[d.name];
-              const weight = photoEditedWeights[i] || d.estimated_weight_grams;
+              const rawWeight = d.estimated_weight_grams || 100;
+              const unit = photoUnits?.[i] || d.suggested_unit || 'g';
+              const isWeightUnit = unit === 'g' || unit === 'ml';
+              // For serving units (碗/杯/匙/etc), default to 1 serving; weight shows in note
+              const weight = photoEditedWeights[i] || (isWeightUnit ? rawWeight : 1);
+              // For nutrition calculation, always use grams
+              const calcGrams = isWeightUnit ? weight : weight * rawWeight;
               const isSelected = selectedDishes.has(i);
               const aiNut = editedNutrition[i];
-              const dbFactor = weight / 100;
+              const dbFactor = calcGrams / 100;
               const cal = aiNut ? aiNut.cal : (nutrition ? parseFloat((nutrition.calories_per_100g * dbFactor).toFixed(0)) : 0);
               const prot = aiNut ? aiNut.p : (nutrition ? parseFloat((nutrition.protein_per_100g * dbFactor).toFixed(1)) : 0);
               const carb = aiNut ? aiNut.c : (nutrition ? parseFloat((nutrition.carbs_per_100g * dbFactor).toFixed(1)) : 0);
@@ -273,8 +287,12 @@ export function PhotoTab({
             let totCal = 0, totP = 0, totC = 0, totF = 0;
             photoResult.dishes.forEach((d: any, i: number) => {
               const n = photoNutrition[d.name];
-              const w = photoEditedWeights[i] || d.estimated_weight_grams;
-              if (n) { const f = w / 100; totCal += n.calories_per_100g * f; totP += n.protein_per_100g * f; totC += n.carbs_per_100g * f; totF += n.fat_per_100g * f; }
+              const rawGrams = d.estimated_weight_grams || 100;
+              const displayUnit = photoUnits?.[i] || d.suggested_unit || 'g';
+              const displayWeight = photoEditedWeights[i] || ((displayUnit === 'g' || displayUnit === 'ml') ? rawGrams : 1);
+              // Nutrition always uses grams — if user entered servings, convert back
+              const calcGrams = (displayUnit === 'g' || displayUnit === 'ml') ? displayWeight : displayWeight * rawGrams;
+              if (n) { const f = calcGrams / 100; totCal += n.calories_per_100g * f; totP += n.protein_per_100g * f; totC += n.carbs_per_100g * f; totF += n.fat_per_100g * f; }
             });
             return totCal > 0 ? (
               <div key="totals" className="flex items-center gap-3 p-2 rounded bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20">
