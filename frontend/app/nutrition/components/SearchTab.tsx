@@ -12,6 +12,7 @@ interface CustomFood { id: number; food_name: string; calories_per_100g: number;
 export function SearchTab({
   searchQ, setSearchQ, searchResults, searching, showDropdown, setShowDropdown,
   onSearch, selectFood, addTarget, addMeal, setAddMeal, addWeight, setAddWeight,
+  addServingUnit, setAddServingUnit,
   adding, addFood, customFoods, fetchCustoms,
   customName, setCustomName, customCal, setCustomCal, customProtein, setCustomProtein,
   customCarbs, setCustomCarbs,  customFat, setCustomFat, addCustomFood, customMeal, setCustomMeal,
@@ -23,6 +24,7 @@ export function SearchTab({
   showDropdown: boolean; setShowDropdown: (v:boolean) => void; onSearch: (v:string) => void;
   selectFood: (f:FoodResult) => void; addTarget: FoodResult | null; addMeal: string;
   setAddMeal: (v:string) => void; addWeight: number; setAddWeight: (v:number|((w:number)=>number)) => void;
+  addServingUnit: string; setAddServingUnit: (v:string) => void;
   adding: boolean; addFood: () => void;
   customFoods: CustomFood[]; fetchCustoms: () => void;
   customName: string; setCustomName: (v:string) => void; customCal: string; setCustomCal: (v:string) => void;
@@ -82,7 +84,14 @@ export function SearchTab({
               <input type="number" value={addWeight} onChange={e => setAddWeight(Number(e.target.value) || 0)}
                 className="w-[60px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none" inputMode="decimal" />
               <button onClick={() => setAddWeight((w: number) => w + 10)} className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30"><Plus size={12} /></button>
-              <span className="text-[12px] text-[var(--color-text-muted)]">g</span>
+              <select value={addServingUnit} onChange={e => setAddServingUnit(e.target.value)}
+                className="text-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 outline-none text-[var(--color-text-muted)]">
+                <option value="g">g</option><option value="ml">ml</option>
+                <option value="份">份</option><option value="碗">碗</option>
+                <option value="杯">杯</option><option value="罐">罐</option>
+                <option value="瓶">瓶</option><option value="個">個</option>
+                <option value="包">包</option><option value="碟">碟</option>
+              </select>
             </div>
             <button onClick={addFood} disabled={adding}
               className="ml-auto px-4 py-1.5 text-[12px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity">

@@ -27,8 +27,9 @@ interface FoodResult {
   protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; source: string;
 }
 interface LogEntry {
-  id: number; food_name: string; weight_grams: number; calories: number;
-  protein: number; carbs: number; fat: number; meal_type: string; source: string;
+  id: number; food_name: string; weight_grams: number; serving_unit?: string;
+  calories: number; protein: number; carbs: number; fat: number;
+  meal_type: string; source: string;
 }
 interface DaySummary { calories: number; protein: number; carbs: number; fat: number; count: number; exercise_calories: number; }
 interface UserProfile {
@@ -73,6 +74,7 @@ export default function NutritionPage() {
   const [addTarget, setAddTarget] = useState<FoodResult | null>(null);
   const [addWeight, setAddWeight] = useState(100);
   const [addMeal, setAddMeal] = useState("lunch");
+  const [addServingUnit, setAddServingUnit] = useState("g");
   const [adding, setAdding] = useState(false);
   const [customFoods, setCustomFoods] = useState<CustomFood[]>([]);
   const [editCustId, setEditCustId] = useState<number | null>(null);
@@ -250,9 +252,9 @@ export default function NutritionPage() {
       await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: addTarget.food_name, weight_grams: addWeight, meal_type: addMeal, log_date: currentDate }),
+        body: JSON.stringify({ food_name: addTarget.food_name, weight_grams: addWeight, meal_type: addMeal, serving_unit: addServingUnit, log_date: currentDate }),
       });
-      setAddTarget(null); setAddWeight(100);
+      setAddTarget(null); setAddWeight(100); setAddServingUnit("g");
       fetchLogs(currentDate);
       showToast(`Added ${addTarget.food_name}`);
     } catch { showToast("Failed to add"); }
@@ -564,6 +566,7 @@ export default function NutritionPage() {
         <SearchTab searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults} searching={searching}
           showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
           addTarget={addTarget} addMeal={addMeal} setAddMeal={setAddMeal} addWeight={addWeight} setAddWeight={setAddWeight}
+          addServingUnit={addServingUnit} setAddServingUnit={setAddServingUnit}
           adding={adding} addFood={addFood} customFoods={customFoods} fetchCustoms={fetchCustoms}
           customName={customName} setCustomName={setCustomName} customCal={customCal} setCustomCal={setCustomCal}
           customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
@@ -642,6 +645,7 @@ export default function NutritionPage() {
             <SearchTab searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults} searching={searching}
               showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
               addTarget={addTarget} addMeal={addMeal} setAddMeal={setAddMeal} addWeight={addWeight} setAddWeight={setAddWeight}
+              addServingUnit={addServingUnit} setAddServingUnit={setAddServingUnit}
               adding={adding} addFood={addFood} customFoods={customFoods} fetchCustoms={fetchCustoms}
               customName={customName} setCustomName={setCustomName} customCal={customCal} setCustomCal={setCustomCal}
               customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
