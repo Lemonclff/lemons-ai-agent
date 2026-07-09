@@ -421,6 +421,9 @@ export function DashboardTab({
                           className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" />
                       </td>
                       <td className="py-2 px-2">
+                        <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.weight_grams)}
+                          title="Add to Quick Favorites"
+                          className="p-1 rounded hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"><Star size={12} /></button>
                         <button onClick={() => deleteLog(entry.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"><X size={14} /></button>
                       </td>
                     </tr>
@@ -438,6 +441,9 @@ export function DashboardTab({
                       <span className="text-[13px] font-medium text-[var(--color-text-primary)]">{entry.food_name}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] capitalize">{entry.meal_type}</span>
                     </div>
+                    <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.weight_grams)}
+                      title="Add to Quick Favorites"
+                      className="p-1 rounded hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"><Star size={14} /></button>
                     <button onClick={() => deleteLog(entry.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"><X size={14} /></button>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
