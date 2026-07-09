@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       const inResult = await query(
         `SELECT food_name as name,
                 COUNT(*) as log_count,
-                ROUND(AVG(weight_grams)) as default_weight,
+                ROUND(AVG(amount)) as default_weight,
                 ROUND(AVG(calories)) as avg_calories
          FROM daily_food_logs
          WHERE user_id = $1

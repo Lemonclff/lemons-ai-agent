@@ -27,7 +27,7 @@ interface FoodResult {
   protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; source: string;
 }
 interface LogEntry {
-  id: number; food_name: string; weight_grams: number; serving_unit?: string;
+  id: number; food_name: string; amount: number; serving_unit?: string;
   calories: number; protein: number; carbs: number; fat: number;
   meal_type: string; source: string;
 }
@@ -182,12 +182,12 @@ export default function NutritionPage() {
   useEffect(() => { fetchGoals(); fetchExList(); }, [fetchGoals]);
 
   /* ---- Update log entry ---- */
-  const updateLog = async (id: number, fields: { weight_grams?: number; serving_unit?: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
+  const updateLog = async (id: number, fields: { amount?: number; serving_unit?: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
     // Optimistic update
     setLogs(prev => prev.map(l => {
       if (l.id !== id) return l;
       const updated = { ...l };
-      if (fields.weight_grams !== undefined) updated.weight_grams = fields.weight_grams;
+      if (fields.amount !== undefined) updated.amount = fields.amount;
       if (fields.serving_unit !== undefined) updated.serving_unit = fields.serving_unit;
       if (fields.calories !== undefined) updated.calories = fields.calories;
       if (fields.protein !== undefined) updated.protein = fields.protein;
@@ -202,7 +202,7 @@ export default function NutritionPage() {
         body: JSON.stringify(fields),
       });
       // Only re-fetch if macros/weight changed — serving_unit is cosmetic
-      if (fields.weight_grams !== undefined || fields.calories !== undefined ||
+      if (fields.amount !== undefined || fields.calories !== undefined ||
           fields.protein !== undefined || fields.carbs !== undefined || fields.fat !== undefined) {
         fetchLogs(currentDate);
       }
@@ -210,7 +210,7 @@ export default function NutritionPage() {
   };
 
   // Backward-compat wrapper for weight-only updates
-  const updateWeight = (id: number, weight: number) => updateLog(id, { weight_grams: weight });
+  const updateWeight = (id: number, weight: number) => updateLog(id, { amount: weight });
 
   const deleteLog = async (id: number) => {
     setLogs(prev => prev.filter(l => l.id !== id));
@@ -253,7 +253,7 @@ export default function NutritionPage() {
       await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: addTarget.food_name, weight_grams: addWeight, meal_type: addMeal, serving_unit: addServingUnit, log_date: currentDate }),
+        body: JSON.stringify({ food_name: addTarget.food_name, amount: addWeight, meal_type: addMeal, serving_unit: addServingUnit, log_date: currentDate }),
       });
       setAddTarget(null); setAddWeight(100); setAddServingUnit("g");
       fetchLogs(currentDate);
@@ -278,7 +278,7 @@ export default function NutritionPage() {
         const logRes = await fetch("/api/nutrition/logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ food_name: json.food.food_name, weight_grams: weight, meal_type: customMeal, serving_unit: customServingUnit, log_date: todayStr }),
+          body: JSON.stringify({ food_name: json.food.food_name, amount: weight, meal_type: customMeal, serving_unit: customServingUnit, log_date: todayStr }),
         });
         const logJson = await logRes.json();
         if (logJson.error) { showToast(`Failed to log: ${logJson.error}`); return; }
@@ -414,7 +414,7 @@ export default function NutritionPage() {
       await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: f.name, weight_grams: weight, meal_type: "snack", log_date: todayStr }),
+        body: JSON.stringify({ food_name: f.name, amount: weight, meal_type: "snack", log_date: todayStr }),
       });
       fetchLogs(currentDate);
       showToast(`Quick added ${f.name} (${weight}g)`);
@@ -487,7 +487,7 @@ export default function NutritionPage() {
       else {
         setPhotoResult(json);
         const weights: Record<number, number> = {}; const initNutrition: Record<number, {cal:number,p:number,c:number,f:number}> = {};
-        json.dishes?.forEach((d: any, i: number) => { weights[i] = d.estimated_weight_grams; if (d.calories !== undefined) initNutrition[i] = { cal: d.calories, p: d.protein_g||0, c: d.carbs_g||0, f: d.fat_g||0 }; });
+        json.dishes?.forEach((d: any, i: number) => { weights[i] = d.estimated_amount; if (d.calories !== undefined) initNutrition[i] = { cal: d.calories, p: d.protein_g||0, c: d.carbs_g||0, f: d.fat_g||0 }; });
         setPhotoEditedWeights(weights); setEditedNutrition(initNutrition); setSelectedDishes(new Set(json.dishes?.map((_:any,i:number)=>i)||[]));
         if (json.dishes?.length > 0) {
           const nutritionMap: Record<string, any> = {};
@@ -511,7 +511,7 @@ export default function NutritionPage() {
     if (!photoResult?.dishes?.length) return;
     setPhotoConfirming(true);
     try {
-      const selectedDishesList = photoResult.dishes.filter((_:any,i:number)=>selectedDishes.has(i)).map((d:any,i:number)=>{const aiNut=editedNutrition[i]; return {name:d.name,estimated_weight_grams:photoEditedWeights[i]||d.estimated_weight_grams,...(aiNut?{ai_calories:aiNut.cal,ai_protein:aiNut.p,ai_carbs:aiNut.c,ai_fat:aiNut.f}:{})};});
+      const selectedDishesList = photoResult.dishes.filter((_:any,i:number)=>selectedDishes.has(i)).map((d:any,i:number)=>{const aiNut=editedNutrition[i]; return {name:d.name,estimated_amount:photoEditedWeights[i]||d.estimated_amount,...(aiNut?{ai_calories:aiNut.cal,ai_protein:aiNut.p,ai_carbs:aiNut.c,ai_fat:aiNut.f}:{})};});
       if (selectedDishesList.length===0) { showToast("No dishes selected"); return; }
       const r = await fetch("/api/nutrition/confirm-analysis", { method: "POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({dishes:selectedDishesList,meal_type:photoMealType,log_date:currentDate}) });
       const json = await r.json(); const addedCount = json.added?.filter((a:any)=>a.status==="added").length||0;

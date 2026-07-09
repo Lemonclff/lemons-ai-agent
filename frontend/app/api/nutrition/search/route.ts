@@ -201,7 +201,7 @@ function ensureTables() {
         log_date      DATE NOT NULL,
         meal_type     VARCHAR(20) DEFAULT 'snack',
         food_name     VARCHAR(200) NOT NULL,
-        weight_grams  DECIMAL(10,4),
+        amount        DECIMAL(10,4),
         calories      DECIMAL(10,4),
         protein       DECIMAL(10,4),
         carbs         DECIMAL(10,4),

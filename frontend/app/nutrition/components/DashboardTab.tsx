@@ -9,7 +9,7 @@ import { Ring } from "./Ring";
 import { cn } from "@/lib/utils";
 
 interface LogEntry {
-  id: number; food_name: string; weight_grams: number; serving_unit?: string;
+  id: number; food_name: string; amount: number; serving_unit?: string;
   calories: number; protein: number; carbs: number; fat: number;
   meal_type: string; source: string;
 }
@@ -54,7 +54,7 @@ export function DashboardTab({
   summary: DaySummary; goals: {calories:number,protein:number,carbs:number,fat:number};
   loading: boolean; mealFilter: string; setMealFilter: (v:string) => void;
   filteredLogs: LogEntry[]; updateWeight: (id:number,w:number) => void;
-  updateLog: (id: number, fields: { weight_grams?: number; serving_unit?: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => void;
+  updateLog: (id: number, fields: { amount?: number; serving_unit?: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => void;
   deleteLog: (id:number) => void; copyYesterday: () => void;
   exercises: any[]; deleteExercise: (id:number) => void;
   updateExercise: (id: number, data: { duration_min?: number; calories_burned?: number }) => void;
@@ -374,10 +374,10 @@ export function DashboardTab({
                       </td>
                       <td className="py-2 px-2">
                         <div className="flex items-center justify-center gap-0.5">
-                          <button onClick={() => updateWeight(entry.id, Math.max(1, entry.weight_grams - 10))} className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={10} /></button>
-                          <input type="number" value={entry.weight_grams} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
+                          <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))} className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={10} /></button>
+                          <input type="number" value={entry.amount} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
                             className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" />
-                          <button onClick={() => updateWeight(entry.id, entry.weight_grams + 10)} className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={10} /></button>
+                          <button onClick={() => updateWeight(entry.id, entry.amount + 10)} className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={10} /></button>
                           <select value={entry.serving_unit || 'g'}
                             onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
                             className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)] cursor-pointer">
@@ -421,7 +421,7 @@ export function DashboardTab({
                           className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" />
                       </td>
                       <td className="py-2 px-2">
-                        <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.weight_grams)}
+                        <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.amount)}
                           title="Add to Quick Favorites"
                           className="p-1 rounded hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"><Star size={12} /></button>
                         <button onClick={() => deleteLog(entry.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"><X size={14} /></button>
@@ -441,17 +441,17 @@ export function DashboardTab({
                       <span className="text-[13px] font-medium text-[var(--color-text-primary)]">{entry.food_name}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] capitalize">{entry.meal_type}</span>
                     </div>
-                    <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.weight_grams)}
+                    <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.amount)}
                       title="Add to Quick Favorites"
                       className="p-1 rounded hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"><Star size={14} /></button>
                     <button onClick={() => deleteLog(entry.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"><X size={14} /></button>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => updateWeight(entry.id, Math.max(1, entry.weight_grams - 10))} className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Minus size={13} /></button>
-                      <input type="number" value={entry.weight_grams} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
+                      <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))} className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Minus size={13} /></button>
+                      <input type="number" value={entry.amount} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
                         className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none" inputMode="decimal" />
-                      <button onClick={() => updateWeight(entry.id, entry.weight_grams + 10)} className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Plus size={13} /></button>
+                      <button onClick={() => updateWeight(entry.id, entry.amount + 10)} className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Plus size={13} /></button>
                       <select value={entry.serving_unit || 'g'}
                         onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
                         className="text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1.5 py-1 outline-none text-[var(--color-text-muted)]">

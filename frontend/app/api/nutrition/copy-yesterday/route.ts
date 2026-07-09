@@ -22,9 +22,9 @@ export async function POST() {
       if (existing.rows.length > 0) continue;
 
       await query(
-        `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, weight_grams, calories, protein, carbs, fat, source)
+        `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, calories, protein, carbs, fat, source)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'copy')`,
-        [UID, today, log.meal_type, log.food_name, log.weight_grams, log.calories, log.protein, log.carbs, log.fat]
+        [UID, today, log.meal_type, log.food_name, log.amount, log.calories, log.protein, log.carbs, log.fat]
       );
       copied++;
     }
