@@ -65,6 +65,9 @@ Lemon's AI Agent is a **local-first, privacy-respecting dashboard** that runs en
 | **Local First** | PostgreSQL on localhost, Python scripts execute on your machine |
 | **Privacy by Default** | STT runs on your GPU — audio files never leave your disk |
 | **Single Config** | All settings in one `frontend/.env.local` file |
+| **Mobile-First UI** | All 10 pages use unified `PageContainer` + `PageHeader` + `Tabs`; auto-fullscreen on mobile |
+| **Accessibility** | WCAG AA contrast (≥4.5:1), ≥44px touch targets, focus rings, skip-to-content, reduced-motion |
+| **Dark/Light Mode** | CSS variable design token system; theme toggle in sidebar + navbar (mobile-accessible) |
 | **Task Queue Pattern** | Long operations (OCR, transcription) are async with progress polling |
 | **Extensible** | Adding a new page follows a documented 5-step pattern |
 | **Dark Theme** | Consistent dark UI with CSS variables, Tailwind utility classes |
@@ -880,36 +883,38 @@ Real-time US macro data dashboard pulling from the Federal Reserve Economic Data
 
 > **Page**: `/nutrition` &nbsp;|&nbsp; **API**: `GET|POST /api/nutrition/*` &nbsp;|&nbsp; **DB**: `db/nutrition_schema.sql`
 
-Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, and dual-ring calorie budget visualization.
+Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, and calorie budget visualization. **Auto-fullscreen on mobile** with a bold flat-design bottom tab bar.
 
 #### Features
 
 | Feature | Detail |
 |---------|--------|
 | **Onboarding Wizard** | 3-step guided setup (body data → activity/goal → TDEE) on first visit |
+| **Auto-Fullscreen (Mobile)** | Opens directly in immersive fullscreen mode on phones (<768px) with bottom tab bar |
 | **Dual Calories Cards** | Orange In card + Green Out card with progress bars + Net Calories pill |
 | **Quick Add Favorites** | Per-user curated In/Out favorites with tab switching, auto-suggest from logs |
 | **Serving Units** | 10 unit types (g/ml/份/碗/杯/罐/瓶/個/包/碟), auto-adjusted weight on unit switch |
 | **Food Search** | Search 120+ curated Taiwanese foods + Open Food Facts API + unit selector |
 | **AI Photo** | Upload food photo → AI identifies dishes, suggests units, estimates nutrition |
-| **Exercise Tracking** | 26 built-in exercises with MET values → auto-calculate calories burned |
-| **Inline Editing** | Editable Cal/P/C/F + serving unit in food log; editable Duration/Calories in exercise |
+| **Exercise Tracking** | Simple form: name + duration + calories(optional) → logs to API; card-row exercise list |
+| **Inline Editing** | Editable Cal/P/C/F + serving unit in food log; editable Duration in exercise |
 | **Custom Foods** | Add custom foods with nutrition per 100g; auto-log with unit |
 | **Copy Yesterday** | One-click copy of yesterday's food log |
 | **Star to Favorites** | Pin any food log entry directly to Quick Add Favorites |
-| **Fullscreen Mode** | Mobile-only toggle — hides header/sidebar for immersive nutrition tracking |
-| **Mobile Optimized** | 80px bottom nav (24px icons), active dot indicator, safe-area padding |
+| **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
+| **Bottom Tab Bar (Fullscreen)** | 6-icon bar (Home/In/Out/Photo/Hist/Me) with accent color blocks, safe-area padding |
+| **Page Dots** | Active tab indicator dots below header |
 
 #### 6-Tab Layout
 
 | Tab | Icon | Function |
 |-----|------|----------|
-| Home | PieChart | Dual calories cards, Quick Add Favorites (In/Out), macro rings, food log, exercise |
-| Calories In | Search | Food lookup + add to log with weight/meal controls |
-| Calories Out | TrendingUp | Exercise log with MET calculator, custom calorie entry |
+| Home | LayoutDashboard | Dual calories cards, Quick Add Favorites (In/Out), macro rings, food log, exercise |
+| Calories In | UtensilsCrossed | Food lookup + add to log with weight/meal controls |
+| Calories Out | Dumbbell | Simple exercise form: name + duration + calories → Add; card-row list with delete |
 | AI Photo | Camera | Drag-drop food image → AI analysis → confirm & add |
 | History | History | 7-day bar chart + mini calendar + day detail |
-| Profile | Settings | Body metrics, TDEE calculator, activity level, goal |
+| Profile | UserCircle | Body metrics, TDEE calculator, activity level, goal |
 
 #### API Endpoints
 
