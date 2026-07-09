@@ -244,6 +244,9 @@ export default function NutritionPage() {
 
   const selectFood = (f: FoodResult) => {
     setAddTarget(f); setShowDropdown(false); setSearchQ("");
+    // Reset weight based on current unit
+    const isWeight = addServingUnit === 'g' || addServingUnit === 'ml';
+    setAddWeight(isWeight ? 100 : 1);
   };
 
   const addFood = async () => {
