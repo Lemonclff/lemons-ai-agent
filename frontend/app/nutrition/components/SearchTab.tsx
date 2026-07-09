@@ -16,6 +16,7 @@ export function SearchTab({
   adding, addFood, customFoods, fetchCustoms,
   customName, setCustomName, customCal, setCustomCal, customProtein, setCustomProtein,
   customCarbs, setCustomCarbs,  customFat, setCustomFat, addCustomFood, customMeal, setCustomMeal,
+  customServingUnit, setCustomServingUnit,
   editCustId, setEditCustId, editCustName, setEditCustName, editCustCal, setEditCustCal,
   editCustP, setEditCustP, editCustC, setEditCustC, editCustF, setEditCustF,
   saveEditCustom, startEditCustom, deleteCustom,
@@ -31,6 +32,7 @@ export function SearchTab({
   customProtein: string; setCustomProtein: (v:string) => void; customCarbs: string; setCustomCarbs: (v:string) => void;
   customFat: string; setCustomFat: (v:string) => void; addCustomFood: () => void;
   customMeal: string; setCustomMeal: (v:string) => void;
+  customServingUnit: string; setCustomServingUnit: (v:string) => void;
   editCustId: number | null; setEditCustId: (v:number|null) => void;
   editCustName: string; setEditCustName: (v:string) => void; editCustCal: string; setEditCustCal: (v:string) => void;
   editCustP: string; setEditCustP: (v:string) => void; editCustC: string; setEditCustC: (v:string) => void;
@@ -127,6 +129,15 @@ export function SearchTab({
               <option value="lunch">Lunch</option>
               <option value="dinner">Dinner</option>
               <option value="snack">Snack</option>
+            </select>
+            <span className="text-[11px] text-[var(--color-text-muted)] mx-1">with</span>
+            <select value={customServingUnit} onChange={e => setCustomServingUnit(e.target.value)}
+              className="px-2 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-muted)]">
+              <option value="g">g</option><option value="ml">ml</option>
+              <option value="份">份</option><option value="碗">碗</option>
+              <option value="杯">杯</option><option value="罐">罐</option>
+              <option value="瓶">瓶</option><option value="個">個</option>
+              <option value="包">包</option><option value="碟">碟</option>
             </select>
           </div>
         </div>

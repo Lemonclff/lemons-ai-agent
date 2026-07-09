@@ -89,6 +89,7 @@ export default function NutritionPage() {
   const [customCarbs, setCustomCarbs] = useState("");
   const [customFat, setCustomFat] = useState("");
   const [customMeal, setCustomMeal] = useState("snack");
+  const [customServingUnit, setCustomServingUnit] = useState("g");
 
   // Exercise
   const [exercises, setExercises] = useState<any[]>([]);
@@ -272,12 +273,12 @@ export default function NutritionPage() {
       const json = await r.json();
       if (!json.error) {
         setCustomFoods(prev => [...prev, json.food]);
-        setCustomName(""); setCustomCal(""); setCustomProtein(""); setCustomCarbs(""); setCustomFat("");
+        setCustomName(""); setCustomCal(""); setCustomProtein(""); setCustomCarbs(""); setCustomFat(""); setCustomServingUnit("g");
         const weight = 100;
         const logRes = await fetch("/api/nutrition/logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ food_name: json.food.food_name, weight_grams: weight, meal_type: customMeal, log_date: todayStr }),
+          body: JSON.stringify({ food_name: json.food.food_name, weight_grams: weight, meal_type: customMeal, serving_unit: customServingUnit, log_date: todayStr }),
         });
         const logJson = await logRes.json();
         if (logJson.error) { showToast(`Failed to log: ${logJson.error}`); return; }
@@ -572,6 +573,7 @@ export default function NutritionPage() {
           customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
           customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
           customMeal={customMeal} setCustomMeal={setCustomMeal}
+          customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
           editCustId={editCustId} setEditCustId={setEditCustId} editCustName={editCustName} setEditCustName={setEditCustName}
           editCustCal={editCustCal} setEditCustCal={setEditCustCal} editCustP={editCustP} setEditCustP={setEditCustP}
           editCustC={editCustC} setEditCustC={setEditCustC} editCustF={editCustF} setEditCustF={setEditCustF}
@@ -651,6 +653,7 @@ export default function NutritionPage() {
               customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
               customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
               customMeal={customMeal} setCustomMeal={setCustomMeal}
+              customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
               editCustId={editCustId} setEditCustId={setEditCustId} editCustName={editCustName} setEditCustName={setEditCustName}
               editCustCal={editCustCal} setEditCustCal={setEditCustCal} editCustP={editCustP} setEditCustP={setEditCustP}
               editCustC={editCustC} setEditCustC={setEditCustC} editCustF={editCustF} setEditCustF={setEditCustF}
