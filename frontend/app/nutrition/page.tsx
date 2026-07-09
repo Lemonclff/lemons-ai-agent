@@ -509,8 +509,11 @@ export default function NutritionPage() {
     const units: Record<number, string> = {};
     const initNutrition: Record<number, {cal:number,p:number,c:number,f:number}> = {};
     json.dishes?.forEach((d: any, i: number) => {
-      weights[i] = d.estimated_weight_grams || 100;
-      units[i] = d.suggested_unit || 'g';
+      const unit = d.unit || d.suggested_unit || 'g';
+      const gramsPerServing = d.grams_per_serving || d.estimated_weight_grams || 100;
+      const isWeight = unit === 'g' || unit === 'ml';
+      weights[i] = isWeight ? gramsPerServing : 1;
+      units[i] = unit;
       if (d.calories !== undefined) initNutrition[i] = { cal: d.calories, p: d.protein_g||0, c: d.carbs_g||0, f: d.fat_g||0 };
     });
     setPhotoEditedWeights(weights); setPhotoUnits(units);
