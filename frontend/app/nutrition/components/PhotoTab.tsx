@@ -9,11 +9,11 @@ const SYSTEM_PROMPT_TEXT = `You are a professional food nutrition analyzer. Anal
 {
   "status": "success",
   "dishes": [
-    {"name": "白飯", "estimated_weight_grams": 150, "confidence": 95, "note": "標準碗大小", "calories": 275, "protein_g": 4.0, "carbs_g": 59.7, "fat_g": 0.6}
+    {"name": "白飯", "estimated_weight_grams": 150, "suggested_unit": "碗", "confidence": 95, "note": "標準碗大小", "calories": 275, "protein_g": 4.0, "carbs_g": 59.7, "fat_g": 0.6}
   ],
   "overall_note": "簡短總結"
 }
-Rules: Identify each dish, estimate weight in grams, estimate nutrition (calories/protein_g/carbs_g/fat_g), confidence 0-100, brief note. Return ONLY JSON, no markdown.`;
+Rules: Identify each dish. Estimate weight in grams. Suggest the most natural serving unit (g/ml/份/碗/杯/罐/瓶/個/包/碟). Estimate nutrition (calories/protein_g/carbs_g/fat_g). Confidence 0-100. Brief note. Return ONLY JSON, no markdown.`;
 
 export function PhotoTab({
   photoFile, setPhotoFile, photoPreview, setPhotoPreview,
@@ -25,8 +25,10 @@ export function PhotoTab({
   selectedDishes, setSelectedDishes,
   editedNutrition, setEditedNutrition,
   pasteMode, setPasteMode, pasteText, setPasteText,
+  photoUnits, setPhotoUnits,
   handlePhotoSelect, handlePhotoDrop, handleAnalyze,
   handleConfirmAnalysis, resetPhoto, showToast,
+  onPasteResult,
 }: {
   photoFile: File | null; setPhotoFile: (f:File|null) => void;
   photoPreview: string; setPhotoPreview: (s:string) => void;
@@ -42,9 +44,11 @@ export function PhotoTab({
   setEditedNutrition: (fn:(n:Record<number,{cal:number,p:number,c:number,f:number}>)=>Record<number,{cal:number,p:number,c:number,f:number}>) => void;
   pasteMode: boolean; setPasteMode: (v:boolean) => void;
   pasteText: string; setPasteText: (v:string) => void;
+  photoUnits?: Record<number, string>; setPhotoUnits?: (fn:(u:Record<number,string>)=>Record<number,string>) => void;
   handlePhotoSelect: (f:File) => void; handlePhotoDrop: (e:React.DragEvent) => void;
   handleAnalyze: () => void; handleConfirmAnalysis: () => void;
   resetPhoto: () => void; showToast: (msg:string) => void;
+  onPasteResult?: (result: any) => void;
 }) {
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,13 +65,13 @@ export function PhotoTab({
       t = t.replace(/,(\s*[}\]])/g, "$1");
       const json = JSON.parse(t);
       if (!json.dishes || !Array.isArray(json.dishes)) { showToast("Invalid: missing 'dishes' array"); return; }
-      resetPhoto();
-      // Use setTimeout so reset completes before setting new result
-      setTimeout(() => {
-        // We need parent to handle this — call via a workaround
-        (window as any).__photoResult = json;
-        showToast("Parsed " + json.dishes.length + " dishes — paste mode needs page support");
-      }, 50);
+      if (onPasteResult) {
+        onPasteResult(json);
+        setPasteMode(false); setPasteText("");
+        showToast(`Parsed ${json.dishes.length} dishes`);
+      } else {
+        showToast("Paste mode needs page support — use built-in AI instead");
+      }
     } catch (e) { showToast("Invalid JSON — check format"); }
   };
 
@@ -230,7 +234,15 @@ export function PhotoTab({
                       <input type="number" value={weight} min={10} max={2000}
                         onChange={e => setPhotoEditedWeights(w => ({...w, [i]: Number(e.target.value) || 10}))}
                         className="w-14 text-center text-[13px] font-semibold bg-transparent border-b border-[var(--color-border)] outline-none text-[var(--color-text-primary)] tabular-nums" />
-                      <span className="text-[10px] text-[var(--color-text-muted)]">g</span>
+                      <select value={photoUnits?.[i] || d.suggested_unit || 'g'}
+                        onChange={e => setPhotoUnits?.(u => ({...u, [i]: e.target.value}))}
+                        className="text-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)]">
+                        <option value="g">g</option><option value="ml">ml</option>
+                        <option value="份">份</option><option value="碗">碗</option>
+                        <option value="杯">杯</option><option value="罐">罐</option>
+                        <option value="瓶">瓶</option><option value="個">個</option>
+                        <option value="包">包</option><option value="碟">碟</option>
+                      </select>
                       <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.min(2000, weight + 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">+</button>
                     </div>
                   </div>

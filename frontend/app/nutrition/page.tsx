@@ -129,6 +129,7 @@ export default function NutritionPage() {
   const [photoProvider, setPhotoProvider] = useState("agnes");
   const [photoNutrition, setPhotoNutrition] = useState<Record<string, any>>({});
   const [photoEditedWeights, setPhotoEditedWeights] = useState<Record<number, number>>({});
+  const [photoUnits, setPhotoUnits] = useState<Record<number, string>>({});
   const [selectedDishes, setSelectedDishes] = useState<Set<number>>(new Set());
   const [editedNutrition, setEditedNutrition] = useState<Record<number, {cal:number,p:number,c:number,f:number}>>({});
   const [pasteMode, setPasteMode] = useState(false);
@@ -479,6 +480,38 @@ export default function NutritionPage() {
     reader.readAsDataURL(file);
   };
   const handlePhotoDrop = (e: React.DragEvent) => { e.preventDefault(); setPhotoDragOver(false); const file = e.dataTransfer.files[0]; if (file) handlePhotoSelect(file); };
+
+  const processPhotoResult = async (json: any) => {
+    setPhotoResult(json);
+    const weights: Record<number, number> = {};
+    const units: Record<number, string> = {};
+    const initNutrition: Record<number, {cal:number,p:number,c:number,f:number}> = {};
+    json.dishes?.forEach((d: any, i: number) => {
+      weights[i] = d.estimated_weight_grams || 100;
+      units[i] = d.suggested_unit || 'g';
+      if (d.calories !== undefined) initNutrition[i] = { cal: d.calories, p: d.protein_g||0, c: d.carbs_g||0, f: d.fat_g||0 };
+    });
+    setPhotoEditedWeights(weights); setPhotoUnits(units);
+    setEditedNutrition(initNutrition); setSelectedDishes(new Set(json.dishes?.map((_:any,i:number)=>i)||[]));
+    if (json.dishes?.length > 0) {
+      const nutritionMap: Record<string, any> = {};
+      await Promise.all(json.dishes.map(async (d: any) => {
+        try {
+          let nr = await fetch(`/api/nutrition/search?q=${encodeURIComponent(d.name)}`); let nj = await nr.json();
+          if (nj.results?.[0]) { nutritionMap[d.name] = nj.results[0]; return; }
+          const keywords = d.name.split(/[/、\s]+/).filter((k:string)=>k.length>1);
+          for (const kw of keywords) { nr = await fetch(`/api/nutrition/search?q=${encodeURIComponent(kw)}`); nj = await nr.json(); if (nj.results?.[0]) { nutritionMap[d.name] = nj.results[0]; break; } }
+          if (nutritionMap[d.name]) return;
+          for (let i=0;i<=d.name.length-2;i++) { const slice = d.name.slice(i,i+2); nr = await fetch(`/api/nutrition/search?q=${encodeURIComponent(slice)}`); nj = await nr.json(); if (nj.results?.[0]) { nutritionMap[d.name] = nj.results[0]; break; } }
+        } catch {}
+      }));
+      setPhotoNutrition(nutritionMap);
+    }
+  };
+
+  const handlePasteResult = (json: any) => {
+    processPhotoResult(json);
+  };
   const handleAnalyze = async () => {
     if (!photoFile) return;
     setPhotoAnalyzing(true); setPhotoError("");
@@ -488,24 +521,7 @@ export default function NutritionPage() {
       const json = await r.json();
       if (json.status === "error") { setPhotoError(json.message); }
       else {
-        setPhotoResult(json);
-        const weights: Record<number, number> = {}; const initNutrition: Record<number, {cal:number,p:number,c:number,f:number}> = {};
-        json.dishes?.forEach((d: any, i: number) => { weights[i] = d.estimated_amount; if (d.calories !== undefined) initNutrition[i] = { cal: d.calories, p: d.protein_g||0, c: d.carbs_g||0, f: d.fat_g||0 }; });
-        setPhotoEditedWeights(weights); setEditedNutrition(initNutrition); setSelectedDishes(new Set(json.dishes?.map((_:any,i:number)=>i)||[]));
-        if (json.dishes?.length > 0) {
-          const nutritionMap: Record<string, any> = {};
-          await Promise.all(json.dishes.map(async (d: any) => {
-            try {
-              let nr = await fetch(`/api/nutrition/search?q=${encodeURIComponent(d.name)}`); let nj = await nr.json();
-              if (nj.results?.[0]) { nutritionMap[d.name] = nj.results[0]; return; }
-              const keywords = d.name.split(/[/、\s]+/).filter((k:string)=>k.length>1);
-              for (const kw of keywords) { nr = await fetch(`/api/nutrition/search?q=${encodeURIComponent(kw)}`); nj = await nr.json(); if (nj.results?.[0]) { nutritionMap[d.name] = nj.results[0]; break; } }
-              if (nutritionMap[d.name]) return;
-              for (let i=0;i<=d.name.length-2;i++) { const slice = d.name.slice(i,i+2); nr = await fetch(`/api/nutrition/search?q=${encodeURIComponent(slice)}`); nj = await nr.json(); if (nj.results?.[0]) { nutritionMap[d.name] = nj.results[0]; break; } }
-            } catch {}
-          }));
-          setPhotoNutrition(nutritionMap);
-        }
+        processPhotoResult(json);
       }
     } catch (e) { setPhotoError(String(e)); }
     setPhotoAnalyzing(false);
@@ -514,7 +530,15 @@ export default function NutritionPage() {
     if (!photoResult?.dishes?.length) return;
     setPhotoConfirming(true);
     try {
-      const selectedDishesList = photoResult.dishes.filter((_:any,i:number)=>selectedDishes.has(i)).map((d:any,i:number)=>{const aiNut=editedNutrition[i]; return {name:d.name,estimated_amount:photoEditedWeights[i]||d.estimated_amount,...(aiNut?{ai_calories:aiNut.cal,ai_protein:aiNut.p,ai_carbs:aiNut.c,ai_fat:aiNut.f}:{})};});
+      const selectedDishesList = photoResult.dishes.filter((_:any,i:number)=>selectedDishes.has(i)).map((d:any,i:number)=>{
+        const aiNut=editedNutrition[i];
+        return {
+          name: d.name,
+          estimated_weight_grams: photoEditedWeights[i] || d.estimated_weight_grams || 100,
+          serving_unit: photoUnits[i] || d.suggested_unit || 'g',
+          ...(aiNut ? { ai_calories: aiNut.cal, ai_protein: aiNut.p, ai_carbs: aiNut.c, ai_fat: aiNut.f } : {}),
+        };
+      });
       if (selectedDishesList.length===0) { showToast("No dishes selected"); return; }
       const r = await fetch("/api/nutrition/confirm-analysis", { method: "POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({dishes:selectedDishesList,meal_type:photoMealType,log_date:currentDate}) });
       const json = await r.json(); const addedCount = json.added?.filter((a:any)=>a.status==="added").length||0;
@@ -523,7 +547,7 @@ export default function NutritionPage() {
     } catch (e) { showToast("Failed to save"); }
     setPhotoConfirming(false);
   };
-  const resetPhoto = () => { setPhotoFile(null); setPhotoPreview(""); setPhotoResult(null); setPhotoError(""); setPhotoNutrition({}); setPhotoEditedWeights({}); setSelectedDishes(new Set()); setEditedNutrition({}); setPasteMode(false); setPasteText(""); };
+  const resetPhoto = () => { setPhotoFile(null); setPhotoPreview(""); setPhotoResult(null); setPhotoError(""); setPhotoNutrition({}); setPhotoEditedWeights({}); setPhotoUnits({}); setSelectedDishes(new Set()); setEditedNutrition({}); setPasteMode(false); setPasteText(""); };
 
   /* ---- Render ---- */
   return (
@@ -601,7 +625,8 @@ export default function NutritionPage() {
           pasteMode={pasteMode} setPasteMode={setPasteMode} pasteText={pasteText} setPasteText={setPasteText}
           handlePhotoSelect={handlePhotoSelect} handlePhotoDrop={handlePhotoDrop}
           handleAnalyze={handleAnalyze} handleConfirmAnalysis={handleConfirmAnalysis}
-          resetPhoto={resetPhoto} showToast={showToast} />
+          resetPhoto={resetPhoto} showToast={showToast}
+          onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />
       )}
 
       {page === "profile" && (
@@ -676,7 +701,8 @@ export default function NutritionPage() {
               pasteMode={pasteMode} setPasteMode={setPasteMode} pasteText={pasteText} setPasteText={setPasteText}
               handlePhotoSelect={handlePhotoSelect} handlePhotoDrop={handlePhotoDrop}
               handleAnalyze={handleAnalyze} handleConfirmAnalysis={handleConfirmAnalysis}
-              resetPhoto={resetPhoto} showToast={showToast} />
+              resetPhoto={resetPhoto} showToast={showToast}
+              onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />
           )}
           {page === "profile" && (
             <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} />

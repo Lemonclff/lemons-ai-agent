@@ -1,32 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
-/* ================================================================
-   Confirm AI Analysis API
-   POST /api/nutrition/confirm-analysis
-   - Accepts confirmed dishes from AI photo analysis
-   - Looks up nutrition data for each dish
-   - Inserts into daily_food_logs
-   - Unknown foods inserted with zero nutrition
-   ================================================================ */
-
 const UID = 1;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { dishes, meal_type, log_date } = body;
-
-    if (!dishes || !Array.isArray(dishes) || dishes.length === 0) {
-      return NextResponse.json({ error: "dishes array required" }, { status: 400 });
-    }
-
     const date = log_date || new Date().toISOString().slice(0, 10);
-    const added: Array<{ name: string; status: string; weight: number }> = [];
+    const added: any[] = [];
 
     for (const dish of dishes) {
       const name: string = dish.name;
       const weight: number = dish.estimated_weight_grams || 100;
+      const unit: string = dish.serving_unit || 'g';
 
       // Look up nutrition from cache or custom foods
       const per100 = await query(
@@ -49,9 +36,9 @@ export async function POST(req: NextRequest) {
         // Use AI estimate if provided
         if (dish.ai_calories !== undefined) {
           await query(
-            `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, calories, protein, carbs, fat, source)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ai_photo')`,
-            [UID, date, meal_type || "lunch", name, weight,
+            `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ai_photo')`,
+            [UID, date, meal_type || "lunch", name, weight, unit,
              dish.ai_calories || 0, dish.ai_protein || 0, dish.ai_carbs || 0, dish.ai_fat || 0]
           );
           added.push({ name, status: "added_ai", weight });
@@ -59,9 +46,9 @@ export async function POST(req: NextRequest) {
         }
         // Unknown food — insert with zero nutrition
         await query(
-          `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, calories, protein, carbs, fat, source)
-           VALUES ($1,$2,$3,$4,$5,0,0,0,0,'ai_unknown')`,
-          [UID, date, meal_type || "lunch", name, weight]
+          `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
+           VALUES ($1,$2,$3,$4,$5,$6,0,0,0,0,'ai_unknown')`,
+          [UID, date, meal_type || "lunch", name, weight, unit]
         );
         added.push({ name, status: "unknown", weight });
         continue;
@@ -74,9 +61,9 @@ export async function POST(req: NextRequest) {
       const fat = parseFloat((Number(nutrition.fat_per_100g) * factor).toFixed(1));
 
       await query(
-        `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, calories, protein, carbs, fat, source)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ai_photo')`,
-        [UID, date, meal_type || "lunch", name, weight, calories, protein, carbs, fat]
+        `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ai_photo')`,
+        [UID, date, meal_type || "lunch", name, weight, unit, calories, protein, carbs, fat]
       );
       added.push({ name, status: "added", weight });
     }
