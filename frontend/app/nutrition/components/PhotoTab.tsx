@@ -364,8 +364,8 @@ export function PhotoTab({
             let totCal = 0, totP = 0, totC = 0, totF = 0;
             photoResult.dishes.forEach((d: any, i: number) => {
               const n = photoNutrition[d.name];
-              const rawGrams = d.estimated_weight_grams || 100;
-              const displayUnit = photoUnits?.[i] || d.suggested_unit || 'g';
+              const rawGrams = d.grams_per_serving || d.estimated_weight_grams || 100;
+              const displayUnit = photoUnits?.[i] || d.unit || d.suggested_unit || 'g';
               const displayWeight = photoEditedWeights[i] || ((displayUnit === 'g' || displayUnit === 'ml') ? rawGrams : 1);
               // Nutrition always uses grams — if user entered servings, convert back
               const calcGrams = (displayUnit === 'g' || displayUnit === 'ml') ? displayWeight : displayWeight * rawGrams;
