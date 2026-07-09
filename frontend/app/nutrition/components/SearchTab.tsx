@@ -123,14 +123,21 @@ export function SearchTab({
               <option value="snack">Snack</option>
             </select>
             <span className="text-[11px] text-[var(--color-text-muted)] mx-1">with</span>
-            <select value={customServingUnit} onChange={e => setCustomServingUnit(e.target.value)}
-              className="px-2 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-muted)]">
-              <option value="g">g</option><option value="ml">ml</option>
-              <option value="份">份</option><option value="碗">碗</option>
-              <option value="杯">杯</option><option value="罐">罐</option>
-              <option value="瓶">瓶</option><option value="個">個</option>
-              <option value="包">包</option><option value="碟">碟</option>
-            </select>
+            <input
+              list="custom-serving-units"
+              value={customServingUnit}
+              onChange={e => setCustomServingUnit(e.target.value)}
+              placeholder="g"
+              className="w-[80px] px-2 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-primary)]"
+            />
+            <datalist id="custom-serving-units">
+              <option value="g" /><option value="ml" />
+              <option value="份" /><option value="碗" />
+              <option value="杯" /><option value="罐" />
+              <option value="瓶" /><option value="個" />
+              <option value="包" /><option value="碟" />
+              <option value="匙" /><option value="片" /><option value="塊" />
+            </datalist>
           </div>
         </div>
       </div>
