@@ -1,25 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Loader2, Minus, Plus, X } from "lucide-react";
+import { Search, Loader2, Minus, Plus } from "lucide-react";
 
 interface FoodResult {
   food_name: string; display_name: string; calories_per_100g: number;
   protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; source: string;
 }
-interface CustomFood { id: number; food_name: string; calories_per_100g: number; protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; }
 
 export function SearchTab({
   searchQ, setSearchQ, searchResults, searching, showDropdown, setShowDropdown,
   onSearch, selectFood, addTarget, addMeal, setAddMeal, addWeight, setAddWeight,
   addServingUnit, setAddServingUnit,
-  adding, addFood, customFoods, fetchCustoms,
+  adding, addFood,
   customName, setCustomName, customCal, setCustomCal, customProtein, setCustomProtein,
   customCarbs, setCustomCarbs,  customFat, setCustomFat, addCustomFood, customMeal, setCustomMeal,
   customServingUnit, setCustomServingUnit,
-  editCustId, setEditCustId, editCustName, setEditCustName, editCustCal, setEditCustCal,
-  editCustP, setEditCustP, editCustC, setEditCustC, editCustF, setEditCustF,
-  saveEditCustom, startEditCustom, deleteCustom,
 }: {
   searchQ: string; setSearchQ: (v:string) => void; searchResults: FoodResult[]; searching: boolean;
   showDropdown: boolean; setShowDropdown: (v:boolean) => void; onSearch: (v:string) => void;
@@ -27,17 +22,11 @@ export function SearchTab({
   setAddMeal: (v:string) => void; addWeight: number; setAddWeight: (v:number|((w:number)=>number)) => void;
   addServingUnit: string; setAddServingUnit: (v:string) => void;
   adding: boolean; addFood: () => void;
-  customFoods: CustomFood[]; fetchCustoms: () => void;
   customName: string; setCustomName: (v:string) => void; customCal: string; setCustomCal: (v:string) => void;
   customProtein: string; setCustomProtein: (v:string) => void; customCarbs: string; setCustomCarbs: (v:string) => void;
   customFat: string; setCustomFat: (v:string) => void; addCustomFood: () => void;
   customMeal: string; setCustomMeal: (v:string) => void;
   customServingUnit: string; setCustomServingUnit: (v:string) => void;
-  editCustId: number | null; setEditCustId: (v:number|null) => void;
-  editCustName: string; setEditCustName: (v:string) => void; editCustCal: string; setEditCustCal: (v:string) => void;
-  editCustP: string; setEditCustP: (v:string) => void; editCustC: string; setEditCustC: (v:string) => void;
-  editCustF: string; setEditCustF: (v:string) => void;
-  saveEditCustom: () => void; startEditCustom: (f:CustomFood) => void; deleteCustom: (id:number) => void;
 }) {
   return (
     <div className="grid gap-4 max-w-[640px]">
@@ -91,8 +80,8 @@ export function SearchTab({
                 const wasWeight = addServingUnit === 'g' || addServingUnit === 'ml';
                 const isWeight = newUnit === 'g' || newUnit === 'ml';
                 setAddServingUnit(newUnit);
-                if (wasWeight && !isWeight) setAddWeight(1);      // switch to serving → reset to 1
-                else if (!wasWeight && isWeight) setAddWeight(100); // switch to weight → reset to 100
+                if (wasWeight && !isWeight) setAddWeight(1);
+                else if (!wasWeight && isWeight) setAddWeight(100);
               }}
                 className="text-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 outline-none text-[var(--color-text-muted)]">
                 <option value="g">g</option><option value="ml">ml</option>
@@ -110,14 +99,10 @@ export function SearchTab({
         )}
       </div>
 
-      {/* Custom Foods Management */}
+      {/* Custom Foods */}
       <div className="border border-[var(--color-border)] rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Custom Foods</h3>
-          <button onClick={fetchCustoms} className="text-[11px] text-[var(--color-accent)] hover:underline">Refresh</button>
-        </div>
+        <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-3">Custom Foods</h3>
 
-        {/* Add new */}
         <div className="border-b border-[var(--color-border)]/30 pb-3 mb-3">
           <div className="text-[11px] font-medium text-[var(--color-text-muted)] mb-2">Add New</div>
           <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
@@ -148,43 +133,6 @@ export function SearchTab({
             </select>
           </div>
         </div>
-
-        {/* List */}
-        {customFoods.length > 0 && (
-          <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-            {customFoods.map(f => (
-              editCustId === f.id ? (
-                <div key={f.id} className="p-3 rounded-lg bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input value={editCustName} onChange={e => setEditCustName(e.target.value)} className="col-span-2 px-2 py-1 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" placeholder="Name" />
-                    <input type="number" value={editCustCal} onChange={e => setEditCustCal(e.target.value)} className="px-2 py-1 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" placeholder="kcal/100g" />
-                    <input type="number" value={editCustP} onChange={e => setEditCustP(e.target.value)} className="px-2 py-1 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" placeholder="Protein g" />
-                    <input type="number" value={editCustC} onChange={e => setEditCustC(e.target.value)} className="px-2 py-1 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" placeholder="Carbs g" />
-                    <input type="number" value={editCustF} onChange={e => setEditCustF(e.target.value)} className="px-2 py-1 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" placeholder="Fat g" />
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={saveEditCustom} className="flex-1 px-3 py-1 text-[11px] font-medium rounded bg-[var(--color-accent)] text-white hover:opacity-90">Save</button>
-                    <button onClick={() => setEditCustId(null)} className="px-3 py-1 text-[11px] rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)]">Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div key={f.id} className="flex items-center gap-2 p-2 rounded hover:bg-[var(--color-surface-elevated)]/30 transition-colors group">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[13px] font-medium text-[var(--color-text-primary)]">{f.food_name}</span>
-                    <span className="text-[10px] text-[var(--color-text-muted)] ml-2">{f.calories_per_100g}kcal | P:{f.protein_per_100g} C:{f.carbs_per_100g} F:{f.fat_per_100g}</span>
-                  </div>
-                  <button onClick={() => startEditCustom(f)} className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface-elevated)] transition-all">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
-                  <button onClick={() => deleteCustom(f.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-all"><X size={12} /></button>
-                </div>
-              )
-            ))}
-          </div>
-        )}
-        {customFoods.length === 0 && (
-          <div className="text-[12px] text-[var(--color-text-muted)] text-center py-4">No custom foods yet. Add one above.</div>
-        )}
       </div>
     </div>
   );

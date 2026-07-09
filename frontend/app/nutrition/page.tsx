@@ -568,16 +568,13 @@ export default function NutritionPage() {
           showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
           addTarget={addTarget} addMeal={addMeal} setAddMeal={setAddMeal} addWeight={addWeight} setAddWeight={setAddWeight}
           addServingUnit={addServingUnit} setAddServingUnit={setAddServingUnit}
-          adding={adding} addFood={addFood} customFoods={customFoods} fetchCustoms={fetchCustoms}
+          adding={adding} addFood={addFood}
           customName={customName} setCustomName={setCustomName} customCal={customCal} setCustomCal={setCustomCal}
           customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
           customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
           customMeal={customMeal} setCustomMeal={setCustomMeal}
           customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
-          editCustId={editCustId} setEditCustId={setEditCustId} editCustName={editCustName} setEditCustName={setEditCustName}
-          editCustCal={editCustCal} setEditCustCal={setEditCustCal} editCustP={editCustP} setEditCustP={setEditCustP}
-          editCustC={editCustC} setEditCustC={setEditCustC} editCustF={editCustF} setEditCustF={setEditCustF}
-          saveEditCustom={saveEditCustom} startEditCustom={startEditCustom} deleteCustom={deleteCustom} />
+          />
       )}
 
       {page === "calories-out" && (
@@ -648,16 +645,13 @@ export default function NutritionPage() {
               showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
               addTarget={addTarget} addMeal={addMeal} setAddMeal={setAddMeal} addWeight={addWeight} setAddWeight={setAddWeight}
               addServingUnit={addServingUnit} setAddServingUnit={setAddServingUnit}
-              adding={adding} addFood={addFood} customFoods={customFoods} fetchCustoms={fetchCustoms}
+              adding={adding} addFood={addFood}
               customName={customName} setCustomName={setCustomName} customCal={customCal} setCustomCal={setCustomCal}
               customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
               customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
               customMeal={customMeal} setCustomMeal={setCustomMeal}
               customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
-              editCustId={editCustId} setEditCustId={setEditCustId} editCustName={editCustName} setEditCustName={setEditCustName}
-              editCustCal={editCustCal} setEditCustCal={setEditCustCal} editCustP={editCustP} setEditCustP={setEditCustP}
-              editCustC={editCustC} setEditCustC={setEditCustC} editCustF={editCustF} setEditCustF={setEditCustF}
-              saveEditCustom={saveEditCustom} startEditCustom={startEditCustom} deleteCustom={deleteCustom} />
+              />
           )}
           {page === "calories-out" && (
             <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
