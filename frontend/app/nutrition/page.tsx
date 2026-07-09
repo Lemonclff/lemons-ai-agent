@@ -376,12 +376,12 @@ export default function NutritionPage() {
     } catch {}
   };
 
-  const addToFavorites = async (type: 'in'|'out', name: string, calories?: number, default_weight?: number, default_duration?: number) => {
+  const addToFavorites = async (type: 'in'|'out', name: string, calories?: number, default_weight?: number, default_duration?: number, serving_unit?: string) => {
     try {
       const r = await fetch("/api/nutrition/favorites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, name, calories: calories || 0, default_weight, default_duration }),
+        body: JSON.stringify({ type, name, calories: calories || 0, default_weight, default_duration, serving_unit: serving_unit || 'g' }),
       });
       const json = await r.json();
       if (json.favorite) {

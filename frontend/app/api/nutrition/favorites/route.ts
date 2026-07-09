@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
         `SELECT food_name as name,
                 COUNT(*) as log_count,
                 ROUND(AVG(amount)) as default_weight,
-                ROUND(AVG(calories)) as avg_calories
+                ROUND(AVG(calories)) as avg_calories,
+                MODE() WITHIN GROUP (ORDER BY COALESCE(serving_unit, 'g')) as default_unit
          FROM daily_food_logs
          WHERE user_id = $1
            AND food_name NOT IN (SELECT name FROM user_quick_favorites WHERE user_id = $1 AND favorite_type = 'in')
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
   const uid = getUserId(req);
   try {
     const body = await req.json();
-    const { type, name, calories, default_weight, default_duration } = body;
+    const { type, name, calories, default_weight, default_duration, serving_unit } = body;
 
     if (!type || !name || !["in", "out"].includes(type)) {
       return NextResponse.json(
@@ -106,19 +107,17 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await query(
-      `INSERT INTO user_quick_favorites (user_id, favorite_type, name, calories, default_weight, default_duration)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO user_quick_favorites (user_id, favorite_type, name, calories, default_weight, default_duration, serving_unit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (user_id, favorite_type, name)
        DO UPDATE SET calories = EXCLUDED.calories, default_weight = EXCLUDED.default_weight,
-                     default_duration = EXCLUDED.default_duration, sort_order = EXCLUDED.sort_order
+                     default_duration = EXCLUDED.default_duration, serving_unit = EXCLUDED.serving_unit,
+                     sort_order = EXCLUDED.sort_order
        RETURNING *`,
       [
-        uid,
-        type,
-        name,
-        calories ?? 0,
-        default_weight ?? 100,
-        default_duration ?? 30,
+        uid, type, name, calories ?? 0,
+        default_weight ?? 100, default_duration ?? 30,
+        serving_unit || 'g',
       ]
     );
 
