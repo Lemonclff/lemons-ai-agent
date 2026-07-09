@@ -889,13 +889,14 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Onboarding Wizard** | 3-step guided setup (body data → activity/goal → TDEE) on first visit |
 | **Dual Calories Cards** | Orange In card + Green Out card with progress bars + Net Calories pill |
 | **Quick Add Favorites** | Per-user curated In/Out favorites with tab switching, auto-suggest from logs |
-| **Food Search** | Search 120+ curated Taiwanese foods + Open Food Facts API |
-| **AI Photo** | Upload food photo → GPT-4o identifies dishes, estimates weights→ add to log |
+| **Serving Units** | 10 unit types (g/ml/份/碗/杯/罐/瓶/個/包/碟), auto-adjusted weight on unit switch |
+| **Food Search** | Search 120+ curated Taiwanese foods + Open Food Facts API + unit selector |
+| **AI Photo** | Upload food photo → AI identifies dishes, suggests units, estimates nutrition |
 | **Exercise Tracking** | 26 built-in exercises with MET values → auto-calculate calories burned |
-| **Inline Editing** | Editable Cal/P/C/F macros in food log + editable Duration/Calories in exercise |
-| **7-Day Chart** | Recharts bar chart with calorie trend + mini calendar with log indicators |
-| **Custom Foods** | Add your own foods with custom macros |
+| **Inline Editing** | Editable Cal/P/C/F + serving unit in food log; editable Duration/Calories in exercise |
+| **Custom Foods** | Add custom foods with nutrition per 100g; auto-log with unit |
 | **Copy Yesterday** | One-click copy of yesterday's food log |
+| **Star to Favorites** | Pin any food log entry directly to Quick Add Favorites |
 | **Fullscreen Mode** | Mobile-only toggle — hides header/sidebar for immersive nutrition tracking |
 | **Mobile Optimized** | 80px bottom nav (24px icons), active dot indicator, safe-area padding |
 
@@ -916,16 +917,16 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 |----------|--------|---------|
 | `GET /api/nutrition/profile` | GET | `{ profile }` or `null` (triggers onboarding) |
 | `POST /api/nutrition/profile` | POST | Saves user body data + auto-calculates TDEE |
-| `GET /api/nutrition/logs?date=` | GET | `{ logs, summary: { calories, protein, carbs, fat, count, exercise_calories } }` |
-| `POST /api/nutrition/logs` | POST | Add food entry (looks up nutrition from cache) |
-| `PUT /api/nutrition/logs?id=` | PUT | Update weight/meal_type, or direct macro override (calories/protein/carbs/fat) |
+| `GET /api/nutrition/logs?date=` | GET | `{ logs, summary }` — logs include `amount` + `serving_unit`, all values rounded |
+| `POST /api/nutrition/logs` | POST | Add food entry with `amount` + `serving_unit` (looks up nutrition from cache) |
+| `PUT /api/nutrition/logs?id=` | PUT | Update amount/meal_type/serving_unit, or direct macro override |
 | `DELETE /api/nutrition/logs?id=` | DELETE | Remove food entry |
 | `GET /api/nutrition/exercise?date=` | GET | `{ exercises[], total_burned }` |
 | `POST /api/nutrition/exercise` | POST | Add exercise (calories = MET × weight(kg) × hours) |
 | `PUT /api/nutrition/exercise?id=` | PUT | Update duration (auto-recalc from MET) or direct calorie override |
 | `DELETE /api/nutrition/exercise?id=` | DELETE | Remove exercise entry |
-| `GET /api/nutrition/favorites` | GET | `{ favorites: {in, out}, suggested: {in, out} }` — curated + auto-suggested |
-| `POST /api/nutrition/favorites` | POST | Pin a food/exercise to favorites (`type`, `name`, `calories`, ...) |
+| `GET /api/nutrition/favorites` | GET | `{ favorites: {in, out}, suggested: {in, out} }` — curated + auto-suggested with units |
+| `POST /api/nutrition/favorites` | POST | Pin a food/exercise to favorites (`type`, `name`, `serving_unit`, ...) |
 | `DELETE /api/nutrition/favorites?id=` | DELETE | Remove from favorites |
 | `GET /api/nutrition/exercises` | GET | 26-exercise MET reference table |
 | `GET /api/nutrition/search?q=` | GET | Search foods (local DB → custom → Open Food Facts) |
@@ -953,8 +954,8 @@ Remaining = Target - Net  (red if negative → over budget)
 | `user_profiles` | Body metrics, activity level, goal, TDEE targets |
 | `food_nutrition_cache` | 120+ curated Taiwanese/Asian foods + API cache |
 | `user_custom_foods` | User-defined foods |
-| `user_quick_favorites` | Per-user curated favorites (type: 'in' food / 'out' exercise) |
-| `daily_food_logs` | Every food entry per user per day |
+| `user_quick_favorites` | Per-user curated favorites (type 'in'/'out', `serving_unit`, `default_weight`) |
+| `daily_food_logs` | Every food entry per user per day (`amount` + `serving_unit` instead of raw weight_grams) |
 | `exercise_logs` | Exercise records with MET-based calorie calculation |
 
 Setup: `psql -U admin -d ai_dashboard_db -f db/nutrition_schema.sql`
