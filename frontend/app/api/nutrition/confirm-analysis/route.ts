@@ -16,10 +16,21 @@ export async function POST(req: NextRequest) {
       const amount: number = dish.amount ?? dish.grams_per_serving ?? dish.estimated_weight_grams ?? 100;
       const gramsPerServing: number = dish.grams_per_serving || dish.estimated_weight_grams || 100;
       const isWeightUnit = unit === 'g' || unit === 'ml';
-      // Nutrition calc always uses grams
       const calcGrams = isWeightUnit ? amount : amount * gramsPerServing;
 
-      // Look up nutrition from cache or custom foods
+      // If AI provided nutrition, use it directly — skip DB lookup
+      if (dish.ai_calories !== undefined) {
+        await query(
+          `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ai_photo')`,
+          [UID, date, meal_type || "lunch", name, amount, unit,
+           dish.ai_calories || 0, dish.ai_protein || 0, dish.ai_carbs || 0, dish.ai_fat || 0]
+        );
+        added.push({ name, status: "added_ai", amount, unit });
+        continue;
+      }
+
+      // No AI nutrition — look up from cache or custom foods
       const per100 = await query(
         `SELECT calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g
          FROM food_nutrition_cache WHERE food_name ILIKE $1 LIMIT 1`,
@@ -37,17 +48,6 @@ export async function POST(req: NextRequest) {
       }
 
       if (!nutrition) {
-        // Use AI estimate if provided
-        if (dish.ai_calories !== undefined) {
-          await query(
-            `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ai_photo')`,
-            [UID, date, meal_type || "lunch", name, amount, unit,
-             dish.ai_calories || 0, dish.ai_protein || 0, dish.ai_carbs || 0, dish.ai_fat || 0]
-          );
-          added.push({ name, status: "added_ai", amount, unit });
-          continue;
-        }
         // Unknown food — insert with zero nutrition
         await query(
           `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
