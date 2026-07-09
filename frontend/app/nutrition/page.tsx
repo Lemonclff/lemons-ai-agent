@@ -179,12 +179,13 @@ export default function NutritionPage() {
   useEffect(() => { fetchGoals(); fetchExList(); }, [fetchGoals]);
 
   /* ---- Update log entry ---- */
-  const updateLog = async (id: number, fields: { weight_grams?: number; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
+  const updateLog = async (id: number, fields: { weight_grams?: number; serving_unit?: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
     // Optimistic update
     setLogs(prev => prev.map(l => {
       if (l.id !== id) return l;
       const updated = { ...l };
       if (fields.weight_grams !== undefined) updated.weight_grams = fields.weight_grams;
+      if (fields.serving_unit !== undefined) updated.serving_unit = fields.serving_unit;
       if (fields.calories !== undefined) updated.calories = fields.calories;
       if (fields.protein !== undefined) updated.protein = fields.protein;
       if (fields.carbs !== undefined) updated.carbs = fields.carbs;
