@@ -198,7 +198,11 @@ export default function NutritionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(fields),
       });
-      fetchLogs(currentDate);
+      // Only re-fetch if macros/weight changed — serving_unit is cosmetic
+      if (fields.weight_grams !== undefined || fields.calories !== undefined ||
+          fields.protein !== undefined || fields.carbs !== undefined || fields.fat !== undefined) {
+        fetchLogs(currentDate);
+      }
     } catch {}
   };
 
