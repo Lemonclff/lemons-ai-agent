@@ -86,7 +86,14 @@ export function SearchTab({
               <input type="number" value={addWeight} onChange={e => setAddWeight(Number(e.target.value) || 0)}
                 className="w-[60px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none" inputMode="decimal" />
               <button onClick={() => setAddWeight((w: number) => w + 10)} className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30"><Plus size={12} /></button>
-              <select value={addServingUnit} onChange={e => setAddServingUnit(e.target.value)}
+              <select value={addServingUnit} onChange={e => {
+                const newUnit = e.target.value;
+                const wasWeight = addServingUnit === 'g' || addServingUnit === 'ml';
+                const isWeight = newUnit === 'g' || newUnit === 'ml';
+                setAddServingUnit(newUnit);
+                if (wasWeight && !isWeight) setAddWeight(1);      // switch to serving → reset to 1
+                else if (!wasWeight && isWeight) setAddWeight(100); // switch to weight → reset to 100
+              }}
                 className="text-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 outline-none text-[var(--color-text-muted)]">
                 <option value="g">g</option><option value="ml">ml</option>
                 <option value="份">份</option><option value="碗">碗</option>
