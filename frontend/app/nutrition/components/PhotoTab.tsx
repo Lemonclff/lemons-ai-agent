@@ -5,23 +5,71 @@ import { Camera, X, Loader2, Copy } from "lucide-react";
 
 interface PhotoProvider { value: string; label: string; hasVision: boolean; }
 
-const SYSTEM_PROMPT_TEXT = `You are a professional food nutrition analyzer. Analyze this food image and return JSON:
+const SYSTEM_PROMPT_TEXT = `You are a precise food nutrition analyzer for a calorie tracking app. Analyze the food image and return ONLY this JSON structure:
+
 {
   "status": "success",
   "dishes": [
-    {"name": "白飯", "estimated_weight_grams": 150, "suggested_unit": "碗", "confidence": 95, "note": "標準碗大小", "calories": 275, "protein_g": 4.0, "carbs_g": 59.7, "fat_g": 0.6}
+    {
+      "name": "白飯",
+      "estimated_weight_grams": 150,
+      "suggested_unit": "碗",
+      "confidence": 95,
+      "note": "約一碗標準白飯",
+      "calories": 195,
+      "protein_g": 4.0,
+      "carbs_g": 43.0,
+      "fat_g": 0.4
+    }
   ],
-  "overall_note": "簡短總結"
+  "overall_note": "這餐約600大卡，蛋白質偏低，建議增加肉類或豆製品"
 }
-Rules:
-1. Identify each dish. Estimate total weight in grams (this is always the GRAM weight, never servings).
-2. Choose suggested_unit from: g, ml, 份, 碗, 杯, 罐, 瓶, 個, 包, 碟, 匙, 片, 塊.
-   - Use g/ml for items measured by weight/volume (rice, meat, liquids).
-   - Use serving units (碗/杯/匙/etc) ONLY when the item naturally comes in discrete servings (e.g. 1 can of soda, 1 scoop of powder, 1 pack of noodles).
-   - When using a serving unit, estimated_weight_grams must be the weight of ONE serving.
-3. Estimate nutrition per the TOTAL weight in estimated_weight_grams.
-4. Confidence 0-100. Brief helpful note in Traditional Chinese.
-5. Return ONLY JSON, no markdown, no extra text.`;
+
+CRITICAL RULES — follow exactly:
+1. estimated_weight_grams = the WEIGHT IN GRAMS of what you see in the photo.
+   - For a bowl of rice: ~150g (one bowl)
+   - For a piece of chicken breast: ~150g
+   - For a can of soda: ~355g (standard can)
+   - For a scoop of protein powder: ~30g (one scoop)
+   This is ALWAYS grams. Never enter a serving count here.
+
+2. suggested_unit — pick the most natural way to describe this portion:
+   - g/ml: for items poured/weighed (rice by weight, oil, sauces, liquids)
+   - 碗: bowl-sized portions (rice, noodles, soup)
+   - 杯: cup/glass (drinks, smoothies, ice cream)
+   - 個: countable whole items (apple, egg, bread roll, dumpling)
+   - 份: generic serving (set meals, combo plates)
+   - 碟: plate-sized portions
+   - 包: packaged items (snack bag, instant noodles)
+   - 罐/瓶: canned/bottled items
+   - 匙: spoon-sized (powder, sugar, sauce by spoon)
+   - 片/塊: sliced/piece items (bread slice, pizza slice, meat chunk)
+
+3. Nutrition values (calories, protein_g, carbs_g, fat_g):
+   Estimate for the TOTAL weight in estimated_weight_grams.
+   Be accurate — use your food knowledge. Common references:
+   - Rice (cooked): ~130 kcal/100g
+   - Chicken breast (cooked): ~165 kcal/100g, 31g protein
+   - Egg (1個≈50g): ~78 kcal, 6g protein
+   - Cooking oil: ~900 kcal/100g (account for oil used in cooking!)
+   - Vegetables: ~25-40 kcal/100g
+   - For mixed/takeout dishes, estimate ingredients and add 10-20% for oil/sauce.
+
+4. confidence (0-100): How sure are you?
+   - 90-100: clearly identifiable single food
+   - 70-89: recognizable dish with some uncertainty
+   - 50-69: partially visible or mixed dish
+   - <50: don't include this dish
+
+5. note: Brief Traditional Chinese note (≤20 chars). Mention portion size, cooking method, or key observation.
+   E.g. "標準一碗" "炸物含油較高" "約兩湯匙份量"
+
+6. overall_note: 1-2 sentence Traditional Chinese summary of the meal. Include:
+   - Estimated total calories
+   - Key nutrition observation (high protein? high carb? lacking vegetables?)
+   - Practical suggestion if relevant
+
+IMPORTANT: Return ONLY the JSON object. No markdown code blocks, no explanations.`;
 
 export function PhotoTab({
   photoFile, setPhotoFile, photoPreview, setPhotoPreview,
