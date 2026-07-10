@@ -1,6 +1,7 @@
 /**
  * Shared auth helper for nutrition API routes.
  * Reads the HMAC-signed token cookie to get the real userId.
+ * Returns 0 if no valid token — queries will naturally return empty results.
  */
 import { NextRequest } from "next/server";
 import { verifyToken } from "@/lib/auth";
@@ -13,9 +14,8 @@ export function getUserId(req: NextRequest): number {
       if (payload) return payload.userId;
     }
   } catch {}
-  // Fallback for unauthenticated access — still isolate to user 1
-  // but require explicit auth for multi-user safety
-  return 1;
+  // No valid token → userId 0 isolates the user from all data
+  return 0;
 }
 
 export function requireAuth(req: NextRequest): { userId: number } | null {
