@@ -149,7 +149,7 @@ export function ProfileTab({
               ) : (
                 <input type="number" value={(profile as any)[f.key]} step={f.step || "1"}
                   onChange={e => setProfile(p => ({ ...p, [f.key]: Number(e.target.value) }))}
-                  className="w-full px-2.5 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" />
+                  className="w-full px-2.5 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" style={{ fontSize: '16px' }} />
               )}
             </div>
           ))}
@@ -158,7 +158,7 @@ export function ProfileTab({
             <input type="number" value={profile.body_fat_pct || ""} step="0.1" min="3" max="60"
               onChange={e => setProfile(p => ({ ...p, body_fat_pct: e.target.value ? Number(e.target.value) : undefined }))}
               placeholder="e.g. 18"
-              className="w-full px-2.5 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" />
+              className="w-full px-2.5 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" style={{ fontSize: '16px' }} />
           </div>
           <div>
             <label className="text-[10px] text-[var(--color-text-muted)] block mb-0.5">Activity Level</label>
@@ -243,7 +243,7 @@ export function ProfileTab({
               <input type="number" value={newWeight} step="0.1" min="20" max="300"
                 onChange={e => setNewWeight(e.target.value)} onKeyDown={e => e.key === 'Enter' && addWeight()}
                 placeholder="70.0"
-                className="w-full px-3 py-2.5 text-[16px] font-bold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl outline-none tabular-nums focus:border-indigo-400/50 transition-colors" />
+                className="w-full px-3 py-2.5 text-[16px] font-bold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl outline-none tabular-nums focus:border-indigo-400/50 transition-colors" style={{ fontSize: '16px' }} />
             </div>
             <div className="flex-1">
               <label className="text-[10px] text-[var(--color-text-muted)] block mb-0.5"><Calendar size={10} className="inline mr-0.5" />Date</label>

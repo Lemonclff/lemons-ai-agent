@@ -296,7 +296,7 @@ export function SearchTab({
             <div className="flex items-center gap-1">
               <button onClick={() => setAddWeight(w => Math.max(10, (w || 100) - 10))} className="min-w-[36px] min-h-[36px] rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] flex items-center justify-center"><Minus size={14} /></button>
               <input type="number" value={addWeight} onChange={e => setAddWeight(Number(e.target.value) || 100)} min={10} max={2000}
-                className="w-16 text-center text-[13px] font-semibold bg-transparent border-b border-[var(--color-border)] outline-none text-[var(--color-text-primary)] tabular-nums" />
+                className="w-16 text-center text-[13px] font-semibold bg-transparent border-b border-[var(--color-border)] outline-none text-[var(--color-text-primary)] tabular-nums" style={{ fontSize: '16px' }} />
               <button onClick={() => setAddWeight(w => Math.min(2000, (w || 100) + 10))} className="min-w-[36px] min-h-[36px] rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] flex items-center justify-center"><Plus size={14} /></button>
             </div>
             <select value={addServingUnit} onChange={e => setAddServingUnit(e.target.value)}

@@ -326,7 +326,7 @@ export function PhotoTab({
                       <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, weight - 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">−</button>
                       <input type="number" value={weight} min={10} max={2000}
                         onChange={e => setPhotoEditedWeights(w => ({...w, [i]: Number(e.target.value) || 10}))}
-                        className="w-14 text-center text-[13px] font-semibold bg-transparent border-b border-[var(--color-border)] outline-none text-[var(--color-text-primary)] tabular-nums" />
+                        className="w-14 text-center text-[13px] font-semibold bg-transparent border-b border-[var(--color-border)] outline-none text-[var(--color-text-primary)] tabular-nums" style={{ fontSize: '16px' }} />
                       <select value={photoUnits?.[i] || d.suggested_unit || 'g'}
                         onChange={e => setPhotoUnits?.(u => ({...u, [i]: e.target.value}))}
                         className="text-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)]">
@@ -339,17 +339,17 @@ export function PhotoTab({
                   </div>
                   <div className="ml-6 mt-1.5 flex items-center gap-1.5 flex-wrap">
                     {hasNutrition ? (<>
-                      <input type="number" value={cal} step={5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), cal: Number(e.target.value)||0}}))} className="w-14 text-center text-[11px] font-semibold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-orange-400 tabular-nums" />
+                      <input type="number" value={cal} step={5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), cal: Number(e.target.value)||0}}))} className="w-14 text-center text-[11px] font-semibold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-orange-400 tabular-nums" style={{ fontSize: '16px' }} />
                       <span className="text-[9px] text-orange-400/70">kcal</span>
                       <span className="text-[9px] text-[var(--color-text-muted)]/40 mx-0.5">|</span>
                       <span className="text-[9px] text-blue-400/70">P</span>
-                      <input type="number" value={prot} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), p: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-blue-400 tabular-nums" />
+                      <input type="number" value={prot} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), p: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-blue-400 tabular-nums" style={{ fontSize: '16px' }} />
                       <span className="text-[9px] text-[var(--color-text-muted)]/40 mx-0.5">|</span>
                       <span className="text-[9px] text-amber-400/70">C</span>
-                      <input type="number" value={carb} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), c: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-amber-400 tabular-nums" />
+                      <input type="number" value={carb} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), c: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-amber-400 tabular-nums" style={{ fontSize: '16px' }} />
                       <span className="text-[9px] text-[var(--color-text-muted)]/40 mx-0.5">|</span>
                       <span className="text-[9px] text-red-400/70">F</span>
-                      <input type="number" value={fat} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), f: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-red-400 tabular-nums" />
+                      <input type="number" value={fat} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), f: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-red-400 tabular-nums" style={{ fontSize: '16px' }} />
                     </>) : (
                       <span className="text-[10px] text-[var(--color-text-muted)]/50 italic">no nutrition data — edit below</span>
                     )}

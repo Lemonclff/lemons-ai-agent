@@ -395,7 +395,7 @@ export function DashboardTab({
                             className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={10} /></button>
                           <input type="number" value={Math.round(entry.calories)}
                             onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
-                            className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none text-orange-400 font-medium" inputMode="decimal" min="0" />
+                            className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none text-orange-400 font-medium" inputMode="decimal" min="0" style={{ fontSize: '16px' }} />
                           <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
                             className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={10} /></button>
                         </div>
@@ -403,17 +403,17 @@ export function DashboardTab({
                       <td className="text-right py-2 px-1 tabular-nums">
                         <input type="number" value={Math.round(entry.protein * 10) / 10}
                           onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
-                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" />
+                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
                       </td>
                       <td className="text-right py-2 px-1 tabular-nums">
                         <input type="number" value={Math.round(entry.carbs * 10) / 10}
                           onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
-                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" />
+                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
                       </td>
                       <td className="text-right py-2 px-1 tabular-nums">
                         <input type="number" value={Math.round(entry.fat * 10) / 10}
                           onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
-                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" />
+                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none hover:border-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50" inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
                       </td>
                       <td className="py-2 px-2">
                         <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.amount, undefined, entry.serving_unit || 'g')}
@@ -465,7 +465,7 @@ export function DashboardTab({
                           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Minus size={16} /></button>
                         <input type="number" value={Math.round(entry.calories)}
                           onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
-                          className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none text-orange-400 font-semibold" inputMode="decimal" min="0" />
+                          className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none text-orange-400 font-semibold" inputMode="decimal" min="0" style={{ fontSize: '16px' }} />
                         <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
                           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Plus size={16} /></button>
                         <span className="text-[10px] text-[var(--color-text-muted)]">kcal</span>
@@ -473,15 +473,15 @@ export function DashboardTab({
                       <span className="text-[var(--color-text-muted)]">P:</span>
                       <input type="number" value={Math.round(entry.protein * 10) / 10}
                         onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
-                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
+                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
                       <span className="text-[var(--color-text-muted)]">C:</span>
                       <input type="number" value={Math.round(entry.carbs * 10) / 10}
                         onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
-                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
+                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
                       <span className="text-[var(--color-text-muted)]">F:</span>
                       <input type="number" value={Math.round(entry.fat * 10) / 10}
                         onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
-                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" />
+                        className="w-[36px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[12px] tabular-nums outline-none" inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
                     </div>
                   </div>
                 </div>
@@ -522,7 +522,7 @@ export function DashboardTab({
                           className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={12} /></button>
                         <input type="number" value={ex.duration_min}
                           onChange={e => { const v = Number(e.target.value); if (v > 0) updateExercise(ex.id, { duration_min: v }); }}
-                          className="w-[42px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" min="1" />
+                          className="w-[42px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" min="1" style={{ fontSize: '16px' }} />
                         <button onClick={() => updateExercise(ex.id, { duration_min: ex.duration_min + 5 })}
                           className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={12} /></button>
                         <span className="text-[10px] text-[var(--color-text-muted)] ml-0.5">min</span>
@@ -534,7 +534,7 @@ export function DashboardTab({
                           className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={12} /></button>
                         <input type="number" value={Math.round(Number(ex.calories_burned))}
                           onChange={e => { const v = Number(e.target.value); if (v > 0) updateExercise(ex.id, { calories_burned: v }); }}
-                          className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none text-green-400 font-medium" inputMode="decimal" min="1" />
+                          className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none text-green-400 font-medium" inputMode="decimal" min="1" style={{ fontSize: '16px' }} />
                         <button onClick={() => updateExercise(ex.id, { calories_burned: Math.round(Number(ex.calories_burned)) + 10 })}
                           className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={12} /></button>
                         <span className="text-[10px] text-[var(--color-text-muted)] ml-0.5">kcal</span>
@@ -564,7 +564,7 @@ export function DashboardTab({
                       className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Minus size={14} /></button>
                     <input type="number" value={ex.duration_min}
                       onChange={e => { const v = Number(e.target.value); if (v > 0) updateExercise(ex.id, { duration_min: v }); }}
-                      className="w-[42px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none" inputMode="decimal" min="1" />
+                      className="w-[42px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none" inputMode="decimal" min="1" style={{ fontSize: '16px' }} />
                     <span className="text-[11px] text-[var(--color-text-muted)]">min</span>
                     <button onClick={() => updateExercise(ex.id, { duration_min: ex.duration_min + 5 })}
                       className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Plus size={14} /></button>
@@ -576,7 +576,7 @@ export function DashboardTab({
                       className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Minus size={14} /></button>
                     <input type="number" value={Math.round(Number(ex.calories_burned))}
                       onChange={e => { const v = Number(e.target.value); if (v > 0) updateExercise(ex.id, { calories_burned: v }); }}
-                      className="w-[52px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none text-green-400 font-medium" inputMode="decimal" min="1" />
+                      className="w-[52px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[13px] tabular-nums outline-none text-green-400 font-medium" inputMode="decimal" min="1" style={{ fontSize: '16px' }} />
                     <span className="text-[11px] text-[var(--color-text-muted)]">kcal</span>
                     <button onClick={() => updateExercise(ex.id, { calories_burned: Math.round(Number(ex.calories_burned)) + 10 })}
                       className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text-muted)]"><Plus size={14} /></button>

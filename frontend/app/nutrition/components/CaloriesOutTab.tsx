@@ -77,8 +77,7 @@ export function CaloriesOutTab({
                   min={1}
                   className="w-full text-center py-2.5 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-green-500/50 transition-colors tabular-nums"
                   inputMode="numeric"
-                  onKeyDown={e => e.key === "Enter" && handleAdd()}
-                />
+                  onKeyDown={e => e.key === "Enter" && handleAdd()} style={{ fontSize: '16px' }} />
                 <span className="text-[11px] text-[var(--color-text-muted)] shrink-0">min</span>
               </div>
             </div>
@@ -91,8 +90,7 @@ export function CaloriesOutTab({
                 placeholder="Auto"
                 className="w-full text-center py-2.5 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-green-500/50 transition-colors tabular-nums"
                 inputMode="decimal"
-                onKeyDown={e => e.key === "Enter" && handleAdd()}
-              />
+                onKeyDown={e => e.key === "Enter" && handleAdd()} style={{ fontSize: '16px' }} />
             </div>
             <button
               onClick={handleAdd}
