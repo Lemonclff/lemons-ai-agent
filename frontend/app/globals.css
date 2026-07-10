@@ -225,6 +225,11 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* Prevent iOS auto-zoom on all form inputs */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }
 
 /* ================================================================
