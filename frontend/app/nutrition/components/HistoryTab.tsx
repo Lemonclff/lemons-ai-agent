@@ -1,10 +1,98 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, History, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Goals { calories: number; protein: number; carbs: number; fat: number; }
+
+/** Load G2 from CDN once */
+let g2Promise: Promise<any> | null = null;
+function loadG2(): Promise<any> {
+  if (g2Promise) return g2Promise;
+  g2Promise = new Promise((resolve, reject) => {
+    if ((window as any).G2) return resolve((window as any).G2);
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/@antv/g2@5/dist/g2.min.js";
+    script.onload = () => resolve((window as any).G2);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return g2Promise;
+}
+
+function G2Chart({ data, goal, type }: { data: { date: string; value: number }[]; goal: number; type: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || data.length === 0) return;
+    let cancelled = false;
+
+    loadG2().then((G2) => {
+      if (cancelled || !containerRef.current) return;
+      if (chartRef.current) chartRef.current.destroy();
+
+      const colors: Record<string, string> = { calories: "#f97316", protein: "#22c55e", carbs: "#eab308", fat: "#ef4444" };
+      const color = colors[type] || "#3b82f6";
+      const unit = type === "calories" ? "kcal" : "g";
+
+      const chart = new G2.Chart({
+        container: containerRef.current,
+        autoFit: true,
+        height: 200,
+        padding: 8,
+        paddingLeft: 48,
+        paddingRight: 16,
+        paddingBottom: 32,
+      });
+
+      const marks: any[] = [
+        {
+          type: "interval",
+          data,
+          encode: { x: "date", y: "value" },
+          style: { fill: color, radius: 4, fillOpacity: 0.85, maxWidth: 32 },
+          labels: [{
+            text: (d: any) => d.value > 0 ? String(d.value) : "",
+            position: "top",
+            style: { fontSize: 10, fill: color, fontWeight: 600, dy: -4 },
+          }],
+        },
+      ];
+
+      // Goal line
+      if (type === "calories" && goal > 0) {
+        marks.push({
+          type: "lineY",
+          data: [{ y: goal }],
+          encode: { y: "y" },
+          style: { stroke: "#ef4444", lineWidth: 1, lineDash: [4, 3], opacity: 0.7 },
+          labels: [{ text: `Goal ${goal}`, position: "right", style: { fontSize: 9, fill: "#ef4444", dx: 4 } }],
+        });
+      }
+
+      chart.options({
+        type: "view",
+        data,
+        children: marks,
+        scale: { y: { domainMin: 0 } },
+        axis: {
+          x: { title: false, labelFontSize: 11, labelFill: "#888", tick: false, line: false },
+          y: { title: false, labelFontSize: 10, labelFill: "#666", grid: true, gridStroke: "rgba(128,128,128,0.1)", tick: false, line: false },
+        },
+        interaction: { tooltip: { shared: true } },
+      });
+
+      chart.render();
+      chartRef.current = chart;
+    });
+
+    return () => { cancelled = true; };
+  }, [data, goal, type]);
+
+  return <div ref={containerRef} className="w-full" />;
+}
 
 export function HistoryTab({
   weeklyData, currentDate, setCurrentDate, todayStr, goals,
@@ -16,22 +104,16 @@ export function HistoryTab({
 }) {
   const entries = Object.entries(weeklyData);
   const [chartType, setChartType] = useState("calories");
-  const [chartImg, setChartImg] = useState<string | null>(null);
-  const [chartLoading, setChartLoading] = useState(false);
 
-  useEffect(() => {
-    setChartLoading(true);
-    setChartImg(null);
-    fetch(`/api/nutrition/charts/calorie-trend?days=7&type=${chartType}`)
-      .then(r => r.json())
-      .then(d => { if (d.imageUrl) setChartImg(d.imageUrl); })
-      .catch(() => {})
-      .finally(() => setChartLoading(false));
-  }, [chartType]);
+  // Build chart data
+  const chartData = entries.map(([date, vals]) => ({
+    date: new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" }),
+    value: chartType === "calories" ? (vals.calories || 0) : chartType === "protein" ? (vals.protein || 0) : chartType === "carbs" ? (vals.carbs || 0) : (vals.fat || 0),
+    raw: date,
+  }));
 
   return (
     <div className="grid gap-4 max-w-[700px]">
-      {/* Weekly stats summary */}
       {entries.length === 0 ? (
         <div className="text-center py-10 text-[13px] text-[var(--color-text-muted)] border border-[var(--color-border)] rounded-lg">
           <History size={32} className="mx-auto mb-2 opacity-20" />
@@ -89,13 +171,11 @@ export function HistoryTab({
             ))}
           </div>
         </div>
-        <div className="p-3 flex items-center justify-center min-h-[280px] bg-[var(--color-surface)]">
-          {chartLoading ? (
-            <Loader2 size={24} className="animate-spin text-[var(--color-text-muted)]/40" />
-          ) : chartImg ? (
-            <img src={chartImg} alt={`${chartType} trend`} className="w-full max-w-full h-auto rounded" />
+        <div className="p-3">
+          {chartData.length > 0 ? (
+            <G2Chart data={chartData} goal={goals.calories} type={chartType} />
           ) : (
-            <span className="text-[12px] text-[var(--color-text-muted)]/50">No chart data</span>
+            <div className="h-[200px] flex items-center justify-center text-[12px] text-[var(--color-text-muted)]/50">No data</div>
           )}
         </div>
       </div>
