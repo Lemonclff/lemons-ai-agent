@@ -126,7 +126,7 @@ function loadHtml5Qrcode(): Promise<any> {
   if (html5QrPromise) return html5QrPromise;
   html5QrPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://unpkg.com/html5-qrcode@2/min/html5-qrcode.min.js";
+    script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js";
     script.onload = () => resolve((window as any).Html5Qrcode);
     script.onerror = () => reject(new Error("Failed to load scanner library"));
     document.head.appendChild(script);
