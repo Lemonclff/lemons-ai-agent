@@ -122,6 +122,8 @@ export async function POST(req: NextRequest) {
       // ── Food favorite: upsert into user_custom_foods with is_favorite=true ──
       // Try to get per-100g nutrition from cache
       let calPer100 = 0, protPer100 = 0, carbPer100 = 0, fatPer100 = 0, gramsPerServing: number | null = null;
+      let servingCal: number | null = null, servingP: number | null = null, servingC: number | null = null, servingF: number | null = null;
+
       try {
         const cached = await query(
           `SELECT * FROM food_nutrition_cache WHERE food_name ILIKE $1 LIMIT 1`,
@@ -132,9 +134,34 @@ export async function POST(req: NextRequest) {
           protPer100 = Number(cached.rows[0].protein_per_100g) || 0;
           carbPer100 = Number(cached.rows[0].carbs_per_100g) || 0;
           fatPer100 = Number(cached.rows[0].fat_per_100g) || 0;
-          // Calculate grams_per_serving from provided calories if possible
           if (calories && calories > 0 && calPer100 > 0) {
             gramsPerServing = Math.round((calories / calPer100) * 100);
+          }
+        }
+
+        // Also grab actual serving nutrition from the most recent log entry
+        const logEntry = await query(
+          `SELECT calories, protein, carbs, fat, amount, serving_unit
+           FROM daily_food_logs
+           WHERE user_id = $1 AND food_name ILIKE $2 AND calories > 0
+           ORDER BY log_date DESC, created_at DESC LIMIT 1`,
+          [uid, name]
+        );
+        if (logEntry.rows[0]) {
+          const le = logEntry.rows[0];
+          const unit = (le.serving_unit || 'g').toLowerCase();
+          let amt = Number(le.amount) || 1;
+          // Normalize to per-serving
+          if (unit !== 'g' && unit !== 'ml' && amt > 1) {
+            servingCal = Math.round(Number(le.calories) / amt);
+            servingP = parseFloat((Number(le.protein || 0) / amt).toFixed(1));
+            servingC = parseFloat((Number(le.carbs || 0) / amt).toFixed(1));
+            servingF = parseFloat((Number(le.fat || 0) / amt).toFixed(1));
+          } else {
+            servingCal = Number(le.calories);
+            servingP = Number(le.protein) || 0;
+            servingC = Number(le.carbs) || 0;
+            servingF = Number(le.fat) || 0;
           }
         }
       } catch {}
@@ -143,15 +170,19 @@ export async function POST(req: NextRequest) {
       const unit = serving_unit || 'g';
 
       const result = await query(
-        `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_favorite, default_weight, default_serving_unit, grams_per_serving, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,TRUE,$7,$8,$9,0)
+        `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_favorite, default_weight, default_serving_unit, grams_per_serving, serving_calories, serving_protein, serving_carbs, serving_fat, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,$7,$8,$9,$10,$11,$12,$13,0)
          ON CONFLICT (user_id, food_name)
          DO UPDATE SET is_favorite = TRUE,
                        default_weight = EXCLUDED.default_weight,
                        default_serving_unit = EXCLUDED.default_serving_unit,
-                       grams_per_serving = COALESCE(EXCLUDED.grams_per_serving, user_custom_foods.grams_per_serving)
-         RETURNING id, food_name as name, default_weight, default_serving_unit, grams_per_serving`,
-        [uid, name, calPer100, protPer100, carbPer100, fatPer100, weight, unit, gramsPerServing]
+                       grams_per_serving = COALESCE(EXCLUDED.grams_per_serving, user_custom_foods.grams_per_serving),
+                       serving_calories = COALESCE(EXCLUDED.serving_calories, user_custom_foods.serving_calories),
+                       serving_protein = COALESCE(EXCLUDED.serving_protein, user_custom_foods.serving_protein),
+                       serving_carbs = COALESCE(EXCLUDED.serving_carbs, user_custom_foods.serving_carbs),
+                       serving_fat = COALESCE(EXCLUDED.serving_fat, user_custom_foods.serving_fat)
+         RETURNING id, food_name as name, default_weight, default_serving_unit, grams_per_serving, serving_calories, serving_protein, serving_carbs, serving_fat`,
+        [uid, name, calPer100, protPer100, carbPer100, fatPer100, weight, unit, gramsPerServing, servingCal, servingP, servingC, servingF]
       );
 
       return NextResponse.json({ favorite: result.rows[0] });
