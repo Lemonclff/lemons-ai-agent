@@ -318,8 +318,8 @@ export function ProfileTab({
               const isToday = e.log_date.slice(0, 10) === new Date().toISOString().slice(0, 10);
               return (
                 <div key={e.id} className="flex items-center gap-3 px-4 py-2 text-[13px] hover:bg-[var(--color-surface-elevated)]/20 group transition-colors border-b border-[var(--color-border)]/10 last:border-0">
-                  <span className="text-[var(--color-text-muted)] w-[72px] tabular-nums shrink-0">
-                    {isToday ? 'Today' : e.log_date.slice(5)}
+                  <span className="text-[var(--color-text-muted)] w-[55px] tabular-nums shrink-0 text-[12px]">
+                    {isToday ? 'Today' : e.log_date.slice(5, 10)}
                   </span>
                   <span className="font-semibold tabular-nums text-[var(--color-text-primary)] w-[48px] shrink-0">{e.weight_kg}</span>
                   <span className="text-[var(--color-text-muted)] text-[11px]">kg</span>
