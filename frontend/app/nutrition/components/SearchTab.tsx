@@ -1,10 +1,92 @@
 "use client";
 
-import { Search, Loader2, Minus, Plus, Star } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Search, Loader2, Minus, Plus, Star, ScanLine, Camera, X } from "lucide-react";
 
 interface FoodResult {
   food_name: string; display_name: string; calories_per_100g: number;
   protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; source: string;
+}
+
+interface BarcodeResult {
+  code: string; name: string; brand: string | null; image: string | null;
+  nutrition: { calories_per_100g: number; protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; fiber_per_100g: number; sugars_per_100g: number };
+  serving_size: string | null; quantity: string | null;
+}
+
+function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult) => void; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState("");
+  const [scanning, setScanning] = useState(false);
+
+  const startScan = useCallback(async () => {
+    setError("");
+    setScanning(true);
+    try {
+      // Use BarcodeDetector API (Chrome 88+)
+      if ("BarcodeDetector" in window) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (videoRef.current) videoRef.current.srcObject = stream;
+        await videoRef.current?.play();
+
+        const detector = new (window as any).BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39"] });
+        const tick = async () => {
+          if (!videoRef.current || !scanning) return;
+          try {
+            const barcodes = await detector.detect(videoRef.current);
+            if (barcodes.length > 0) {
+              const code = barcodes[0].rawValue;
+              stream.getTracks().forEach(t => t.stop());
+              setScanning(false);
+              const r = await fetch(`/api/nutrition/barcode?code=${code}`);
+              const data = await r.json();
+              if (data.error) { setError(data.error); return; }
+              onResult(data);
+            }
+          } catch {}
+          if (scanning) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      } else {
+        setError("Barcode scanner not supported in this browser. Use Chrome/Edge, or type the barcode manually.");
+        setScanning(false);
+      }
+    } catch (e: any) {
+      setError(e.message || "Camera access denied");
+      setScanning(false);
+    }
+  }, [onResult, scanning]);
+
+  const stopScan = () => {
+    setScanning(false);
+    const stream = videoRef.current?.srcObject as MediaStream;
+    stream?.getTracks().forEach(t => t.stop());
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
+      <button onClick={stopScan} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
+        <X size={24} />
+      </button>
+      {error ? (
+        <div className="text-center">
+          <p className="text-red-400 text-[14px] mb-4">{error}</p>
+          <button onClick={stopScan} className="px-4 py-2 rounded-lg bg-white/10 text-white">Close</button>
+        </div>
+      ) : (
+        <>
+          <video ref={videoRef} className="w-full max-w-[400px] rounded-xl" autoPlay playsInline muted />
+          {!scanning && (
+            <button onClick={startScan} className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2">
+              <Camera size={18} /> Start Scanning
+            </button>
+          )}
+          <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>
+        </>
+      )}
+    </div>
+  );
 }
 
 export function SearchTab({
@@ -30,17 +112,41 @@ export function SearchTab({
   customServingUnit: string; setCustomServingUnit: (v:string) => void;
   customFavorite: boolean; setCustomFavorite: (v:boolean) => void;
 }) {
+  const [barcodeCode, setBarcodeCode] = useState("");
+  const [barcodeLoading, setBarcodeLoading] = useState(false);
+  const [barcodeResult, setBarcodeResult] = useState<BarcodeResult | null>(null);
+  const [barcodeError, setBarcodeError] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+
+  async function lookupBarcode() {
+    if (!barcodeCode) return;
+    setBarcodeLoading(true); setBarcodeError(""); setBarcodeResult(null);
+    try {
+      const r = await fetch(`/api/nutrition/barcode?code=${barcodeCode}`);
+      const data = await r.json();
+      if (data.error) { setBarcodeError(data.error); } else { setBarcodeResult(data); }
+    } catch { setBarcodeError("Network error"); }
+    setBarcodeLoading(false);
+  }
+
+  function useBarcodeData() {
+    if (!barcodeResult) return;
+    setCustomName(barcodeResult.name);
+    setCustomCal(String(barcodeResult.nutrition.calories_per_100g || ""));
+    setCustomProtein(String(barcodeResult.nutrition.protein_per_100g || ""));
+    setCustomCarbs(String(barcodeResult.nutrition.carbs_per_100g || ""));
+    setCustomFat(String(barcodeResult.nutrition.fat_per_100g || ""));
+    setBarcodeResult(null); setBarcodeCode("");
+  }
+
   return (
     <div className="grid gap-4 max-w-[640px]">
       {/* Search */}
       <div className="border border-[var(--color-border)] rounded-lg p-4">
         <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-3">Search Food</h3>
         <div className="flex gap-2">
-          <input
-            value={searchQ}
-            onChange={e => { setSearchQ(e.target.value); onSearch(e.target.value); }}
-            onFocus={() => setShowDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          <input value={searchQ} onChange={e => { setSearchQ(e.target.value); onSearch(e.target.value); }}
+            onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             placeholder="Search food database..."
             className="flex-1 px-3 py-2 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50"
           />
@@ -57,6 +163,61 @@ export function SearchTab({
                 <span className="text-[10px] text-[var(--color-text-muted)]">{f.calories_per_100g} kcal/100g</span>
               </button>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* ═══ Barcode Scanner ═══ */}
+      <div className="border border-[var(--color-border)] rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <ScanLine size={16} className="text-[var(--color-accent)]" />
+          <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)]">Barcode Scanner</h3>
+          <span className="text-[10px] text-[var(--color-text-muted)]/60">Open Food Facts</span>
+        </div>
+
+        <div className="flex gap-2">
+          <input value={barcodeCode} onChange={e => setBarcodeCode(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && lookupBarcode()}
+            placeholder="Enter barcode number..."
+            className="flex-1 px-3 py-2 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none tabular-nums"
+          />
+          <button onClick={lookupBarcode} disabled={barcodeLoading || !barcodeCode}
+            className="px-4 py-2 text-[12px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5">
+            {barcodeLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+            Lookup
+          </button>
+          <button onClick={() => setShowScanner(true)}
+            className="px-4 py-2 text-[12px] font-medium rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/25 flex items-center gap-1.5">
+            <Camera size={14} /> Scan
+          </button>
+        </div>
+
+        {barcodeError && (
+          <div className="mt-2 text-[12px] text-red-400 p-2 rounded bg-red-500/5 border border-red-500/10">{barcodeError}</div>
+        )}
+
+        {barcodeResult && (
+          <div className="mt-3 p-3 rounded-lg bg-[var(--color-surface-elevated)]/20 border border-[var(--color-border)]/30">
+            <div className="flex items-start gap-3">
+              {barcodeResult.image && (
+                <img src={barcodeResult.image} alt="" className="w-14 h-14 rounded-lg object-cover border border-[var(--color-border)]" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-[var(--color-text-primary)] truncate">{barcodeResult.name}</div>
+                {barcodeResult.brand && <div className="text-[11px] text-[var(--color-text-muted)]">{barcodeResult.brand}</div>}
+                <div className="text-[11px] text-[var(--color-text-muted)]/60 mt-0.5">{barcodeResult.code}</div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px]">
+                  <span className="text-orange-400 font-semibold">{barcodeResult.nutrition.calories_per_100g} kcal</span>
+                  <span className="text-blue-400">P: {barcodeResult.nutrition.protein_per_100g}g</span>
+                  <span className="text-amber-400">C: {barcodeResult.nutrition.carbs_per_100g}g</span>
+                  <span className="text-red-400">F: {barcodeResult.nutrition.fat_per_100g}g</span>
+                </div>
+                <button onClick={useBarcodeData}
+                  className="mt-2 px-3 py-1 text-[11px] font-medium rounded-lg bg-[var(--color-accent)]/15 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25 transition-colors">
+                  Use This Food ↓
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -94,7 +255,6 @@ export function SearchTab({
       {/* Custom Foods */}
       <div className="border border-[var(--color-border)] rounded-lg p-4">
         <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-3">Custom Foods</h3>
-
         <div className="border-b border-[var(--color-border)]/30 pb-3 mb-3">
           <div className="text-[11px] font-medium text-[var(--color-text-muted)] mb-2">Add New</div>
           <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
@@ -115,19 +275,12 @@ export function SearchTab({
               <option value="snack">Snack</option>
             </select>
             <span className="text-[11px] text-[var(--color-text-muted)]">with</span>
-            <input
-              list="custom-serving-units"
-              value={customServingUnit}
-              onChange={e => setCustomServingUnit(e.target.value)}
-              placeholder="g"
-              className="w-[80px] px-2 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-primary)]"
-            />
+            <input list="custom-serving-units" value={customServingUnit} onChange={e => setCustomServingUnit(e.target.value)}
+              placeholder="g" className="w-[80px] px-2 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-primary)]" />
             <datalist id="custom-serving-units">
               <option value="g" /><option value="ml" />
-              <option value="份" /><option value="碗" />
-              <option value="杯" /><option value="罐" />
-              <option value="瓶" /><option value="個" />
-              <option value="包" /><option value="碟" />
+              <option value="份" /><option value="碗" /><option value="杯" /><option value="罐" />
+              <option value="瓶" /><option value="個" /><option value="包" /><option value="碟" />
               <option value="匙" /><option value="片" /><option value="塊" />
             </datalist>
             <label className="flex items-center gap-1.5 cursor-pointer ml-auto">
@@ -139,6 +292,14 @@ export function SearchTab({
           </div>
         </div>
       </div>
+
+      {/* Camera Scanner Modal */}
+      {showScanner && (
+        <BarcodeScanner
+          onResult={(data) => { setBarcodeResult(data); setShowScanner(false); }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 }
