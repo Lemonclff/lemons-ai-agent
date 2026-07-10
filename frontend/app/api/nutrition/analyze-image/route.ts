@@ -73,9 +73,9 @@ function getProviderConfig(provider: string): ProviderCfg {
     nvidia: {
       apiKey: process.env.NVIDIA_API_KEY || "",
       baseUrl: "https://integrate.api.nvidia.com/v1",
-      model: process.env.NVIDIA_MODEL || "deepseek-ai/deepseek-v4-pro",
+      model: "google/diffusiongemma-26b-a4b-it",
       hasVision: false,
-      extraBody: { chat_template_kwargs: { thinking: false } },
+      extraBody: { chat_template_kwargs: { enable_thinking: true }, top_p: 0.95 },
       noResponseFormat: true,
     },
     deepseek: {
