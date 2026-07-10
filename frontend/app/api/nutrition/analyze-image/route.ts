@@ -129,7 +129,7 @@ function getProviderConfig(provider: string): ProviderCfg {
       apiKey: "lm-studio",
       baseUrl: "http://10.2.0.2:1234/v1",
       model: "qwen/qwen3.5-9b-Q4",
-      hasVision: false,
+      hasVision: true,
       noResponseFormat: true,
     },
   };
