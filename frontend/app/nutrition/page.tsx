@@ -246,7 +246,15 @@ export default function NutritionPage() {
   };
 
   // Backward-compat wrapper for weight-only updates
-  const updateWeight = (id: number, weight: number) => updateLog(id, { amount: weight });
+  const updateWeight = (id: number, weight: number) => {
+    // Pass current macros as overrides so changing amount doesn't recalculate nutrition
+    const entry = logs.find(l => l.id === id);
+    if (entry) {
+      updateLog(id, { amount: weight, calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat });
+    } else {
+      updateLog(id, { amount: weight });
+    }
+  };
 
   const deleteLog = async (id: number) => {
     setLogs(prev => prev.filter(l => l.id !== id));

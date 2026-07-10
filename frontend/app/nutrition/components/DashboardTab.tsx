@@ -355,7 +355,7 @@ export function DashboardTab({
                   <tr className="border-b border-[var(--color-border)] text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
                     <th className="text-left py-2 px-4">Food</th>
                     <th className="text-left py-2 px-2">Meal</th>
-                    <th className="text-center py-2 px-2">Weight</th>
+                    <th className="text-center py-2 px-2">Amount</th>
                     <th className="text-right py-2 px-2">Cal</th>
                     <th className="text-right py-2 px-2">P</th>
                     <th className="text-right py-2 px-2">C</th>
