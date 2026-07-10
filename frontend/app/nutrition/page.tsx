@@ -36,8 +36,10 @@ interface LogEntry {
 interface DaySummary { calories: number; protein: number; carbs: number; fat: number; count: number; exercise_calories: number; }
 interface UserProfile {
   gender: string; age: number; height_cm: number; weight_kg: number;
+  body_fat_pct?: number;
   activity_level: string; goal: string;
   daily_calorie_target: number; daily_protein_target: number; daily_carbs_target: number; daily_fat_target: number;
+  daily_bmr?: number; daily_tdee?: number;
 }
 interface CustomFood { id: number; food_name: string; calories_per_100g: number; protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; }
 
