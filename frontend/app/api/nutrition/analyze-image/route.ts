@@ -125,6 +125,13 @@ function getProviderConfig(provider: string): ProviderCfg {
       hasVision: true,
       nativeApi: true,
     },
+    local: {
+      apiKey: "lm-studio",
+      baseUrl: "http://10.2.0.2:1234/v1",
+      model: "qwen/qwen3.5-9b-Q4",
+      hasVision: false,
+      noResponseFormat: true,
+    },
   };
   return configs[p] || configs.openai;
 }
