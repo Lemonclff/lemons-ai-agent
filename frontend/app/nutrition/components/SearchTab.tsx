@@ -116,24 +116,28 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
   }, [scanning, lookupProduct]);
 
   const stopScan = () => {
+    try {
+      if (scannerRef.current) {
+        try { scannerRef.current.stop(); } catch {}
+        scannerRef.current = null;
+      }
+    } catch {}
+    try {
+      const stream = videoRef.current?.srcObject as MediaStream;
+      stream?.getTracks().forEach((t: any) => { try { t.stop(); } catch {} });
+    } catch {}
     setScanning(false);
-    if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {});
-    }
-    const stream = videoRef.current?.srcObject as MediaStream;
-    stream?.getTracks().forEach(t => t.stop());
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
-      <button onClick={stopScan} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 z-10">
+      <button onClick={stopScan} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 z-20">
         <X size={24} />
       </button>
-      <div id="barcode-reader" className="w-full max-w-[400px]" />
       {error ? (
         <div className="text-center mt-4">
-          <p className="text-red-400 text-[14px] mb-4">{error}</p>
+          <p className="text-red-400 text-[14px] mb-4 max-w-[300px]">{error}</p>
           <button onClick={stopScan} className="px-4 py-2 rounded-lg bg-white/10 text-white">Close</button>
         </div>
       ) : !scanning ? (
@@ -141,8 +145,12 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
           className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2 disabled:opacity-50">
           <Camera size={18} /> {libReady ? "Start Scanning" : "Loading scanner..."}
         </button>
-      ) : null}
-      {scanning && <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>}
+      ) : (
+        <>
+          <div id="barcode-reader" className="w-full max-w-[400px]" />
+          <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>
+        </>
+      )}
     </div>
   );
 }
