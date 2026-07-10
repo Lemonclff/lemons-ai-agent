@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, History, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Goals { calories: number; protein: number; carbs: number; fat: number; }
@@ -15,19 +14,6 @@ export function HistoryTab({
   goals: Goals; historyMonth: Date; setHistoryMonth: (d:Date) => void;
 }) {
   const entries = Object.entries(weeklyData);
-  const [chartType, setChartType] = useState("calories");
-  const [chartImg, setChartImg] = useState<string | null>(null);
-  const [chartLoading, setChartLoading] = useState(false);
-
-  useEffect(() => {
-    setChartLoading(true);
-    setChartImg(null);
-    fetch(`/api/nutrition/charts/calorie-trend?days=7&type=${chartType}`)
-      .then(r => r.json())
-      .then(d => { if (d.imageUrl) setChartImg(d.imageUrl); })
-      .catch(() => {})
-      .finally(() => setChartLoading(false));
-  }, [chartType]);
 
   return (
     <div className="grid gap-4 max-w-[700px]">
@@ -67,37 +53,35 @@ export function HistoryTab({
         })()
       )}
 
-      {/* ═══ G2 Chart: 7-Day Trend ═══ */}
-      <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-[var(--color-surface-elevated)]/30 border-b border-[var(--color-border)]/50">
-          <History size={15} className="text-[var(--color-accent)]" />
-          <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">7-Day Trend</span>
-          <div className="ml-auto flex items-center gap-1">
-            {[
-              { key: "calories", label: "Cal", color: "bg-orange-400" },
-              { key: "protein", label: "Prot", color: "bg-green-400" },
-              { key: "carbs", label: "Carb", color: "bg-amber-400" },
-              { key: "fat", label: "Fat", color: "bg-red-400" },
-            ].map(t => (
-              <button key={t.key} onClick={() => setChartType(t.key)}
-                className={cn(
-                  "px-2 py-1 text-[11px] rounded-md font-medium transition-all",
-                  chartType === t.key
-                    ? `${t.color} text-white shadow-sm`
-                    : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)]"
-                )}>{t.label}</button>
-            ))}
+      {/* Calorie trend bar chart */}
+      <div className="border border-[var(--color-border)] rounded-lg p-4">
+        <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-3">7-Day Calorie Trend</h3>
+        <div className="flex items-end gap-1 h-[140px]">
+          {entries.length === 0 ? (
+            <div className="text-[12px] text-[var(--color-text-muted)] w-full text-center">No data</div>
+          ) : entries.map(([date, vals]) => {
+            const maxVal = Math.max(...Object.values(weeklyData).map(v => v.calories), 100);
+            const h = Math.max((vals.calories / maxVal) * 110, 2);
+            const label = new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" });
+            const overGoal = goals.calories > 0 && vals.calories > goals.calories;
+            return (
+              <button key={date} onClick={() => setCurrentDate(date)}
+                className="flex-1 flex flex-col items-center gap-1 group cursor-pointer">
+                <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums group-hover:text-[var(--color-accent)] transition-colors">{vals.calories}</span>
+                <div className="w-full rounded-t transition-all group-hover:opacity-80"
+                  style={{ height: Math.max(h, 3), background: overGoal ? "#ef4444" : date === currentDate ? "var(--color-accent)" : "#3b82f6", opacity: date === currentDate ? 1 : 0.45 }} />
+                <span className="text-[10px] text-[var(--color-text-muted)]">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {goals.calories > 0 && (
+          <div className="mt-2 flex items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Over target</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Under target</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[var(--color-accent)] inline-block" />Selected</span>
           </div>
-        </div>
-        <div className="p-3 flex items-center justify-center min-h-[280px] bg-[var(--color-surface)]">
-          {chartLoading ? (
-            <Loader2 size={24} className="animate-spin text-[var(--color-text-muted)]/40" />
-          ) : chartImg ? (
-            <img src={chartImg} alt={`${chartType} trend`} className="w-full max-w-full h-auto rounded" />
-          ) : (
-            <span className="text-[12px] text-[var(--color-text-muted)]/50">No chart data</span>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Mini Calendar */}
