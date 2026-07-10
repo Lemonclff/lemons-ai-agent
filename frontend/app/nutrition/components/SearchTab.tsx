@@ -135,6 +135,8 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
       <button onClick={stopScan} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 z-20">
         <X size={24} />
       </button>
+      {/* Scanner div always present so html5-qrcode can attach */}
+      <div id="barcode-reader" className="w-full max-w-[400px]" style={{ display: scanning ? 'block' : 'none' }} />
       {error ? (
         <div className="text-center mt-4">
           <p className="text-red-400 text-[14px] mb-4 max-w-[300px]">{error}</p>
@@ -146,10 +148,7 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
           <Camera size={18} /> {libReady ? "Start Scanning" : "Loading scanner..."}
         </button>
       ) : (
-        <>
-          <div id="barcode-reader" className="w-full max-w-[400px]" />
-          <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>
-        </>
+        <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>
       )}
     </div>
   );
