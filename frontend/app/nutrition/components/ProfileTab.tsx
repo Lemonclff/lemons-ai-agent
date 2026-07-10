@@ -282,30 +282,30 @@ export function ProfileTab({
 
         {/* Add form */}
         <div className="px-4 py-3 flex items-end gap-2 flex-wrap border-t border-[var(--color-border)]/30">
-          <div className="flex-1 min-w-[100px]">
+          <div className="flex-1 min-w-[80px] max-w-[120px]">
             <label className="text-[10px] text-[var(--color-text-muted)] block mb-0.5">Weight (kg)</label>
             <input type="number" value={newWeight} step="0.1" min="20" max="300"
               onChange={e => setNewWeight(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addWeight()}
               placeholder="70.0"
-              className="w-full px-3 py-2 text-[15px] font-semibold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none tabular-nums focus:border-[var(--color-accent)]/50 transition-colors" />
+              className="w-full px-2 py-2 text-[15px] font-semibold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none tabular-nums focus:border-[var(--color-accent)]/50 transition-colors" />
           </div>
-          <div>
+          <div className="flex-1 min-w-[100px] max-w-[140px]">
             <label className="text-[10px] text-[var(--color-text-muted)] block mb-0.5"><Calendar size={10} className="inline mr-0.5" />Date</label>
             <input type="date" value={weightDate}
               onChange={e => setWeightDate(e.target.value)}
-              className="w-[130px] px-2.5 py-2 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" />
+              className="w-full px-2 py-2 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" />
           </div>
-          <div className="hidden sm:block">
+          <div className="hidden sm:block flex-1 min-w-[80px] max-w-[110px]">
             <label className="text-[10px] text-[var(--color-text-muted)] block mb-0.5"><Pencil size={10} className="inline mr-0.5" />Note</label>
             <input type="text" value={weightNote}
               onChange={e => setWeightNote(e.target.value)}
               placeholder="morning"
-              className="w-[100px] px-2.5 py-2 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" />
+              className="w-full px-2 py-2 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none" />
           </div>
           <button onClick={addWeight} disabled={addingWeight || !newWeight}
-            className="px-4 py-2 text-[13px] font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-30 transition-all flex items-center gap-1.5 shadow-sm shadow-indigo-500/20">
-            <Plus size={15} /> Log
+            className="px-3 py-2 text-[12px] font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-30 transition-all flex items-center gap-1 shadow-sm shadow-indigo-500/20 shrink-0">
+            <Plus size={14} /> Log
           </button>
         </div>
 
