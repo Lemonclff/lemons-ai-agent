@@ -67,8 +67,8 @@ function calculateMacro(weight_kg: number, tdee: number, goal: string) {
 /* ---- GET ---- */
 
 export async function GET(req: NextRequest) {
-  let uid = getUserId(req);
-  if (uid === 0) uid = 1; // fallback for unauthenticated profile access
+  const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
@@ -104,8 +104,8 @@ export async function GET(req: NextRequest) {
 /* ---- POST ---- */
 
 export async function POST(req: NextRequest) {
-  let uid = getUserId(req);
-  if (uid === 0) uid = 1; // fallback for unauthenticated profile save
+  const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
