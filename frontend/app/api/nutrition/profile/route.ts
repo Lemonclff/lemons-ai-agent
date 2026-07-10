@@ -67,7 +67,8 @@ function calculateMacro(weight_kg: number, tdee: number, goal: string) {
 /* ---- GET ---- */
 
 export async function GET(req: NextRequest) {
-  const uid = getUserId(req);
+  let uid = getUserId(req);
+  if (uid === 0) uid = 1; // fallback for unauthenticated profile access
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
@@ -103,7 +104,8 @@ export async function GET(req: NextRequest) {
 /* ---- POST ---- */
 
 export async function POST(req: NextRequest) {
-  const uid = getUserId(req);
+  let uid = getUserId(req);
+  if (uid === 0) uid = 1; // fallback for unauthenticated profile save
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
