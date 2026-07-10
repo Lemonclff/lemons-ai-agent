@@ -88,7 +88,7 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
       scannerRef.current = scanner;
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [H5Q.FORMATS.EAN_13, H5Q.FORMATS.EAN_8, H5Q.FORMATS.UPC_A, H5Q.FORMATS.UPC_E, H5Q.FORMATS.CODE_128, H5Q.FORMATS.CODE_39] },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
         (decodedText: string, decodedResult: any) => {
           try {
             scanner.stop().catch(() => {});
