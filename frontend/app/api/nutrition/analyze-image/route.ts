@@ -84,13 +84,6 @@ function getProviderConfig(provider: string): ProviderCfg {
       model: "deepseek-chat",
       hasVision: false,
     },
-    lmstudio: {
-      apiKey: "lm-studio",
-      baseUrl: (process.env.LMSTUDIO_BASE_URL || "http://localhost:1234/v1"),
-      model: process.env.LMSTUDIO_MODEL || "qwen/qwen3.5-9b-Q4",
-      hasVision: false,
-      noResponseFormat: true,
-    },
     agnes: {
       apiKey: process.env.AGNES_API_KEY || "",
       baseUrl: "https://apihub.agnes-ai.com/v1",
@@ -158,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     const cfg = getProviderConfig(provider);
 
-    if (!cfg.apiKey && provider !== "lmstudio") {
+    if (!cfg.apiKey && provider !== "local") {
       return NextResponse.json({
         ...DEMO_RESPONSE,
         status: "demo_no_api_key",

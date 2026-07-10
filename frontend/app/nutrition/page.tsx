@@ -166,8 +166,7 @@ export default function NutritionPage() {
     { value: "openai", label: "OpenAI (gpt-4o)", hasVision: true },
     { value: "openrouter", label: "OpenRouter", hasVision: true },
     { value: "nemotron", label: "Nemotron Omni (NVIDIA)", hasVision: true },
-    { value: "lmstudio", label: "LM Studio (本地)", hasVision: false },
-    { value: "local", label: "Local LLM (10.2.0.2 / Qwen 9B)", hasVision: true },
+    { value: "local", label: "Local LLM", hasVision: true },
   ];
 
   // Toast
