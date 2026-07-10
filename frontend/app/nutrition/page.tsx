@@ -133,6 +133,8 @@ export default function NutritionPage() {
     activity_level: "moderate", goal: "maintain",
     daily_calorie_target: 2000, daily_protein_target: 100, daily_carbs_target: 250, daily_fat_target: 65,
   });
+  const [profileChecked, setProfileChecked] = useState(false);
+  const [hasProfile, setHasProfile] = useState(true); // optimistic, set false if API returns null
 
   // History
   const [weeklyData, setWeeklyData] = useState<Record<string, Record<string, number>>>({});
@@ -192,14 +194,18 @@ export default function NutritionPage() {
       const json = await r.json();
       if (json.profile) {
         setProfile(json.profile);
+        setHasProfile(true);
         setGoals({
           calories: json.profile.daily_calorie_target || 2000,
           protein: json.profile.daily_protein_target || 100,
           carbs: json.profile.daily_carbs_target || 250,
           fat: json.profile.daily_fat_target || 65,
         });
+      } else {
+        setHasProfile(false);
       }
-    } catch {}
+    } catch { setHasProfile(false); }
+    setProfileChecked(true);
   }, []);
 
   useEffect(() => { fetchLogs(currentDate); fetchExercises(); fetchFavorites(); }, [currentDate, fetchLogs]);
@@ -500,7 +506,7 @@ export default function NutritionPage() {
     try {
       const r = await fetch("/api/nutrition/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profile) });
       const json = await r.json();
-      if (json.profile) { setProfile(json.profile); setGoals({ calories: json.profile.daily_calorie_target||2000, protein: json.profile.daily_protein_target||100, carbs: json.profile.daily_carbs_target||250, fat: json.profile.daily_fat_target||65 }); showToast("Profile saved"); }
+      if (json.profile) { setProfile(json.profile); setHasProfile(true); setGoals({ calories: json.profile.daily_calorie_target||2000, protein: json.profile.daily_protein_target||100, carbs: json.profile.daily_carbs_target||250, fat: json.profile.daily_fat_target||65 }); showToast("Profile saved"); }
     } catch { showToast("Save failed"); }
   };
 
@@ -617,6 +623,24 @@ export default function NutritionPage() {
 
   /* ---- Render ---- */
   const currentPageIdx = PAGE_ORDER.indexOf(page);
+
+  // ── Profile gate: block all tabs until profile is set ──
+  if (profileChecked && !hasProfile && page !== "profile") {
+    return (
+      <div className="fixed inset-0 z-50 bg-[var(--color-surface)] flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-accent)]/15 flex items-center justify-center ring-1 ring-[var(--color-accent)]/20">
+            <UserCircle size={32} className="text-[var(--color-accent)]" />
+          </div>
+          <h2 className="text-[18px] font-bold text-[var(--color-text-primary)] mb-2">Welcome to NutriSnap</h2>
+          <p className="text-[13px] text-[var(--color-text-muted)] mb-4">Please set up your profile before using the nutrition tracker. This helps calculate your daily calorie and macro targets.</p>
+          <button onClick={() => setPage("profile")} className="px-5 py-2.5 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity">
+            Set Up Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

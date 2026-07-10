@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
+import { getUserId } from "@/lib/nutrition-auth";
 
 /* ================================================================
    Quick Add Favorites API (post-migration)
@@ -12,17 +12,6 @@ import { verifyToken } from "@/lib/auth";
    POST   /api/nutrition/favorites       — add/update a favorite
    DELETE /api/nutrition/favorites?id=N&type=in|out  — remove
    ================================================================ */
-
-function getUserId(req: NextRequest): number {
-  try {
-    const token = req.cookies.get("token")?.value;
-    if (token) {
-      const payload = verifyToken(token);
-      if (payload) return payload.userId;
-    }
-  } catch {}
-  return 1;
-}
 
 export async function GET(req: NextRequest) {
   const uid = getUserId(req);
