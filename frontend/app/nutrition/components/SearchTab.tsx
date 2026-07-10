@@ -147,7 +147,8 @@ export function SearchTab({
     if (!barcodeCode) return;
     setBarcodeLoading(true); setBarcodeError(""); setBarcodeResult(null);
     try {
-      const r = await fetch(`/api/nutrition/barcode?code=${barcodeCode}`);
+      const clean = barcodeCode.replace(/\D/g, "");
+      const r = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(clean)}`);
       const data = await r.json();
       if (data.error) { setBarcodeError(data.error); } else { setBarcodeResult(data); }
     } catch { setBarcodeError("Network error"); }

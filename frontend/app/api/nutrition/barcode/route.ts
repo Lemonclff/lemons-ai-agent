@@ -33,13 +33,15 @@ interface OFFProduct {
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
-  if (!code || !/^\d{4,}$/.test(code)) {
-    return NextResponse.json({ error: "Valid barcode required (digits only)" }, { status: 400 });
+  if (!code || code.length < 4) {
+    return NextResponse.json({ error: "Valid barcode required" }, { status: 400 });
   }
+  // Clean the code: strip non-digit characters, keep only digits
+  const cleanCode = code.replace(/\D/g, "");
 
   try {
     const resp = await fetch(
-      `https://world.openfoodfacts.org/api/v2/product/${code}.json`,
+      `https://world.openfoodfacts.org/api/v2/product/${cleanCode}.json`,
       {
         headers: {
           "User-Agent": "NutriSnap/1.0 (https://nutrisnap.app; contact@nutrisnap.app)",
@@ -65,7 +67,7 @@ export async function GET(req: NextRequest) {
     const name = p.product_name_zh || p.product_name || "Unknown Product";
 
     const result = {
-      code: data.code,
+      code: cleanCode,
       name,
       brand: p.brands || null,
       image: p.image_url || null,
