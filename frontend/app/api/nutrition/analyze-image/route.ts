@@ -113,6 +113,12 @@ function getProviderConfig(provider: string) {
       mergeExtraBody: true,
       noResponseFormat: true,
     },
+    gemini: {
+      apiKey: process.env.GEMINI_API_KEY || "",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+      model: "gemini-2.5-flash",
+      hasVision: true,
+    },
   };
   return configs[p] || configs.openai;
 }

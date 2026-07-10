@@ -158,9 +158,10 @@ export default function NutritionPage() {
 
   const PHOTO_PROVIDERS = [
     { value: "agnes", label: "Agnes AI (agnes-2.0-flash)", hasVision: true },
-    { value: "nemotron", label: "Nemotron Omni (NVIDIA)", hasVision: true },
+    { value: "gemini", label: "Google Gemini (gemini-2.5-flash)", hasVision: true },
     { value: "openai", label: "OpenAI (gpt-4o)", hasVision: true },
     { value: "openrouter", label: "OpenRouter", hasVision: true },
+    { value: "nemotron", label: "Nemotron Omni (NVIDIA)", hasVision: true },
     { value: "lmstudio", label: "LM Studio (本地)", hasVision: false },
   ];
 
