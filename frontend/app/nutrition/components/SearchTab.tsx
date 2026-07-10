@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import Script from "next/script";
 import { Search, Loader2, Minus, Plus, Star, ScanLine, Camera, X } from "lucide-react";
 
 interface FoodResult {
@@ -352,8 +351,6 @@ export function SearchTab({
           onClose={() => setShowScanner(false)}
         />
       )}
-      {/* Preload barcode scanner library */}
-      <Script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js" strategy="beforeInteractive" />
     </div>
   );
 }
