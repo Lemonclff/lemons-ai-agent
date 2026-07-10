@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Script from "next/script";
 import { Search, Loader2, Minus, Plus, Star, ScanLine, Camera, X } from "lucide-react";
 
@@ -20,6 +20,19 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
   const scannerRef = useRef<any>(null);
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
+  const [libReady, setLibReady] = useState(false);
+
+  // Load scanner library on mount
+  useEffect(() => {
+    if ((window as any).Html5Qrcode) { setLibReady(true); return; }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js";
+    script.async = true;
+    script.onload = () => setLibReady(true);
+    script.onerror = () => setError("Failed to load scanner");
+    document.head.appendChild(script);
+    return () => { script.remove(); };
+  }, []);
 
   const lookupProduct = useCallback(async (code: string) => {
     try {
@@ -117,9 +130,9 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
           <button onClick={stopScan} className="px-4 py-2 rounded-lg bg-white/10 text-white">Close</button>
         </div>
       ) : !scanning ? (
-        <button onClick={startScan}
-          className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2">
-          <Camera size={18} /> Start Scanning
+        <button onClick={startScan} disabled={!libReady}
+          className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2 disabled:opacity-50">
+          <Camera size={18} /> {libReady ? "Start Scanning" : "Loading scanner..."}
         </button>
       ) : null}
       {scanning && <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>}
@@ -340,7 +353,7 @@ export function SearchTab({
         />
       )}
       {/* Preload barcode scanner library */}
-      <Script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js" strategy="lazyOnload" />
+      <Script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js" strategy="beforeInteractive" />
     </div>
   );
 }
