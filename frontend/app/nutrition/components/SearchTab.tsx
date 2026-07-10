@@ -16,49 +16,83 @@ interface BarcodeResult {
 
 function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerRef = useRef<any>(null);
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
+  const [loadingLib, setLoadingLib] = useState(false);
+
+  const lookupProduct = useCallback(async (code: string) => {
+    const r = await fetch(`/api/nutrition/barcode?code=${code}`);
+    const data = await r.json();
+    if (data.error) { setError(data.error); return; }
+    onResult(data);
+  }, [onResult]);
 
   const startScan = useCallback(async () => {
     setError("");
     setScanning(true);
-    try {
-      // Use BarcodeDetector API (Chrome 88+)
-      if ("BarcodeDetector" in window) {
+
+    // Try native BarcodeDetector first (Chrome/Edge)
+    if ("BarcodeDetector" in window) {
+      try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         if (videoRef.current) videoRef.current.srcObject = stream;
         await videoRef.current?.play();
 
-        const detector = new (window as any).BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39"] });
+        const detector = new (window as any).BarcodeDetector({
+          formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39"],
+        });
         const tick = async () => {
           if (!videoRef.current || !scanning) return;
           try {
             const barcodes = await detector.detect(videoRef.current);
             if (barcodes.length > 0) {
-              const code = barcodes[0].rawValue;
               stream.getTracks().forEach(t => t.stop());
               setScanning(false);
-              const r = await fetch(`/api/nutrition/barcode?code=${code}`);
-              const data = await r.json();
-              if (data.error) { setError(data.error); return; }
-              onResult(data);
+              await lookupProduct(barcodes[0].rawValue);
             }
           } catch {}
           if (scanning) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
-      } else {
-        setError("Barcode scanner not supported in this browser. Use Chrome/Edge, or type the barcode manually.");
+        return;
+      } catch (e: any) {
+        setError(e.message || "Camera access denied");
         setScanning(false);
+        return;
       }
-    } catch (e: any) {
-      setError(e.message || "Camera access denied");
-      setScanning(false);
     }
-  }, [onResult, scanning]);
+
+    // Fallback: load html5-qrcode from CDN (works on all browsers incl Safari)
+    setLoadingLib(true);
+    try {
+      const Html5Qrcode = await loadHtml5Qrcode();
+      const scanner = new Html5Qrcode("barcode-reader");
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText: string) => {
+          scanner.stop().catch(() => {});
+          setScanning(false);
+          lookupProduct(decodedText);
+        },
+        () => {} // ignore scan failures
+      );
+      setLoadingLib(false);
+    } catch (e: any) {
+      setLoadingLib(false);
+      setScanning(false);
+      setError(e.message || "Camera not available. Please type the barcode manually.");
+    }
+  }, [scanning, lookupProduct]);
 
   const stopScan = () => {
     setScanning(false);
+    if (scannerRef.current) {
+      scannerRef.current.stop().catch(() => {});
+    }
     const stream = videoRef.current?.srcObject as MediaStream;
     stream?.getTracks().forEach(t => t.stop());
     onClose();
@@ -66,27 +100,38 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
-      <button onClick={stopScan} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
+      <button onClick={stopScan} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 z-10">
         <X size={24} />
       </button>
+      <div id="barcode-reader" className="w-full max-w-[400px]" />
       {error ? (
-        <div className="text-center">
+        <div className="text-center mt-4">
           <p className="text-red-400 text-[14px] mb-4">{error}</p>
           <button onClick={stopScan} className="px-4 py-2 rounded-lg bg-white/10 text-white">Close</button>
         </div>
-      ) : (
-        <>
-          <video ref={videoRef} className="w-full max-w-[400px] rounded-xl" autoPlay playsInline muted />
-          {!scanning && (
-            <button onClick={startScan} className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2">
-              <Camera size={18} /> Start Scanning
-            </button>
-          )}
-          <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>
-        </>
-      )}
+      ) : !scanning ? (
+        <button onClick={startScan} disabled={loadingLib}
+          className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2">
+          <Camera size={18} /> {loadingLib ? "Loading..." : "Start Scanning"}
+        </button>
+      ) : null}
+      {scanning && <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>}
     </div>
   );
+}
+
+// Dynamically load html5-qrcode from CDN
+let html5QrPromise: Promise<any> | null = null;
+function loadHtml5Qrcode(): Promise<any> {
+  if (html5QrPromise) return html5QrPromise;
+  html5QrPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/html5-qrcode@2/min/html5-qrcode.min.js";
+    script.onload = () => resolve((window as any).Html5Qrcode);
+    script.onerror = () => reject(new Error("Failed to load scanner library"));
+    document.head.appendChild(script);
+  });
+  return html5QrPromise;
 }
 
 export function SearchTab({
