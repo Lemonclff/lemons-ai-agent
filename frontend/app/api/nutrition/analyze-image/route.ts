@@ -90,6 +90,8 @@ function getProviderConfig(provider: string): ProviderCfg {
       model: "agnes-2.0-flash",
       hasVision: true,
       noResponseFormat: true,
+      extraBody: { max_tokens: 8000 },
+      mergeExtraBody: true,
     },
     llama4: {
       apiKey: process.env.NVIDIA_LLAMA4_KEY || "",
@@ -239,12 +241,29 @@ async function callVisionApi(image: File, userText: string, cfg: ProviderCfg) {
   }
 
   const data = await resp.json();
-  const content = data.choices[0].message.content;
+  const msg = data.choices?.[0]?.message || {};
+  let content = msg.content || "";
+
+  // Reasoning models (Agnes, DeepSeek-R1, etc.) may put the answer in reasoning_content
+  // and leave content empty when hitting the token limit
+  if ((!content || content.trim() === "") && msg.reasoning_content) {
+    console.log("[API] content empty, falling back to reasoning_content");
+    content = msg.reasoning_content;
+  }
+
+  if (!content || typeof content !== "string") {
+    console.error("[API] Unexpected response structure:", JSON.stringify(data).slice(0, 500));
+    return NextResponse.json(
+      { status: "error", message: `AI returned empty or unexpected response. Structure: ${JSON.stringify(data).slice(0, 300)}` },
+      { status: 500 }
+    );
+  }
 
   try {
     const result = cfg.noResponseFormat ? extractJson(content) : JSON.parse(content);
     return NextResponse.json(result);
-  } catch {
+  } catch (e) {
+    console.error("[Agnes/API] JSON parse error:", String(e), "| Raw content (first 500):", content.slice(0, 500));
     return NextResponse.json(
       { status: "error", message: "AI returned invalid JSON. Try a different provider.", raw_output: content.slice(0, 500) },
       { status: 500 }
