@@ -437,15 +437,25 @@ export default function NutritionPage() {
 
   const quickAddIn = async (f: any) => {
     try {
-      const weight = f.default_weight || f.avg_weight || 100;
       const unit = f.default_serving_unit || f.default_unit || 'g';
+      const isWeightUnit = unit === 'g' || unit === 'ml';
+      // Convert serving units to grams for the API (which only understands grams)
+      let weight: number;
+      if (isWeightUnit) {
+        weight = f.default_weight || f.avg_weight || 100;
+      } else {
+        const servings = f.default_weight || 1;
+        const gPerServing = f.grams_per_serving || 100;
+        weight = servings * gPerServing;
+      }
       await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: f.name, amount: weight, meal_type: mealFilter || "snack", serving_unit: unit, log_date: currentDate }),
+        body: JSON.stringify({ food_name: f.name, amount: weight, meal_type: mealFilter || "snack", serving_unit: 'g', log_date: currentDate }),
       });
       fetchLogs(currentDate);
-      showToast(`Quick added ${f.name} (${weight}${unit})`);
+      const display = isWeightUnit ? `${weight}${unit}` : `${f.default_weight || 1}${unit} (${weight}g)`;
+      showToast(`Quick added ${f.name} (${display})`);
     } catch { showToast("Failed to add"); }
   };
 

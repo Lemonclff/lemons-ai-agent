@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     // ── Curated food favorites (from user_custom_foods) ──
     const foodFavs = await query(
       `SELECT id, food_name as name, calories_per_100g,
-              default_weight, default_serving_unit, sort_order,
+              default_weight, default_serving_unit, grams_per_serving, sort_order,
               NULL::integer as default_duration
        FROM user_custom_foods
        WHERE user_id = $1 AND is_favorite = true
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
     if (type === "in") {
       // ── Food favorite: upsert into user_custom_foods with is_favorite=true ──
       // Try to get per-100g nutrition from cache
-      let calPer100 = 0, protPer100 = 0, carbPer100 = 0, fatPer100 = 0;
+      let calPer100 = 0, protPer100 = 0, carbPer100 = 0, fatPer100 = 0, gramsPerServing: number | null = null;
       try {
         const cached = await query(
           `SELECT * FROM food_nutrition_cache WHERE food_name ILIKE $1 LIMIT 1`,
@@ -130,6 +130,10 @@ export async function POST(req: NextRequest) {
           protPer100 = Number(cached.rows[0].protein_per_100g) || 0;
           carbPer100 = Number(cached.rows[0].carbs_per_100g) || 0;
           fatPer100 = Number(cached.rows[0].fat_per_100g) || 0;
+          // Calculate grams_per_serving from provided calories if possible
+          if (calories && calories > 0 && calPer100 > 0) {
+            gramsPerServing = Math.round((calories / calPer100) * 100);
+          }
         }
       } catch {}
 
@@ -137,14 +141,15 @@ export async function POST(req: NextRequest) {
       const unit = serving_unit || 'g';
 
       const result = await query(
-        `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_favorite, default_weight, default_serving_unit, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,TRUE,$7,$8,0)
+        `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_favorite, default_weight, default_serving_unit, grams_per_serving, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,$7,$8,$9,0)
          ON CONFLICT (user_id, food_name)
          DO UPDATE SET is_favorite = TRUE,
                        default_weight = EXCLUDED.default_weight,
-                       default_serving_unit = EXCLUDED.default_serving_unit
-         RETURNING id, food_name as name, default_weight, default_serving_unit`,
-        [uid, name, calPer100, protPer100, carbPer100, fatPer100, weight, unit]
+                       default_serving_unit = EXCLUDED.default_serving_unit,
+                       grams_per_serving = COALESCE(EXCLUDED.grams_per_serving, user_custom_foods.grams_per_serving)
+         RETURNING id, food_name as name, default_weight, default_serving_unit, grams_per_serving`,
+        [uid, name, calPer100, protPer100, carbPer100, fatPer100, weight, unit, gramsPerServing]
       );
 
       return NextResponse.json({ favorite: result.rows[0] });
