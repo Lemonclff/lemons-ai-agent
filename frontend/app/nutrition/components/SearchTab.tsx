@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Script from "next/script";
 import { Search, Loader2, Minus, Plus, Star, ScanLine, Camera, X } from "lucide-react";
-import { Html5Qrcode } from "html5-qrcode";
 
 interface FoodResult {
   food_name: string; display_name: string; calories_per_100g: number;
@@ -68,14 +68,16 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
       }
     }
 
-    // Fallback: use html5-qrcode npm package
+    // Fallback: use html5-qrcode from CDN (loaded via next/script)
     try {
-      const scanner = new Html5Qrcode("barcode-reader");
+      const H5Q = (window as any).Html5Qrcode;
+      if (!H5Q) { setError("Scanner library not loaded. Please refresh or type barcode manually."); setScanning(false); return; }
+      const scanner = new H5Q("barcode-reader");
       scannerRef.current = scanner;
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        (decodedText: string) => {
+        { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [H5Q.FORMATS.EAN_13, H5Q.FORMATS.EAN_8, H5Q.FORMATS.UPC_A, H5Q.FORMATS.UPC_E, H5Q.FORMATS.CODE_128, H5Q.FORMATS.CODE_39] },
+        (decodedText: string, decodedResult: any) => {
           try {
             scanner.stop().catch(() => {});
             setScanning(false);
@@ -337,6 +339,8 @@ export function SearchTab({
           onClose={() => setShowScanner(false)}
         />
       )}
+      {/* Preload barcode scanner library */}
+      <Script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js" strategy="lazyOnload" />
     </div>
   );
 }
