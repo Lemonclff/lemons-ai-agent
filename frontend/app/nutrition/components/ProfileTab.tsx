@@ -35,10 +35,11 @@ const GOAL_OPTIONS = [
 ];
 
 export function ProfileTab({
-  profile, setProfile, goals, saveProfile,
+  profile, setProfile, goals, saveProfile, showToast,
 }: {
   profile: UserProfile; setProfile: (fn:(p:UserProfile)=>UserProfile) => void;
   goals: {calories:number,protein:number,carbs:number,fat:number}; saveProfile: () => void;
+  showToast: (msg: string) => void;
 }) {
   const [weightLog, setWeightLog] = useState<WeightEntry[]>([]);
   const [weightStats, setWeightStats] = useState<WeightStats | null>(null);
@@ -67,10 +68,11 @@ export function ProfileTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weight_kg: parseFloat(newWeight), log_date: weightDate, notes: weightNote || null }),
       });
-      if (!r.ok) throw new Error();
+      if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error(err.error || 'Failed'); }
       setNewWeight(""); setWeightNote("");
       fetchWeightLog();
-    } catch {}
+      showToast(`Logged ${newWeight} kg`);
+    } catch (e: any) { showToast(e.message || 'Failed to log weight'); }
     setAddingWeight(false);
   }
 

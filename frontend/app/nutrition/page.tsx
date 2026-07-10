@@ -764,7 +764,7 @@ export default function NutritionPage() {
       )}
 
       {page === "profile" && (
-        <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} />
+        <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} showToast={showToast} />
       )}
 
       {page === "history" && (
@@ -867,7 +867,7 @@ export default function NutritionPage() {
               onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />
           )}
           {page === "profile" && (
-            <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} />
+            <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} showToast={showToast} />
           )}
           {page === "history" && (
             <HistoryTab weeklyData={weeklyData} currentDate={currentDate} setCurrentDate={setCurrentDate}
