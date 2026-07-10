@@ -110,6 +110,7 @@ export default function NutritionPage() {
   const [customFat, setCustomFat] = useState("");
   const [customMeal, setCustomMeal] = useState("snack");
   const [customServingUnit, setCustomServingUnit] = useState("g");
+  const [customFavorite, setCustomFavorite] = useState(false);
 
   // Exercise
   const [exercises, setExercises] = useState<any[]>([]);
@@ -297,12 +298,12 @@ export default function NutritionPage() {
       const r = await fetch("/api/nutrition/custom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: customName, calories_per_100g: Number(customCal)||0, protein_per_100g: Number(customProtein)||0, carbs_per_100g: Number(customCarbs)||0, fat_per_100g: Number(customFat)||0 }),
+        body: JSON.stringify({ food_name: customName, calories_per_100g: Number(customCal)||0, protein_per_100g: Number(customProtein)||0, carbs_per_100g: Number(customCarbs)||0, fat_per_100g: Number(customFat)||0, is_favorite: customFavorite, default_weight: 100, default_serving_unit: customServingUnit }),
       });
       const json = await r.json();
       if (!json.error) {
         setCustomFoods(prev => [...prev, json.food]);
-        setCustomName(""); setCustomCal(""); setCustomProtein(""); setCustomCarbs(""); setCustomFat(""); setCustomServingUnit("g");
+        setCustomName(""); setCustomCal(""); setCustomProtein(""); setCustomCarbs(""); setCustomFat(""); setCustomServingUnit("g"); setCustomFavorite(false);
         const weight = 100;
         const logRes = await fetch("/api/nutrition/logs", {
           method: "POST",
@@ -424,7 +425,7 @@ export default function NutritionPage() {
 
   const removeFavorite = async (type: 'in'|'out', id: number) => {
     try {
-      await fetch(`/api/nutrition/favorites?id=${id}`, { method: "DELETE" });
+      await fetch(`/api/nutrition/favorites?id=${id}&type=${type}`, { method: "DELETE" });
       setFavorites(prev => ({
         ...prev,
         [type]: prev[type].filter((f: any) => f.id !== id),
@@ -437,13 +438,14 @@ export default function NutritionPage() {
   const quickAddIn = async (f: any) => {
     try {
       const weight = f.default_weight || f.avg_weight || 100;
+      const unit = f.default_serving_unit || f.default_unit || 'g';
       await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: f.name, amount: weight, meal_type: "snack", log_date: todayStr }),
+        body: JSON.stringify({ food_name: f.name, amount: weight, meal_type: mealFilter || "snack", serving_unit: unit, log_date: currentDate }),
       });
       fetchLogs(currentDate);
-      showToast(`Quick added ${f.name} (${weight}g)`);
+      showToast(`Quick added ${f.name} (${weight}${unit})`);
     } catch { showToast("Failed to add"); }
   };
 
@@ -674,6 +676,7 @@ export default function NutritionPage() {
           customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
           customMeal={customMeal} setCustomMeal={setCustomMeal}
           customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
+          customFavorite={customFavorite} setCustomFavorite={setCustomFavorite}
           />
       )}
 
@@ -779,6 +782,7 @@ export default function NutritionPage() {
               customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
               customMeal={customMeal} setCustomMeal={setCustomMeal}
               customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
+              customFavorite={customFavorite} setCustomFavorite={setCustomFavorite}
               />
           )}
           {page === "calories-out" && (

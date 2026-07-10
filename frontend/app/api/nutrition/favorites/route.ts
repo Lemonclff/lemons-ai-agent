@@ -3,12 +3,14 @@ import { query } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
 /* ================================================================
-   Quick Add Favorites API
-   GET    /api/nutrition/favorites                — curated + auto-suggested
-   POST   /api/nutrition/favorites                — add a favorite
-   DELETE /api/nutrition/favorites?id=N           — remove a favorite
+   Quick Add Favorites API (post-migration)
+   
+   Food favorites    → user_custom_foods (is_favorite = true)
+   Exercise favorites → user_exercise_favorites
 
-   Supports both "in" (Calories In / food) and "out" (Calories Out / exercise).
+   GET    /api/nutrition/favorites       — curated + auto-suggested
+   POST   /api/nutrition/favorites       — add/update a favorite
+   DELETE /api/nutrition/favorites?id=N&type=in|out  — remove
    ================================================================ */
 
 function getUserId(req: NextRequest): number {
@@ -26,19 +28,28 @@ export async function GET(req: NextRequest) {
   const uid = getUserId(req);
 
   try {
-    // Curated favorites
-    const curated = await query(
-      `SELECT * FROM user_quick_favorites
-       WHERE user_id = $1
-       ORDER BY favorite_type, sort_order, created_at DESC`,
+    // ── Curated food favorites (from user_custom_foods) ──
+    const foodFavs = await query(
+      `SELECT id, food_name as name, calories_per_100g,
+              default_weight, default_serving_unit, sort_order,
+              NULL::integer as default_duration
+       FROM user_custom_foods
+       WHERE user_id = $1 AND is_favorite = true
+       ORDER BY sort_order, created_at DESC`,
       [uid]
     );
 
-    const curatedIn = curated.rows.filter((r: any) => r.favorite_type === "in");
-    const curatedOut = curated.rows.filter((r: any) => r.favorite_type === "out");
+    // ── Curated exercise favorites ──
+    const exFavs = await query(
+      `SELECT id, name, calories, default_duration, sort_order
+       FROM user_exercise_favorites
+       WHERE user_id = $1
+       ORDER BY sort_order, created_at DESC`,
+      [uid]
+    );
 
-    // Auto-suggested Calories In (from frequently logged foods, excluding curated)
-    const curatedInNames = curatedIn.map((r: any) => r.name);
+    // ── Auto-suggested Calories In (from frequently logged, excluding curated) ──
+    const curatedNames = foodFavs.rows.map((r: any) => r.name);
     let suggestedIn: any[] = [];
     try {
       const inResult = await query(
@@ -49,7 +60,7 @@ export async function GET(req: NextRequest) {
                 MODE() WITHIN GROUP (ORDER BY COALESCE(serving_unit, 'g')) as default_unit
          FROM daily_food_logs
          WHERE user_id = $1
-           AND food_name NOT IN (SELECT name FROM user_quick_favorites WHERE user_id = $1 AND favorite_type = 'in')
+           AND food_name NOT IN (SELECT food_name FROM user_custom_foods WHERE user_id = $1 AND is_favorite = true)
          GROUP BY food_name
          ORDER BY MAX(log_date) DESC, log_count DESC
          LIMIT 6`,
@@ -58,8 +69,7 @@ export async function GET(req: NextRequest) {
       suggestedIn = inResult.rows;
     } catch {}
 
-    // Auto-suggested Calories Out (from frequently logged exercises, excluding curated)
-    const curatedOutNames = curatedOut.map((r: any) => r.name);
+    // ── Auto-suggested Calories Out ──
     let suggestedOut: any[] = [];
     try {
       const outResult = await query(
@@ -69,7 +79,7 @@ export async function GET(req: NextRequest) {
                 ROUND(AVG(calories_burned)) as avg_calories
          FROM exercise_logs
          WHERE user_id = $1
-           AND exercise_name NOT IN (SELECT name FROM user_quick_favorites WHERE user_id = $1 AND favorite_type = 'out')
+           AND exercise_name NOT IN (SELECT name FROM user_exercise_favorites WHERE user_id = $1)
          GROUP BY exercise_name
          ORDER BY MAX(log_date) DESC, log_count DESC
          LIMIT 6`,
@@ -80,8 +90,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       favorites: {
-        in: curatedIn,
-        out: curatedOut,
+        in: foodFavs.rows,
+        out: exFavs.rows,
       },
       suggested: {
         in: suggestedIn,
@@ -106,22 +116,50 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await query(
-      `INSERT INTO user_quick_favorites (user_id, favorite_type, name, calories, default_weight, default_duration, serving_unit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (user_id, favorite_type, name)
-       DO UPDATE SET calories = EXCLUDED.calories, default_weight = EXCLUDED.default_weight,
-                     default_duration = EXCLUDED.default_duration, serving_unit = EXCLUDED.serving_unit,
-                     sort_order = EXCLUDED.sort_order
-       RETURNING *`,
-      [
-        uid, type, name, calories ?? 0,
-        default_weight ?? 100, default_duration ?? 30,
-        serving_unit || 'g',
-      ]
-    );
+    if (type === "in") {
+      // ── Food favorite: upsert into user_custom_foods with is_favorite=true ──
+      // Try to get per-100g nutrition from cache
+      let calPer100 = 0, protPer100 = 0, carbPer100 = 0, fatPer100 = 0;
+      try {
+        const cached = await query(
+          `SELECT * FROM food_nutrition_cache WHERE food_name ILIKE $1 LIMIT 1`,
+          [name]
+        );
+        if (cached.rows[0]) {
+          calPer100 = Number(cached.rows[0].calories_per_100g) || 0;
+          protPer100 = Number(cached.rows[0].protein_per_100g) || 0;
+          carbPer100 = Number(cached.rows[0].carbs_per_100g) || 0;
+          fatPer100 = Number(cached.rows[0].fat_per_100g) || 0;
+        }
+      } catch {}
 
-    return NextResponse.json({ favorite: result.rows[0] });
+      const weight = default_weight ?? 100;
+      const unit = serving_unit || 'g';
+
+      const result = await query(
+        `INSERT INTO user_custom_foods (user_id, food_name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_favorite, default_weight, default_serving_unit, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,$7,$8,0)
+         ON CONFLICT (user_id, food_name)
+         DO UPDATE SET is_favorite = TRUE,
+                       default_weight = EXCLUDED.default_weight,
+                       default_serving_unit = EXCLUDED.default_serving_unit
+         RETURNING id, food_name as name, default_weight, default_serving_unit`,
+        [uid, name, calPer100, protPer100, carbPer100, fatPer100, weight, unit]
+      );
+
+      return NextResponse.json({ favorite: result.rows[0] });
+    } else {
+      // ── Exercise favorite ──
+      const result = await query(
+        `INSERT INTO user_exercise_favorites (user_id, name, calories, default_duration, sort_order)
+         VALUES ($1,$2,$3,$4,0)
+         ON CONFLICT (user_id, name)
+         DO UPDATE SET calories = EXCLUDED.calories, default_duration = EXCLUDED.default_duration
+         RETURNING *`,
+        [uid, name, calories ?? 0, default_duration ?? 30]
+      );
+      return NextResponse.json({ favorite: result.rows[0] });
+    }
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
@@ -130,15 +168,25 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const uid = getUserId(req);
   const id = req.nextUrl.searchParams.get("id");
+  const type = req.nextUrl.searchParams.get("type") || "in"; // default to food
+
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
 
   try {
-    await query(
-      `DELETE FROM user_quick_favorites WHERE id = $1 AND user_id = $2`,
-      [id, uid]
-    );
+    if (type === "in") {
+      // Un-favorite the custom food (keep the food, just remove from quick-add)
+      await query(
+        `UPDATE user_custom_foods SET is_favorite = false WHERE id = $1 AND user_id = $2`,
+        [id, uid]
+      );
+    } else {
+      await query(
+        `DELETE FROM user_exercise_favorites WHERE id = $1 AND user_id = $2`,
+        [id, uid]
+      );
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

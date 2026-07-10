@@ -121,6 +121,7 @@ export function DashboardTab({
                     type === 'in' ? (f.avg_calories || f.calories || 0) : (f.avg_calories || f.calories || 0),
                     type === 'in' ? (f.default_weight || f.avg_weight || 100) : undefined,
                     type === 'out' ? (f.default_duration || 30) : undefined,
+                    type === 'in' ? (f.default_unit || 'g') : undefined,
                   );
                 }}
                 className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-accent)]/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
