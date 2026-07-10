@@ -25,7 +25,7 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
   useEffect(() => {
     if ((window as any).Html5Qrcode) { setLibReady(true); return; }
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js";
+    script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
     script.async = true;
     script.onload = () => setLibReady(true);
     script.onerror = () => setError("Failed to load scanner");
