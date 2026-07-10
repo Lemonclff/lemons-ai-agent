@@ -165,7 +165,7 @@ export default function NutritionPage() {
     { value: "gemini", label: "Google Gemini (gemini-2.0-flash)", hasVision: true },
     { value: "openai", label: "OpenAI (gpt-4o)", hasVision: true },
     { value: "openrouter", label: "OpenRouter", hasVision: true },
-    { value: "nemotron", label: "Nemotron Omni (NVIDIA)", hasVision: true },
+    { value: "nemotron", label: "NVIDIA", hasVision: true },
     { value: "local", label: "Local LLM", hasVision: true },
   ];
 

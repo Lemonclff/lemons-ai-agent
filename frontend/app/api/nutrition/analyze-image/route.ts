@@ -73,10 +73,10 @@ function getProviderConfig(provider: string): ProviderCfg {
     nvidia: {
       apiKey: process.env.NVIDIA_API_KEY || "",
       baseUrl: "https://integrate.api.nvidia.com/v1",
-      model: "google/diffusiongemma-26b-a4b-it",
-      hasVision: false,
-      extraBody: { chat_template_kwargs: { enable_thinking: true }, top_p: 0.95 },
-      noResponseFormat: true,
+      model: "qwen/qwen3.5-397b-a17b",
+      hasVision: true,
+      extraBody: { top_p: 0.95, top_k: 20 },
+      mergeExtraBody: true,
     },
     deepseek: {
       apiKey: process.env.DEEPSEEK_API_KEY || "",
@@ -89,6 +89,7 @@ function getProviderConfig(provider: string): ProviderCfg {
       baseUrl: "https://apihub.agnes-ai.com/v1",
       model: "agnes-2.0-flash",
       hasVision: true,
+      noResponseFormat: true,
     },
     llama4: {
       apiKey: process.env.NVIDIA_LLAMA4_KEY || "",
@@ -103,13 +104,12 @@ function getProviderConfig(provider: string): ProviderCfg {
       hasVision: true,
     },
     nemotron: {
-      apiKey: process.env.NVIDIA_NEMOTRON_KEY || "",
+      apiKey: process.env.NVIDIA_API_KEY || "",
       baseUrl: "https://integrate.api.nvidia.com/v1",
-      model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      model: "qwen/qwen3.5-397b-a17b",
       hasVision: true,
-      extraBody: { chat_template_kwargs: { enable_thinking: true }, reasoning_budget: 16384 },
+      extraBody: { max_tokens: 16384, temperature: 0.60, top_p: 0.95, top_k: 20 },
       mergeExtraBody: true,
-      noResponseFormat: true,
     },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY || "",
