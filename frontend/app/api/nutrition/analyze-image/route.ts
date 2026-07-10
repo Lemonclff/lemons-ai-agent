@@ -4,10 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
    AI Photo Analysis API — Multi-Provider
    POST /api/nutrition/analyze-image
    - Accepts image + optional provider + user_text
-   - Proxies to OpenAI / OpenRouter / NVIDIA / DeepSeek / LM Studio
-   - Returns structured dish analysis with confidence scores
-   - Falls back to demo data if no API key configured for any provider
+   - Proxies to OpenAI / OpenRouter / NVIDIA / DeepSeek / LM Studio / Gemini
    ================================================================ */
+
+type ProviderCfg = {
+  apiKey: string; baseUrl: string; model: string; hasVision: boolean;
+  extraHeaders?: Record<string,string>; extraBody?: any;
+  noResponseFormat?: boolean; mergeExtraBody?: boolean;
+  nativeApi?: boolean;
+};
 
 const SYSTEM_PROMPT = `You are a professional food nutrition analyzer. Analyze the food image and return the dishes you see with estimated weights, confidence scores, AND nutrition estimates. Follow these rules:
 
@@ -46,9 +51,9 @@ const DEMO_RESPONSE = {
   overall_note: "⚠️ 未設定任何 LLM API Key，顯示模擬結果。請設定 OPENAI_API_KEY 或 NVIDIA_API_KEY 以啟用 AI 分析。",
 };
 
-function getProviderConfig(provider: string) {
+function getProviderConfig(provider: string): ProviderCfg {
   const p = (provider || "openai").toLowerCase();
-  const configs: Record<string, { apiKey: string; baseUrl: string; model: string; hasVision: boolean; extraHeaders?: Record<string,string>; extraBody?: any; noResponseFormat?: boolean }> = {
+  const configs: Record<string, ProviderCfg> = {
     openai: {
       apiKey: process.env.OPENAI_API_KEY || "",
       baseUrl: "https://api.openai.com/v1",
@@ -69,7 +74,7 @@ function getProviderConfig(provider: string) {
       apiKey: process.env.NVIDIA_API_KEY || "",
       baseUrl: "https://integrate.api.nvidia.com/v1",
       model: process.env.NVIDIA_MODEL || "deepseek-ai/deepseek-v4-pro",
-      hasVision: false, // DeepSeek V4 Pro does not support vision
+      hasVision: false,
       extraBody: { chat_template_kwargs: { thinking: false } },
       noResponseFormat: true,
     },
@@ -115,22 +120,20 @@ function getProviderConfig(provider: string) {
     },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY || "",
-      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-      model: "gemini-2.5-flash",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+      model: "gemini-2.0-flash",
       hasVision: true,
+      nativeApi: true,
     },
   };
   return configs[p] || configs.openai;
 }
 
-/** Strip markdown fences and extract JSON from LLM output */
 function extractJson(text: string): any {
   let t = text.replace(/```(?:json)?\s*/gi, "").replace(/```\s*$/g, "").trim();
-  // Find JSON object boundaries
   const start = t.indexOf("{");
   const end = t.lastIndexOf("}");
   if (start !== -1 && end > start) t = t.slice(start, end + 1);
-  // Fix trailing commas
   t = t.replace(/,(\s*[}\]])/g, "$1");
   return JSON.parse(t);
 }
@@ -148,32 +151,17 @@ export async function POST(req: NextRequest) {
 
     const cfg = getProviderConfig(provider);
 
-    // Check if provider has an API key (skip check for lmstudio)
     if (!cfg.apiKey && provider !== "lmstudio") {
-      // Fall back through available providers
-      const fallbackOrder = ["openai", "openrouter", "nvidia", "deepseek", "lmstudio"];
-      let found = false;
-      for (const fb of fallbackOrder) {
-        if (fb === provider) continue;
-        const fbCfg = getProviderConfig(fb);
-        if (fbCfg.apiKey || fb === "lmstudio") {
-          // Use fallback with demo marking
-          return NextResponse.json({
-            ...DEMO_RESPONSE,
-            status: "demo_no_api_key",
-            overall_note: `⚠️ Provider "${provider}" 未設定 API Key。請設定後重試。目前顯示模擬結果。`,
-          });
-        }
-      }
-      // No providers at all
-      return NextResponse.json(DEMO_RESPONSE);
+      return NextResponse.json({
+        ...DEMO_RESPONSE,
+        status: "demo_no_api_key",
+        overall_note: `⚠️ Provider "${provider}" 未設定 API Key。請設定後重試。目前顯示模擬結果。`,
+      });
     }
 
-    // Check vision support
     if (!cfg.hasVision) {
-      // For non-vision providers, try OpenRouter or OpenAI as fallback
       const visionProviders = ["openai", "openrouter"];
-      let visionCfg = null;
+      let visionCfg: ProviderCfg | null = null;
       for (const vp of visionProviders) {
         const vc = getProviderConfig(vp);
         if (vc.apiKey && vc.hasVision) { visionCfg = vc; break; }
@@ -182,21 +170,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           ...DEMO_RESPONSE,
           status: "demo_no_vision",
-          overall_note: `⚠️ Provider "${provider}" 不支援圖片分析，且沒有可用的 vision provider。請設定 OPENAI_API_KEY。`,
+          overall_note: `⚠️ Provider "${provider}" 不支援圖片分析，且沒有可用的 vision provider。`,
         });
       }
-      // Use the vision-capable fallback
       return await callVisionApi(image, userText, visionCfg);
     }
 
-    return await callVisionApi(image, userText, cfg);
+    if (cfg.nativeApi) {
+      return await callNativeGeminiApi(image, userText, cfg);
+    }
 
+    return await callVisionApi(image, userText, cfg);
   } catch (e) {
     return NextResponse.json({ status: "error", message: String(e) }, { status: 500 });
   }
 }
 
-async function callVisionApi(image: File, userText: string, cfg: any) {
+async function callVisionApi(image: File, userText: string, cfg: ProviderCfg) {
   const imageBuffer = Buffer.from(await image.arrayBuffer());
   const imageB64 = imageBuffer.toString("base64");
   const mediaType = image.type || "image/jpeg";
@@ -234,20 +224,16 @@ async function callVisionApi(image: File, userText: string, cfg: any) {
     Authorization: `Bearer ${cfg.apiKey}`,
     "Content-Type": "application/json",
   };
-  if (cfg.extraHeaders) {
-    Object.assign(headers, cfg.extraHeaders);
-  }
+  if (cfg.extraHeaders) Object.assign(headers, cfg.extraHeaders);
 
   const resp = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
+    method: "POST", headers, body: JSON.stringify(body),
   });
 
   if (!resp.ok) {
     const errText = await resp.text().catch(() => "");
     return NextResponse.json(
-      { status: "error", message: `AI API error: ${resp.status} — ${errText.slice(0, 200)}` },
+      { status: "error", message: `AI API error: ${resp.status} — ${errText.slice(0, 300)}` },
       { status: 500 }
     );
   }
@@ -255,17 +241,63 @@ async function callVisionApi(image: File, userText: string, cfg: any) {
   const data = await resp.json();
   const content = data.choices[0].message.content;
 
-  let result: any;
   try {
-    if (cfg.noResponseFormat) {
-      result = extractJson(content);
-    } else {
-      result = JSON.parse(content);
-    }
+    const result = cfg.noResponseFormat ? extractJson(content) : JSON.parse(content);
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(
       { status: "error", message: "AI returned invalid JSON. Try a different provider.", raw_output: content.slice(0, 500) },
+      { status: 500 }
+    );
+  }
+}
+
+/** Native Gemini API — uses generateContent endpoint with API key in URL */
+async function callNativeGeminiApi(image: File, userText: string, cfg: ProviderCfg) {
+  const imageBuffer = Buffer.from(await image.arrayBuffer());
+  const imageB64 = imageBuffer.toString("base64");
+  const mediaType = image.type || "image/jpeg";
+
+  const fullPrompt = `${SYSTEM_PROMPT}\n\n${userText ? `補充說明：${userText}\n` : ""}請分析這張食物照片並回傳 JSON。`;
+
+  const body = {
+    contents: [{
+      parts: [
+        { text: fullPrompt },
+        { inlineData: { mimeType: mediaType, data: imageB64 } },
+      ],
+    }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.3,
+      maxOutputTokens: 2000,
+    },
+  };
+
+  const url = `${cfg.baseUrl}/models/${cfg.model}:generateContent?key=${cfg.apiKey}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => "");
+    return NextResponse.json(
+      { status: "error", message: `Gemini API error: ${resp.status} — ${errText.slice(0, 300)}` },
+      { status: 500 }
+    );
+  }
+
+  const data = await resp.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+  try {
+    const result = JSON.parse(text);
+    return NextResponse.json(result);
+  } catch {
+    return NextResponse.json(
+      { status: "error", message: "Gemini returned invalid JSON.", raw_output: text.slice(0, 500) },
       { status: 500 }
     );
   }
