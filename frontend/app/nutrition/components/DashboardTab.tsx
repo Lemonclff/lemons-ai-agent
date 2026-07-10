@@ -373,8 +373,12 @@ export function DashboardTab({
                       <td className="py-2 px-2">
                         <div className="flex items-center justify-center gap-0.5">
                           <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))} className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={10} /></button>
-                          <input type="number" value={entry.amount} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
-                            className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none" inputMode="decimal" />
+                          <input type="number" defaultValue={entry.amount}
+                            onBlur={e => { const v = Number(e.target.value); if (v > 0 && v !== entry.amount) updateWeight(entry.id, v); }}
+                            className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-0.5 text-[12px] tabular-nums outline-none"
+                            inputMode="decimal"
+                            style={{ fontSize: '16px' }} />
+
                           <button onClick={() => updateWeight(entry.id, entry.amount + 10)} className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={10} /></button>
                           <select value={entry.serving_unit || 'g'}
                             onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
@@ -440,8 +444,12 @@ export function DashboardTab({
                   <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-1">
                       <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Minus size={16} /></button>
-                      <input type="number" value={entry.amount} onChange={e => updateWeight(entry.id, Number(e.target.value) || 0)}
-                        className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[13px] tabular-nums outline-none" inputMode="decimal" />
+                      <input type="number" defaultValue={entry.amount}
+                        onBlur={e => { const v = Number(e.target.value); if (v > 0 && v !== entry.amount) updateWeight(entry.id, v); }}
+                        className="w-[48px] text-center bg-transparent border border-[var(--color-border)] rounded py-2 text-[13px] tabular-nums outline-none"
+                        inputMode="decimal"
+                        style={{ fontSize: '16px' }} />
+
                       <button onClick={() => updateWeight(entry.id, entry.amount + 10)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)]"><Plus size={16} /></button>
                       <select value={entry.serving_unit || 'g'}
                         onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
