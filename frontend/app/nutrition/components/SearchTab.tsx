@@ -22,10 +22,16 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
   const [scanning, setScanning] = useState(false);
 
   const lookupProduct = useCallback(async (code: string) => {
-    const r = await fetch(`/api/nutrition/barcode?code=${code}`);
-    const data = await r.json();
-    if (data.error) { setError(data.error); return; }
-    onResult(data);
+    try {
+      const clean = String(code).replace(/\D/g, "");
+      if (!clean || clean.length < 4) { setError("Invalid barcode scanned"); return; }
+      const r = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(clean)}`);
+      const data = await r.json();
+      if (data.error) { setError(data.error); return; }
+      onResult(data);
+    } catch (e: any) {
+      setError(e.message || "Lookup failed");
+    }
   }, [onResult]);
 
   const startScan = useCallback(async () => {
@@ -70,9 +76,14 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 150 } },
         (decodedText: string) => {
-          scanner.stop().catch(() => {});
-          setScanning(false);
-          lookupProduct(decodedText);
+          try {
+            scanner.stop().catch(() => {});
+            setScanning(false);
+            lookupProduct(decodedText);
+          } catch (e: any) {
+            setError(e.message || "Scan error");
+            setScanning(false);
+          }
         },
         () => {}
       );
