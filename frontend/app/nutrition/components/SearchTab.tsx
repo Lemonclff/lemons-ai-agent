@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Search, Loader2, Minus, Plus, Star, ScanLine, Camera, X } from "lucide-react";
+import { Html5Qrcode } from "html5-qrcode";
 
 interface FoodResult {
   food_name: string; display_name: string; calories_per_100g: number;
@@ -19,7 +20,6 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
   const scannerRef = useRef<any>(null);
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
-  const [loadingLib, setLoadingLib] = useState(false);
 
   const lookupProduct = useCallback(async (code: string) => {
     const r = await fetch(`/api/nutrition/barcode?code=${code}`);
@@ -38,7 +38,6 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         if (videoRef.current) videoRef.current.srcObject = stream;
         await videoRef.current?.play();
-
         const detector = new (window as any).BarcodeDetector({
           formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39"],
         });
@@ -63,13 +62,10 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
       }
     }
 
-    // Fallback: load html5-qrcode from CDN (works on all browsers incl Safari)
-    setLoadingLib(true);
+    // Fallback: use html5-qrcode npm package
     try {
-      const Html5Qrcode = await loadHtml5Qrcode();
       const scanner = new Html5Qrcode("barcode-reader");
       scannerRef.current = scanner;
-
       await scanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 150 } },
@@ -78,11 +74,9 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
           setScanning(false);
           lookupProduct(decodedText);
         },
-        () => {} // ignore scan failures
+        () => {}
       );
-      setLoadingLib(false);
     } catch (e: any) {
-      setLoadingLib(false);
       setScanning(false);
       setError(e.message || "Camera not available. Please type the barcode manually.");
     }
@@ -110,28 +104,14 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
           <button onClick={stopScan} className="px-4 py-2 rounded-lg bg-white/10 text-white">Close</button>
         </div>
       ) : !scanning ? (
-        <button onClick={startScan} disabled={loadingLib}
+        <button onClick={startScan}
           className="mt-4 px-6 py-3 rounded-xl bg-indigo-500 text-white font-semibold flex items-center gap-2">
-          <Camera size={18} /> {loadingLib ? "Loading..." : "Start Scanning"}
+          <Camera size={18} /> Start Scanning
         </button>
       ) : null}
       {scanning && <p className="mt-3 text-[12px] text-white/40">Point camera at a barcode</p>}
     </div>
   );
-}
-
-// Dynamically load html5-qrcode from CDN
-let html5QrPromise: Promise<any> | null = null;
-function loadHtml5Qrcode(): Promise<any> {
-  if (html5QrPromise) return html5QrPromise;
-  html5QrPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/min/html5-qrcode.min.js";
-    script.onload = () => resolve((window as any).Html5Qrcode);
-    script.onerror = () => reject(new Error("Failed to load scanner library"));
-    document.head.appendChild(script);
-  });
-  return html5QrPromise;
 }
 
 export function SearchTab({
