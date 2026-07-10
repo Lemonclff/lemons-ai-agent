@@ -89,7 +89,7 @@ export function DashboardTab({
           <div key={`${type}-${curated ? 'c' : 's'}-${i}`} className="group relative">
             <button
               onClick={() => onQuickAdd(f)}
-              title={`${f.name}${type === 'in' ? ` — ${f.default_weight || f.avg_weight || 100}${f.default_unit || f.serving_unit || 'g'}` : ` — ${f.default_duration || 30} min`}`}
+              title={f.name}
               className={cn(
                 "px-2.5 py-1.5 text-[12px] rounded-full border transition-all flex items-center gap-1.5",
                 curated
@@ -97,12 +97,7 @@ export function DashboardTab({
                   : "border-dashed border-[var(--color-border)] bg-[var(--color-surface-elevated)]/20 hover:bg-[var(--color-surface-elevated)]/40 hover:border-[var(--color-text-muted)]/40 text-[var(--color-text-secondary)]"
               )}
             >
-              <span className="max-w-[120px] truncate">{f.name}</span>
-              <span className="text-[10px] opacity-60 tabular-nums">
-                {type === 'in'
-                  ? `${f.default_weight || f.avg_weight || 100}${f.default_unit || f.serving_unit || 'g'}`
-                  : `${f.default_duration || 30}min`}
-              </span>
+              <span className="max-w-[160px] truncate">{f.name}</span>
             </button>
             {curated ? (
               <button
