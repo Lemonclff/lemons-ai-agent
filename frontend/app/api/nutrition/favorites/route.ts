@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
     // ── Curated food favorites (from user_custom_foods) ──
     const foodFavs = await query(
       `SELECT id, food_name as name, calories_per_100g,
-              default_weight, default_serving_unit, grams_per_serving, sort_order,
+              default_weight, default_serving_unit, grams_per_serving,
+              serving_calories, serving_protein, serving_carbs, serving_fat,
+              sort_order,
               NULL::integer as default_duration
        FROM user_custom_foods
        WHERE user_id = $1 AND is_favorite = true

@@ -439,22 +439,43 @@ export default function NutritionPage() {
     try {
       const unit = f.default_serving_unit || f.default_unit || 'g';
       const isWeightUnit = unit === 'g' || unit === 'ml';
-      // Convert serving units to grams for the API (which only understands grams)
-      let weight: number;
-      if (isWeightUnit) {
-        weight = f.default_weight || f.avg_weight || 100;
+      // If we have serving nutrition (from AI photo etc), pass it directly
+      const hasServingNutrition = f.serving_calories != null && Number(f.serving_calories) > 0;
+
+      let amount: number, serving_unit: string;
+      let extraBody: Record<string, any> = {};
+
+      if (hasServingNutrition) {
+        // Use serving display values — pass nutrition directly
+        amount = f.default_weight || 1;
+        serving_unit = unit;
+        const servings = Number(amount);
+        extraBody = {
+          calories: Math.round(Number(f.serving_calories) * servings),
+          protein: parseFloat((Number(f.serving_protein || 0) * servings).toFixed(1)),
+          carbs: parseFloat((Number(f.serving_carbs || 0) * servings).toFixed(1)),
+          fat: parseFloat((Number(f.serving_fat || 0) * servings).toFixed(1)),
+        };
+      } else if (isWeightUnit) {
+        amount = f.default_weight || f.avg_weight || 100;
+        serving_unit = unit;
       } else {
         const servings = f.default_weight || 1;
         const gPerServing = f.grams_per_serving || 100;
-        weight = servings * gPerServing;
+        amount = servings * gPerServing;
+        serving_unit = 'g';
       }
+
       await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: f.name, amount: weight, meal_type: mealFilter || "snack", serving_unit: 'g', log_date: currentDate }),
+        body: JSON.stringify({
+          food_name: f.name, amount, meal_type: mealFilter || "snack",
+          serving_unit, log_date: currentDate, ...extraBody,
+        }),
       });
       fetchLogs(currentDate);
-      const display = isWeightUnit ? `${weight}${unit}` : `${f.default_weight || 1}${unit} (${weight}g)`;
+      const display = hasServingNutrition ? `${amount}${serving_unit} (${Number(f.serving_calories) * amount} kcal)` : `${amount}${serving_unit}`;
       showToast(`Quick added ${f.name} (${display})`);
     } catch { showToast("Failed to add"); }
   };
