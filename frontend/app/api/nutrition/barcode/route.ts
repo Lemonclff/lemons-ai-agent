@@ -63,7 +63,13 @@ export async function GET(req: NextRequest) {
     const p = data.product;
     const n = p.nutriments || {};
 
-    // Prefer Chinese name if available, fall back to English
+    // Try regular _100g fields first, then _prepared_100g variants
+    const getNutrient = (key: string, preparedKey: string): number => {
+      const val = n[key] ?? n[preparedKey];
+      return val != null ? parseFloat(Number(val).toFixed(1)) : 0;
+    };
+
+    // Prefer Chinese name if available
     const name = p.product_name_zh || p.product_name || "Unknown Product";
 
     const result = {
@@ -77,14 +83,16 @@ export async function GET(req: NextRequest) {
       nutrition: {
         calories_per_100g: n["energy-kcal_100g"]
           ? Math.round(Number(n["energy-kcal_100g"]))
-          : n["energy-kcal_serving"] && p.serving_quantity
-            ? Math.round(Number(n["energy-kcal_serving"]) / (Number(p.serving_quantity) / 100))
-            : 0,
-        protein_per_100g: n.proteins_100g ? parseFloat(Number(n.proteins_100g).toFixed(1)) : 0,
-        carbs_per_100g: n.carbohydrates_100g ? parseFloat(Number(n.carbohydrates_100g).toFixed(1)) : 0,
-        fat_per_100g: n.fat_100g ? parseFloat(Number(n.fat_100g).toFixed(1)) : 0,
-        fiber_per_100g: n.fiber_100g ? parseFloat(Number(n.fiber_100g).toFixed(1)) : 0,
-        sugars_per_100g: n.sugars_100g ? parseFloat(Number(n.sugars_100g).toFixed(1)) : 0,
+          : n["energy-kcal_prepared_100g"]
+            ? Math.round(Number(n["energy-kcal_prepared_100g"]))
+            : n["energy-kcal_serving"] && p.serving_quantity
+              ? Math.round(Number(n["energy-kcal_serving"]) / (Number(p.serving_quantity) / 100))
+              : 0,
+        protein_per_100g: getNutrient("proteins_100g", "proteins_prepared_100g"),
+        carbs_per_100g: getNutrient("carbohydrates_100g", "carbohydrates_prepared_100g"),
+        fat_per_100g: getNutrient("fat_100g", "fat_prepared_100g"),
+        fiber_per_100g: getNutrient("fiber_100g", "fiber_prepared_100g"),
+        sugars_per_100g: getNutrient("sugars_100g", "sugars_prepared_100g"),
       },
     };
 

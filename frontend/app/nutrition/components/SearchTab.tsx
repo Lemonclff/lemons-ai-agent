@@ -80,27 +80,35 @@ function BarcodeScanner({ onResult, onClose }: { onResult: (data: BarcodeResult)
       }
     }
 
-    // Fallback: use html5-qrcode from CDN (loaded via next/script)
+    // Fallback: use html5-qrcode from CDN
     try {
       const H5Q = (window as any).Html5Qrcode;
-      if (!H5Q) { setError("Scanner library not loaded. Please refresh or type barcode manually."); setScanning(false); return; }
+      if (!H5Q) { setError("Scanner not ready yet. Please wait or type barcode manually."); setScanning(false); return; }
       const scanner = new H5Q("barcode-reader");
       scannerRef.current = scanner;
+
+      // Auto-stop after 30 seconds to prevent freezing
+      const timeout = setTimeout(() => {
+        try { scanner.stop().catch(() => {}); } catch {}
+        setScanning(false);
+        setError("Scan timed out. Please try again or type the barcode manually.");
+      }, 30000);
+
       await scanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 150 } },
-        (decodedText: string, decodedResult: any) => {
-          try {
-            scanner.stop().catch(() => {});
-            setScanning(false);
-            lookupProduct(decodedText);
-          } catch (e: any) {
-            setError(e.message || "Scan error");
-            setScanning(false);
-          }
+        (decodedText: string) => {
+          clearTimeout(timeout);
+          try { scanner.stop().catch(() => {}); } catch {}
+          setScanning(false);
+          lookupProduct(decodedText);
         },
-        () => {}
-      );
+        () => {} // ignore intermediate scan failures
+      ).catch((e: any) => {
+        clearTimeout(timeout);
+        setScanning(false);
+        setError(e?.message || "Scanner error. Please type the barcode manually.");
+      });
     } catch (e: any) {
       setScanning(false);
       setError(e.message || "Camera not available. Please type the barcode manually.");
