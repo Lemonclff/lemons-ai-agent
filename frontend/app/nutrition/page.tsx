@@ -787,7 +787,9 @@ export default function NutritionPage() {
     {showFullscreen && (
       <div className="md:hidden fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col overflow-hidden">
         {/* ═══ Top bar — gradient ═══ */}
-        <div className="shrink-0 px-4 pt-4 pb-3 bg-gradient-to-b from-[var(--color-accent)]/8 via-[var(--color-accent)]/3 to-transparent">
+        <div className="shrink-0 px-4 pb-3 bg-gradient-to-b from-[var(--color-accent)]/8 via-[var(--color-accent)]/3 to-transparent"
+          style={{ paddingTop: "max(16px, env(safe-area-inset-top, 0px))" }}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-[var(--color-accent)]/15 flex items-center justify-center ring-1 ring-[var(--color-accent)]/20">
