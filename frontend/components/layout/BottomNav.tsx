@@ -31,49 +31,52 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around h-[64px] border-t border-[var(--color-border)] bg-[var(--color-surface)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Main navigation"
     >
-      {navItems.map((item) => {
-        const isActive =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(item.href);
-        const Icon = item.icon;
+      <div className="flex items-end justify-around h-[60px] max-w-lg mx-auto">
+        {navItems.map((item) => {
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
+          const Icon = item.icon;
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "relative flex flex-col items-center justify-center gap-1 min-w-0 flex-1 pb-1.5 pt-1 transition-all duration-200",
-              "min-h-[48px] min-w-[48px]",
-              isActive
-                ? "text-[var(--color-accent)]"
-                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            )}
-          >
-            {/* Active indicator — top pill */}
-            {isActive && (
-              <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-[var(--color-accent)]" />
-            )}
-            <div className={cn(
-              "rounded-xl flex items-center justify-center transition-all duration-300",
-              isActive ? "bg-[var(--color-accent)]/10" : ""
-            )}>
-              <Icon
-                size={24}
-                strokeWidth={isActive ? 2.5 : 2}
-                className="shrink-0 m-1"
-              />
-            </div>
-            <span className="text-[11px] font-semibold truncate max-w-full leading-tight">
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "relative flex flex-col items-center justify-end gap-0.5 flex-1 h-full pb-1 transition-all duration-200",
+                isActive
+                  ? "text-[var(--color-accent)]"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+              )}
+            >
+              {/* Active indicator — top line */}
+              {isActive && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[var(--color-accent)]" />
+              )}
+              <div
+                className={cn(
+                  "rounded-lg flex items-center justify-center transition-all duration-300",
+                  isActive ? "bg-[var(--color-accent)]/10" : ""
+                )}
+              >
+                <Icon
+                  size={22}
+                  strokeWidth={isActive ? 2.5 : 1.75}
+                  className="shrink-0 m-1"
+                />
+              </div>
+              <span className="text-[10px] font-semibold leading-none">
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
