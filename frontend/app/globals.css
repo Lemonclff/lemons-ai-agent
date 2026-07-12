@@ -231,8 +231,8 @@ html {
   /* Skip to content */
   .skip-to-content {
     position: absolute;
-    top: -100px;
-    left: 0;
+    top: -9999px;
+    left: -9999px;
     z-index: 9999;
     padding: 12px 20px;
     background: var(--color-accent);
@@ -244,6 +244,7 @@ html {
   }
   .skip-to-content:focus {
     top: 0;
+    left: 0;
   }
 
   /* Reduced Motion */
