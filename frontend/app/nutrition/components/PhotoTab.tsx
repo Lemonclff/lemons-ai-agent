@@ -209,7 +209,7 @@ export function PhotoTab({
           </div>
           <textarea value={pasteText} onChange={e => setPasteText(e.target.value)}
             placeholder={`Paste the JSON response here...\n{"status":"success","dishes":[...]}`}
-            className="w-full h-[120px] text-[12px] p-3 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none resize-none text-[var(--color-text-primary)] font-mono" />
+            className="w-full h-[120px] text-[16px] p-3 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none resize-none text-[var(--color-text-primary)] font-mono" />
           <div className="flex gap-2">
             <button onClick={handlePasteResponse} disabled={!pasteText.trim()}
               className="flex-1 px-4 py-1.5 text-[12px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40">
