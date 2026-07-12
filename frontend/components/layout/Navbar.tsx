@@ -49,10 +49,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   const colorIdx = user ? user.username.charCodeAt(0) % avatarColors.length : 0;
 
   return (
-    <header
-      className="sticky z-30 flex items-center h-16 px-4 md:px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl gap-2"
-      style={{ top: "env(safe-area-inset-top, 0px)" }}
-    >
+    <header className="sticky top-0 z-30 flex items-center h-16 px-4 md:px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl gap-2">
       <button
         onClick={onMenuClick}
         className="md:hidden p-2 rounded-xl hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"

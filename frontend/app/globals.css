@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 /* ================================================================
+   iOS PWA Safe Area — push all content below the status bar
+   Only takes effect in standalone PWA mode (viewport-fit=cover)
+   ================================================================ */
+html {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ================================================================
    Lemon's AI Agent — Design Token System
    Style: Data-Dense Dashboard (Fintech/Crypto)
    Supports: Light ☀️ + Dark 🌙 (class-based, persisted)
