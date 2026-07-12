@@ -166,7 +166,7 @@ export function PhotoTab({
       {!photoFile && !pasteMode && (
         <div>
           <div
-            className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${photoDragOver ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5" : "border-[var(--color-border)] hover:border-[var(--color-accent)]/40"}`}
+            className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors ${photoDragOver ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5" : "border-[var(--color-border)] hover:border-[var(--color-accent)]/40"}`}
             onClick={() => photoInputRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
             onDragLeave={() => setPhotoDragOver(false)}
@@ -198,26 +198,26 @@ export function PhotoTab({
 
       {/* Paste mode */}
       {pasteMode && !photoFile && (
-        <div className="border border-dashed border-[var(--color-accent)]/40 rounded-xl p-4 space-y-3">
+        <div className="border border-dashed border-[var(--color-accent)]/40 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-[var(--color-accent)]">Paste AI Response</span>
-            <button onClick={() => { setPasteMode(false); setPasteText(""); }} className="p-1 rounded hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"><X size={14} /></button>
+            <span className="text-[14px] font-semibold text-[var(--color-accent)]">Paste AI Response</span>
+            <button onClick={() => { setPasteMode(false); setPasteText(""); }} className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"><X size={15} /></button>
           </div>
-          <div className="text-[11px] text-[var(--color-text-muted)]">
+          <div className="text-[12px] text-[var(--color-text-muted)]">
             1. Copy prompt above → paste into ChatGPT/Claude/etc with your food photo<br/>
             2. Copy the JSON response back here
           </div>
           <textarea value={pasteText} onChange={e => setPasteText(e.target.value)}
             placeholder={`Paste the JSON response here...\n{"status":"success","dishes":[...]}`}
-            className="w-full h-[120px] text-[16px] p-3 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none resize-none text-[var(--color-text-primary)] font-mono" />
+            className="w-full h-[120px] text-[16px] p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none resize-none text-[var(--color-text-primary)] font-mono" />
           <div className="flex gap-2">
             <button onClick={handlePasteResponse} disabled={!pasteText.trim()}
-              className="flex-1 px-4 py-1.5 text-[12px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40">
+              className="flex-1 min-h-[44px] text-[13px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all">
               Parse & Show Results
             </button>
             <button onClick={handleCopyPrompt}
-              className="px-3 py-1.5 text-[11px] rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] flex items-center gap-1">
-              <Copy size={11} /> Copy Prompt
+              className="min-h-[44px] px-4 text-[12px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all flex items-center gap-1">
+              <Copy size={12} /> Copy Prompt
             </button>
           </div>
         </div>
@@ -232,13 +232,13 @@ export function PhotoTab({
           </div>
           <div className="flex items-center gap-2">
             <select value={photoProvider} onChange={e => setPhotoProvider(e.target.value)}
-              className="px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-primary)]">
+              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
               {photoProviders.map(p => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </select>
-            <button onClick={handleAnalyze} className="flex-1 px-4 py-2 text-[13px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90">Analyze with AI</button>
-            <button onClick={resetPhoto} className="px-4 py-2 text-[13px] rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)]">Cancel</button>
+            <button onClick={handleAnalyze} className="flex-1 min-h-[44px] px-4 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all">Analyze with AI</button>
+            <button onClick={resetPhoto} className="min-h-[44px] px-4 text-[13px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all">Cancel</button>
           </div>
         </div>
       )}
@@ -397,18 +397,18 @@ export function PhotoTab({
 
           <div className="flex items-center gap-2 pt-1">
             <select value={photoMealType} onChange={e => setPhotoMealType(e.target.value)}
-              className="px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-primary)]">
+              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
               <option value="dinner">Dinner</option>
               <option value="snack">Snack</option>
             </select>
             <button onClick={handleConfirmAnalysis} disabled={photoConfirming}
-              className="flex-1 px-4 py-1.5 text-[13px] font-medium rounded-lg bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 flex items-center justify-center gap-1.5">
+              className="flex-1 min-h-[44px] px-4 text-[14px] font-semibold rounded-xl bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-1.5">
               {photoConfirming && <Loader2 size={14} className="animate-spin" />}
               {photoConfirming ? "Saving..." : "Log to Diary"}
             </button>
-            <button onClick={resetPhoto} className="px-3 py-1.5 text-[13px] rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)]">New Photo</button>
+            <button onClick={resetPhoto} className="min-h-[44px] px-4 text-[13px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all">New Photo</button>
           </div>
           {photoResult.status === "demo_no_api_key" && (
             <div className="text-[11px] text-yellow-400/80 text-center">Demo mode — set API key for real AI analysis</div>

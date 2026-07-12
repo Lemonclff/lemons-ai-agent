@@ -16,10 +16,11 @@ export function HistoryTab({
   const entries = Object.entries(weeklyData);
 
   return (
-    <div className="grid gap-4 max-w-[700px]">
-      {/* Weekly stats summary */}
+    <div className="grid gap-3 max-w-[700px]">
+
+      {/* Weekly stats */}
       {entries.length === 0 ? (
-        <div className="text-center py-10 text-[13px] text-[var(--color-text-muted)] border border-[var(--color-border)] rounded-lg">
+        <div className="text-center py-12 text-[13px] text-[var(--color-text-muted)] rounded-2xl border border-dashed border-[var(--color-border)]/50">
           <History size={32} className="mx-auto mb-2 opacity-20" />
           No history data yet. Start logging food to see trends.
         </div>
@@ -31,21 +32,21 @@ export function HistoryTab({
           const totalF = entries.reduce((s, [,v]) => s + (v.fat||0), 0);
           const days = entries.length;
           return (
-            <div className="grid grid-cols-4 gap-3 max-md:grid-cols-2">
-              <div className="border border-[var(--color-border)] rounded-lg p-3 text-center">
-                <div className="text-[20px] font-bold text-[var(--color-text-primary)] tabular-nums">{Math.round(totalCal/days)}</div>
+            <div className="grid grid-cols-4 gap-2.5 max-md:grid-cols-2">
+              <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/30 p-3 text-center">
+                <div className="text-[22px] font-bold text-[var(--color-text-primary)] tabular-nums">{Math.round(totalCal/days)}</div>
                 <div className="text-[10px] text-[var(--color-text-muted)]">Avg kcal/day</div>
               </div>
-              <div className="border border-[var(--color-border)] rounded-lg p-3 text-center">
-                <div className="text-[20px] font-bold text-green-400 tabular-nums">{totalP.toFixed(0)}</div>
+              <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/30 p-3 text-center">
+                <div className="text-[22px] font-bold text-green-400 tabular-nums">{totalP.toFixed(0)}</div>
                 <div className="text-[10px] text-[var(--color-text-muted)]">Total Protein (g)</div>
               </div>
-              <div className="border border-[var(--color-border)] rounded-lg p-3 text-center">
-                <div className="text-[20px] font-bold text-amber-400 tabular-nums">{totalC.toFixed(0)}</div>
+              <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/30 p-3 text-center">
+                <div className="text-[22px] font-bold text-amber-400 tabular-nums">{totalC.toFixed(0)}</div>
                 <div className="text-[10px] text-[var(--color-text-muted)]">Total Carbs (g)</div>
               </div>
-              <div className="border border-[var(--color-border)] rounded-lg p-3 text-center">
-                <div className="text-[20px] font-bold text-red-400 tabular-nums">{totalF.toFixed(0)}</div>
+              <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/30 p-3 text-center">
+                <div className="text-[22px] font-bold text-red-400 tabular-nums">{totalF.toFixed(0)}</div>
                 <div className="text-[10px] text-[var(--color-text-muted)]">Total Fat (g)</div>
               </div>
             </div>
@@ -53,9 +54,9 @@ export function HistoryTab({
         })()
       )}
 
-      {/* Calorie trend bar chart */}
-      <div className="border border-[var(--color-border)] rounded-lg p-4">
-        <h3 className="text-[13px] font-semibold text-[var(--color-text-secondary)] mb-3">7-Day Calorie Trend</h3>
+      {/* Bar chart */}
+      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+        <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)] mb-4">7-Day Calorie Trend</h3>
         <div className="flex items-end gap-1 h-[140px]">
           {entries.length === 0 ? (
             <div className="text-[12px] text-[var(--color-text-muted)] w-full text-center">No data</div>
@@ -66,8 +67,8 @@ export function HistoryTab({
             const overGoal = goals.calories > 0 && vals.calories > goals.calories;
             return (
               <button key={date} onClick={() => setCurrentDate(date)}
-                className="flex-1 flex flex-col items-center gap-1 group cursor-pointer">
-                <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums group-hover:text-[var(--color-accent)] transition-colors">{vals.calories}</span>
+                className="flex-1 flex flex-col items-center gap-1 group cursor-pointer active:scale-95 transition-all">
+                <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums group-hover:text-[var(--color-accent)]">{vals.calories}</span>
                 <div className="w-full rounded-t transition-all group-hover:opacity-80"
                   style={{ height: Math.max(h, 3), background: overGoal ? "#ef4444" : date === currentDate ? "var(--color-accent)" : "#3b82f6", opacity: date === currentDate ? 1 : 0.45 }} />
                 <span className="text-[10px] text-[var(--color-text-muted)]">{label}</span>
@@ -76,25 +77,33 @@ export function HistoryTab({
           })}
         </div>
         {goals.calories > 0 && (
-          <div className="mt-2 flex items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Over target</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Under target</span>
+          <div className="mt-3 flex items-center gap-4 text-[10px] text-[var(--color-text-muted)]">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Over</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Under</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[var(--color-accent)] inline-block" />Selected</span>
           </div>
         )}
       </div>
 
       {/* Mini Calendar */}
-      <div className="border border-[var(--color-border)] rounded-lg p-4">
+      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => { const d = new Date(historyMonth); d.setMonth(d.getMonth() - 1); setHistoryMonth(d); }}
-            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-accent)] transition-all"><ChevronLeft size={14} /></button>
-          <span className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{historyMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all">
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">
+            {historyMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          </span>
           <button onClick={() => { const d = new Date(historyMonth); d.setMonth(d.getMonth() + 1); setHistoryMonth(d); }}
-            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-accent)] transition-all"><ChevronRight size={14} /></button>
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all">
+            <ChevronRight size={16} />
+          </button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center">
-          {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => <div key={d} className="text-[10px] text-[var(--color-text-muted)] py-1 font-medium">{d}</div>)}
+          {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
+            <div key={d} className="text-[11px] text-[var(--color-text-muted)] py-1.5 font-semibold">{d}</div>
+          ))}
           {(() => {
             const y = historyMonth.getFullYear(); const m = historyMonth.getMonth();
             const firstDay = new Date(y, m, 1).getDay();
@@ -109,15 +118,14 @@ export function HistoryTab({
               const hasLog = loggedDates.has(ds);
               cells.push(
                 <button key={d} onClick={() => setCurrentDate(ds)}
-                  className={cn("relative py-1.5 text-[11px] rounded hover:bg-[var(--color-surface-elevated)] transition-colors",
-                    isToday && "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent)] font-semibold",
+                  className={cn("min-h-[36px] text-[12px] rounded-lg hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all relative",
+                    isToday && "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent)] font-bold",
                     isSelected && !isToday && "bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-semibold",
                     hasLog && !isToday && !isSelected && "text-[var(--color-text-primary)]"
                   )}>
                   {d}
                   {hasLog && !isToday && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                      style={{ background: isSelected ? "var(--color-accent)" : "#22c55e" }} />
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-400" />
                   )}
                 </button>
               );
@@ -125,8 +133,8 @@ export function HistoryTab({
             return cells;
           })()}
         </div>
-        <div className="mt-2 flex items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />Food logged</span>
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
+          <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Food logged
         </div>
       </div>
     </div>
