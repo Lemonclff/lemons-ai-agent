@@ -665,6 +665,8 @@ export default function NutritionPage() {
         <div className="shrink-0 px-4 pb-3 bg-gradient-to-b from-orange-500/12 via-[var(--color-accent)]/5 to-transparent"
           style={{ paddingTop: "max(16px, env(safe-area-inset-top, 0px))" }}
         >
+          {/* DEBUG: verify fullscreen renders */}
+          <div className="text-white text-[20px] font-bold bg-red-500 px-2 py-1 rounded mb-2">FULLSCREEN ACTIVE</div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.4)]">
