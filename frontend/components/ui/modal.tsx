@@ -13,6 +13,8 @@ interface ModalProps {
   size?: "sm" | "md" | "lg" | "xl" | "full";
   className?: string;
   showClose?: boolean;
+  /** Use bottom-sheet style on mobile (default true) */
+  sheetOnMobile?: boolean;
 }
 
 const sizeClasses = {
@@ -32,11 +34,10 @@ export function Modal({
   size = "md",
   className,
   showClose = true,
+  sheetOnMobile = true,
 }: ModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -44,7 +45,6 @@ export function Modal({
     [onClose]
   );
 
-  // Lock body scroll
   useEffect(() => {
     if (open) {
       document.addEventListener("keydown", handleKeyDown);
@@ -56,7 +56,6 @@ export function Modal({
     };
   }, [open, handleKeyDown]);
 
-  // Focus trap: Tab cycles within modal
   useEffect(() => {
     if (!open || !contentRef.current) return;
 
@@ -65,7 +64,8 @@ export function Modal({
 
     const handleTabTrap = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
-      const focusable = contentRef.current!.querySelectorAll<HTMLElement>(focusableSelector);
+      const focusable =
+        contentRef.current!.querySelectorAll<HTMLElement>(focusableSelector);
       if (focusable.length === 0) return;
 
       const first = focusable[0];
@@ -84,7 +84,6 @@ export function Modal({
     return () => document.removeEventListener("keydown", handleTabTrap);
   }, [open]);
 
-  // Auto-focus first focusable element on open
   useEffect(() => {
     if (open && contentRef.current) {
       const focusable = contentRef.current.querySelector<HTMLElement>(
@@ -98,38 +97,50 @@ export function Modal({
 
   return (
     <div
-      ref={overlayRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className={cn(
+        "fixed inset-0 z-[100] flex items-center justify-center p-4",
+        sheetOnMobile && "modal-sheet"
+      )}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
       aria-describedby={description ? "modal-desc" : undefined}
     >
-      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease]"
+        className="absolute inset-0 bg-black/60 backdrop-blur-md animate-[fadeIn_150ms_ease]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Content */}
       <div
         ref={contentRef}
         className={cn(
-          "relative w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] shadow-2xl",
-          "animate-[slideIn_200ms_ease] overflow-y-auto",
+          "relative w-full rounded-2xl border border-[var(--color-border)]",
+          "bg-[var(--color-surface-secondary)] shadow-xl",
+          "animate-[scale-in_220ms_var(--ease-out-expo)] overflow-y-auto overscroll-contain",
+          "max-h-[min(90dvh,900px)]",
           sizeClasses[size],
+          sheetOnMobile && "modal-sheet-content",
           className
         )}
       >
-        {/* Header */}
+        {/* Mobile sheet drag handle */}
+        {sheetOnMobile && (
+          <div
+            className="sm:hidden flex justify-center pt-3 pb-1"
+            aria-hidden="true"
+          >
+            <span className="w-10 h-1 rounded-full bg-[var(--color-border-strong)]" />
+          </div>
+        )}
+
         {(title || showClose) && (
-          <div className="flex items-start justify-between px-6 pt-6 pb-0">
-            <div>
+          <div className="flex items-start justify-between px-5 sm:px-6 pt-4 sm:pt-6 pb-0">
+            <div className="min-w-0 pr-2">
               {title && (
                 <h2
                   id="modal-title"
-                  className="text-lg font-semibold text-[var(--color-text-primary)]"
+                  className="text-lg font-semibold text-[var(--color-text-primary)] tracking-tight"
                 >
                   {title}
                 </h2>
@@ -146,7 +157,7 @@ export function Modal({
             {showClose && (
               <button
                 onClick={onClose}
-                className="p-2 -mr-2 -mt-1 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] transition-colors"
+                className="p-2.5 -mr-1 -mt-1 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] transition-colors touch-target pressable shrink-0"
                 aria-label="Close"
               >
                 <X size={18} />
@@ -155,16 +166,12 @@ export function Modal({
           </div>
         )}
 
-        {/* Body */}
-        <div className="px-6 py-6">{children}</div>
+        <div className="px-5 sm:px-6 py-5 sm:py-6">{children}</div>
       </div>
     </div>
   );
 }
 
-/* ================================================================
-   Confirm Dialog (convenience wrapper)
-   ================================================================ */
 interface ConfirmDialogProps {
   open: boolean;
   onClose: () => void;
@@ -190,12 +197,14 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
-      <p className="text-sm text-[var(--color-text-secondary)] mb-6">{message}</p>
-      <div className="flex items-center justify-end gap-3">
+      <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+        {message}
+      </p>
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
         <button
           onClick={onClose}
           disabled={loading}
-          className="px-4 py-2 text-sm font-medium rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-elevated)] transition-colors disabled:opacity-50"
+          className="px-4 py-2.5 text-sm font-medium rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-elevated)] transition-colors disabled:opacity-50 min-h-[44px]"
         >
           {cancelLabel}
         </button>
@@ -203,10 +212,10 @@ export function ConfirmDialog({
           onClick={onConfirm}
           disabled={loading}
           className={cn(
-            "px-4 py-2 text-sm font-medium rounded-xl text-white transition-all duration-200 disabled:opacity-50",
+            "px-4 py-2.5 text-sm font-medium rounded-xl text-white transition-all duration-200 disabled:opacity-50 min-h-[44px]",
             variant === "danger"
               ? "bg-[var(--color-danger)] hover:opacity-90"
-              : "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]"
+              : "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] shadow-glow-sm"
           )}
         >
           {loading ? "Loading..." : confirmLabel}

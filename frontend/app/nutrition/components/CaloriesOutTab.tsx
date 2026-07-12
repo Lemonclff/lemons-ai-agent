@@ -20,13 +20,16 @@ export function CaloriesOutTab({
     addExercise();
   };
 
+  const burnPct = summary.calories > 0 ? Math.min(100, (totalBurned / summary.calories) * 100) : 0;
+
   return (
-    <div className="space-y-3 max-w-[640px]">
+    <div className="nutri-stagger space-y-3 max-w-[640px]">
 
       {/* ═══ Stats Banner ═══ */}
-      <div className="rounded-2xl bg-gradient-to-br from-green-500/8 to-emerald-500/3 border border-green-500/15 p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center">
+      <div className="relative overflow-hidden rounded-3xl nutri-card-out p-5">
+        <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-green-400/10 blur-2xl pointer-events-none" />
+        <div className="relative flex items-center gap-3 mb-3">
+          <div className="w-11 h-11 rounded-2xl bg-green-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.25)]">
             <Flame size={22} className="text-green-400" />
           </div>
           <div>
@@ -34,12 +37,18 @@ export function CaloriesOutTab({
             <p className="text-[11px] text-[var(--color-text-muted)]">{exercises.length} activities today</p>
           </div>
         </div>
-        <div className="flex items-end gap-2">
-          <span className="text-[36px] font-bold text-green-400 tabular-nums leading-none">{Math.round(totalBurned)}</span>
-          <span className="text-[13px] text-[var(--color-text-muted)] pb-1">kcal</span>
+        <div className="relative flex items-end gap-2">
+          <span className="text-[40px] font-bold text-green-400 nutri-num leading-none">{Math.round(totalBurned)}</span>
+          <span className="text-[13px] text-[var(--color-text-muted)] pb-1.5">kcal</span>
           {summary.calories > 0 && totalBurned > 0 && (
-            <span className="text-[12px] text-[var(--color-text-muted)] pb-1 ml-auto">{Math.round((totalBurned / summary.calories) * 100)}% of intake</span>
+            <span className="text-[12px] text-[var(--color-text-muted)] pb-1.5 ml-auto">{Math.round(burnPct)}% of intake</span>
           )}
+        </div>
+        <div className="relative mt-3 h-2 rounded-full bg-[var(--color-border)]/30 overflow-hidden">
+          <div
+            className="h-full rounded-full nutri-bar-fill bg-gradient-to-r from-emerald-400 to-green-500"
+            style={{ width: `${burnPct}%` }}
+          />
         </div>
       </div>
 

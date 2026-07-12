@@ -33,7 +33,8 @@ export function Tabs({
   return (
     <div
       className={cn(
-        "flex items-center gap-1",
+        "flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 overscroll-x-contain",
+        "snap-x snap-mandatory sm:snap-none",
         variant === "underline" && "border-b border-[var(--color-border)]",
         className
       )}
@@ -51,18 +52,19 @@ export function Tabs({
             disabled={tab.disabled}
             onClick={() => onChange(tab.id)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap",
+              "disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] snap-start shrink-0",
+              "active:scale-[0.97]",
               // Variant: default (bg-highlight)
               variant === "default" && [
                 isActive
-                  ? "bg-[var(--color-accent)] text-white shadow-sm"
+                  ? "bg-[var(--color-accent)] text-white shadow-glow-sm"
                   : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
               ],
               // Variant: pills
               variant === "pills" && [
                 isActive
-                  ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
+                  ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)] nav-active-glow"
                   : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
               ],
               // Variant: underline

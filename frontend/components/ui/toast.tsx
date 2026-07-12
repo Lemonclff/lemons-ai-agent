@@ -83,9 +83,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       value={{ toast: addToast, success, error, warning, info }}
     >
       {children}
-      {/* Toast container */}
+      {/* Toast container — sits above mobile bottom nav */}
       <div
-        className="fixed bottom-4 right-4 z-[200] flex flex-col-reverse gap-2 max-w-sm w-full pointer-events-none"
+        className={cn(
+          "fixed z-[200] flex flex-col-reverse gap-2 max-w-sm w-[calc(100%-2rem)] sm:w-full pointer-events-none",
+          "left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4",
+          "bottom-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+12px)] md:bottom-4"
+        )}
         aria-live="polite"
         aria-label="Notifications"
       >
@@ -116,16 +120,16 @@ function ToastItem({
   return (
     <div
       className={cn(
-        "pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg",
-        "animate-[slideIn_200ms_ease] bg-[var(--color-surface-secondary)] border-[var(--color-border)]"
+        "pointer-events-auto flex items-start gap-3 px-4 py-3.5 rounded-2xl border shadow-lg glass-strong",
+        "animate-[fade-up_250ms_var(--ease-out-expo)] border-[var(--color-border)]"
       )}
       role="alert"
     >
       <Icon size={18} className={cn("shrink-0 mt-0.5", iconColors[toast.variant])} />
-      <p className="flex-1 text-sm text-[var(--color-text-primary)]">{toast.message}</p>
+      <p className="flex-1 text-sm text-[var(--color-text-primary)] leading-snug">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 p-0.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+        className="shrink-0 p-1.5 -m-1 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors touch-target"
         aria-label="Dismiss"
       >
         <X size={14} />

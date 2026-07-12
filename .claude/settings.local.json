@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/Users/z8608/AppData/Local/Packages/CanonicalGroupLimited.Ubuntu24.04LTS_79rhkp1fndgsc/LocalState/home/lemon/lemons-ai-agent/**)",
+      "Bash(npx tsc *)",
+      "Bash(cd \"\\\\\\\\wsl.localhost\\\\ubuntu-24.04\\\\home\\\\lemon\\\\lemons-ai-agent\\\\frontend\")",
+      "Bash(pwd && ls -la ~/ | head -5)",
+      "Read(///wsl.localhost/ubuntu-24.04/home/lemon/lemons-ai-agent/**)",
+      "Bash(npx next *)",
+      "Bash(wsl -d ubuntu-24.04 -- bash -c 'cd /home/lemon/lemons-ai-agent/frontend && npx next build 2>&1 | tail -50')",
+      "Bash(bash -c 'cd /home/lemon/lemons-ai-agent/frontend && npx next build 2>&1 | tail -50')",
+      "Bash(bash -c 'ls /home/lemon/lemons-ai-agent/frontend/package.json 2>&1')",
+      "Bash(ls -la \"\\\\\\\\wsl.localhost\\\\ubuntu-24.04\\\\home\\\\lemon\\\\lemons-ai-agent\\\\frontend\\\\package.json\")",
+      "Bash(cd /mnt/wsl.localhost/ubuntu-24.04/home/lemon/lemons-ai-agent/frontend && ls node_modules/.bin/next 2>&1 && npx next build 2>&1 | tail -60)",
+      "Bash(node ./node_modules/.bin/next build)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"print\\('hello'\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(git stash *)",
+      "Bash(git config *)",
+      "Bash(git checkout *)",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('frontend/app/nutrition/components/DashboardTab.tsx','utf8'\\);let o=0,h=0;for\\(const x of c\\){if\\(x==='{'\\)o++;if\\(x==='}'\\)h++;}console.log\\('{='+o+', }='+h+' '+\\(o===h?'OK':'ERR'\\)\\);\")",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('frontend/app/nutrition/components/DashboardTab.tsx','utf8'\\);console.log\\(JSON.stringify\\(c.substring\\(12600,12750\\)\\)\\)\")",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('frontend/app/nutrition/components/DashboardTab.tsx','utf8'\\);const idx=c.indexOf\\('min-h-[32px]'\\);console.log\\(JSON.stringify\\(c.substring\\(idx-5,idx+90\\)\\)\\)\")",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('frontend/app/nutrition/components/DashboardTab.tsx','utf8'\\);const idx=c.lastIndexOf\\('min-h-[32px]'\\);console.log\\(JSON.stringify\\(c.substring\\(idx-5,idx+120\\)\\)\\)\")"
+    ]
+  }
+}

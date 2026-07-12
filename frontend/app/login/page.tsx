@@ -3,10 +3,11 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock, Sun, Moon } from "lucide-react";
+import { Lock, Sun, Moon, Terminal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
+import { AmbientBackground } from "@/components/ui/effects";
 
 export default function LoginPage() {
   return (
@@ -54,71 +55,82 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface)] p-4">
-      {/* Theme toggle (top-right corner) */}
+    <div className="min-h-safe relative flex items-center justify-center p-4 overflow-hidden">
+      <AmbientBackground />
+
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2.5 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] transition-all border border-[var(--color-border)]"
+        className="fixed top-4 right-4 z-20 p-2.5 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] glass transition-all touch-target pressable"
         aria-label={theme === "dark" ? "切換至淺色模式" : "切換至深色模式"}
       >
         {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
-      <div className="w-full max-w-sm">
+      <div className="relative z-10 w-full max-w-sm animate-fade-up">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-accent-muted)] mb-4">
-            <Lock size={28} className="text-[var(--color-accent)]" />
+          <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-5 shadow-glow">
+            <Terminal size={28} className="text-white relative z-10" />
+            <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/25 to-transparent" />
           </div>
-          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
+          <h1 className="text-2xl font-bold tracking-tight">
             <span className="gradient-text">Lemon&apos;s AI Agent</span>
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-2">
             請登入以繼續
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="使用者名稱"
-            autoFocus
-            autoComplete="username"
-            required
-          />
+        <div className="glass card-gradient-border rounded-2xl p-6 sm:p-7 shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="使用者名稱"
+              autoFocus
+              autoComplete="username"
+              required
+              label="帳號"
+            />
 
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="密碼"
-            autoComplete="current-password"
-            required
-          />
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="密碼"
+              autoComplete="current-password"
+              required
+              label="密碼"
+            />
 
-          {error && (
-            <p className="text-sm text-[var(--color-danger)] text-center animate-[fadeIn_150ms_ease]" role="alert">
-              {error}
-            </p>
-          )}
+            {error && (
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--color-danger-muted)] text-sm text-[var(--color-danger)] animate-[fadeIn_150ms_ease]"
+                role="alert"
+              >
+                <Lock size={14} className="shrink-0" />
+                {error}
+              </div>
+            )}
 
-          <Button
-            type="submit"
-            disabled={loading || !username || !password}
-            variant="primary"
-            size="lg"
-            className="w-full"
-          >
-            {loading ? "驗證中..." : "登入"}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              disabled={loading || !username || !password}
+              loading={loading}
+              variant="primary"
+              size="lg"
+              className="w-full mt-1"
+            >
+              {loading ? "驗證中..." : "登入"}
+            </Button>
+          </form>
+        </div>
 
         <p className="text-center text-sm text-[var(--color-text-muted)] mt-6">
           還沒有帳號？{" "}
           <Link
             href="/register"
-            className="text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors font-medium"
+            className="text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors font-semibold"
           >
             註冊
           </Link>

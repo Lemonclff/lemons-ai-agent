@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Clock,
-  Activity,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -60,50 +59,60 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+function SidebarInner({
+  collapsed,
+  setCollapsed,
+  onMobileClose,
+  isMobile,
+}: {
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+  onMobileClose: () => void;
+  isMobile?: boolean;
+}) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  // Close mobile sidebar on route change
-  useEffect(() => {
-    onMobileClose();
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const sidebarContent = (
+  return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-300",
-        collapsed ? "w-[64px]" : "w-[260px]",
-        // Mobile: full-width overlay
-        "max-md:w-[280px] max-md:shadow-2xl"
+        "fixed left-0 top-0 z-40 h-dvh flex flex-col",
+        "border-r border-[var(--color-border)]",
+        "bg-[var(--color-surface)]/95 backdrop-blur-xl",
+        "transition-[width] duration-300 ease-out-expo",
+        collapsed && !isMobile ? "w-[64px]" : "w-[260px]",
+        isMobile && "w-[min(280px,85vw)] shadow-xl animate-[slide-from-left_0.28s_var(--ease-out-expo)]"
       )}
     >
       {/* Logo */}
       <div
         className={cn(
-          "flex items-center h-16 px-4 border-b border-[var(--color-border)]",
-          collapsed ? "justify-center" : "gap-3"
+          "flex items-center h-16 px-4 border-b border-[var(--color-border)] shrink-0",
+          collapsed && !isMobile ? "justify-center" : "gap-3"
         )}
       >
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
-          <Terminal size={16} className="text-white" />
+        <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0 shadow-glow-sm">
+          <Terminal size={16} className="text-white relative z-10" />
+          <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
         </div>
-        {!collapsed && (
-          <span className="text-lg font-bold gradient-text">Lemon&apos;s AI Agent</span>
+        {(!collapsed || isMobile) && (
+          <span className="text-base font-bold gradient-text truncate">
+            Lemon&apos;s AI
+          </span>
         )}
-        {/* Mobile close button */}
-        <button
-          onClick={onMobileClose}
-          className="md:hidden ml-auto p-2 rounded-lg hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"
-          aria-label="Close menu"
-        >
-          <X size={18} />
-        </button>
+        {isMobile && (
+          <button
+            onClick={onMobileClose}
+            className="ml-auto p-2.5 rounded-xl hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] touch-target pressable"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto scrollbar-none overscroll-contain">
         {mainNav.map((item) => {
           const isActive =
             item.href === "/"
@@ -115,21 +124,39 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium",
+                "transition-all duration-200 group min-h-[44px]",
                 isActive
-                  ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
-                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
-                collapsed && "justify-center px-0"
+                  ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)] nav-active-glow"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] active:scale-[0.98]",
+                collapsed && !isMobile && "justify-center px-0"
               )}
+              title={collapsed && !isMobile ? item.label : undefined}
             >
-              <item.icon size={20} />
-              {!collapsed && (
-                <span className="flex-1">{item.label}</span>
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--color-accent)] shadow-glow-sm" />
               )}
-              {!collapsed && item.badge && (
-                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-[var(--color-accent-muted)] text-[var(--color-accent)]">
-                  {item.badge}
-                </span>
+              <item.icon
+                size={20}
+                strokeWidth={isActive ? 2.25 : 1.75}
+                className="shrink-0"
+              />
+              {(!collapsed || isMobile) && (
+                <>
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {item.badge && (
+                    <span
+                      className={cn(
+                        "px-1.5 py-0.5 text-[10px] font-semibold rounded-md shrink-0",
+                        isActive
+                          ? "bg-[var(--color-accent)]/20 text-[var(--color-accent)]"
+                          : "bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)]"
+                      )}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </>
               )}
             </Link>
           );
@@ -137,73 +164,107 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-3 border-t border-[var(--color-border)] space-y-1">
+      <div className="px-2.5 py-3 border-t border-[var(--color-border)] space-y-0.5 shrink-0">
         {bottomNav.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
+              "transition-all duration-200",
               "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
-              collapsed && "justify-center px-0"
+              collapsed && !isMobile && "justify-center px-0"
             )}
+            title={collapsed && !isMobile ? item.label : undefined}
           >
-            <item.icon size={20} />
-            {!collapsed && <span>{item.label}</span>}
+            <item.icon size={20} className="shrink-0" />
+            {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
           </Link>
         ))}
 
-        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
+            "transition-all duration-200",
             "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]",
-            collapsed && "justify-center px-0"
+            collapsed && !isMobile && "justify-center px-0"
           )}
           aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         >
-          {theme === "dark" ? (
-            <Sun size={20} />
-          ) : (
-            <Moon size={20} />
-          )}
-          {!collapsed && (
+          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          {(!collapsed || isMobile) && (
             <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
           )}
         </button>
 
-        {/* Collapse toggle (desktop only) */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 max-md:hidden",
-            "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
-            collapsed && "justify-center px-0"
-          )}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          {!collapsed && <span>Collapse</span>}
-        </button>
+        {!isMobile && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
+              "transition-all duration-200",
+              "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
+              collapsed && "justify-center px-0"
+            )}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            {!collapsed && <span>Collapse</span>}
+          </button>
+        )}
       </div>
     </aside>
   );
+}
 
-  // Desktop: always visible; Mobile: overlay when open
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    onMobileClose();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lock body scroll when mobile drawer open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="max-md:hidden">{sidebarContent}</div>
-      {/* Mobile overlay */}
+      <div className="max-md:hidden">
+        <SidebarInner
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          onMobileClose={onMobileClose}
+        />
+      </div>
+
+      {/* Mobile drawer */}
       {mobileOpen && (
         <>
           <div
-            className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+            className="md:hidden fixed inset-0 z-30 bg-black/55 backdrop-blur-sm animate-[fadeIn_180ms_ease]"
             onClick={onMobileClose}
             aria-hidden="true"
           />
-          <div className="md:hidden">{sidebarContent}</div>
+          <div className="md:hidden">
+            <SidebarInner
+              collapsed={false}
+              setCollapsed={setCollapsed}
+              onMobileClose={onMobileClose}
+              isMobile
+            />
+          </div>
         </>
       )}
     </>

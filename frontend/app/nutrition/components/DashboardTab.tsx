@@ -3,9 +3,9 @@
 import { useState } from "react";
 import {
   Loader2, Utensils, Minus, Plus, X, Copy, Star,
-  Flame, Zap, TrendingUp, TrendingDown, Dumbbell,
+  Flame, Zap, Dumbbell,
 } from "lucide-react";
-import { Ring } from "./Ring";
+import { Ring, CalorieHero, MacroBars } from "./Ring";
 import { cn } from "@/lib/utils";
 
 interface LogEntry {
@@ -55,12 +55,8 @@ export function DashboardTab({
   servingUnits?: string[];
   userWeight?: number;
 }) {
+  const [logTab, setLogTab] = useState<'food'|'exercise'>('food');
   const [favTab, setFavTab] = useState<'in'|'out'>('in');
-
-  const calInPct = goals.calories > 0 ? Math.min(100, (summary.calories / goals.calories) * 100) : 0;
-  const netCal = summary.calories - summary.exercise_calories;
-  const netPct = goals.calories > 0 ? (netCal / goals.calories) * 100 : 0;
-  const netStatus = netCal > goals.calories ? "over" : netCal < 0 ? "under" : "good";
 
   const renderFavChips = (
     items: FavoriteItem[],
@@ -118,79 +114,14 @@ export function DashboardTab({
   };
 
   return (
-    <div className="space-y-3 pb-2 md:pb-0">
+    <div className="nutri-stagger space-y-3 pb-2 md:pb-0">
 
-      {/* ═══ Dual Calories Cards ═══ */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Calories In */}
-        <div className="relative overflow-hidden rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-orange-500/[0.02] p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-orange-500/15 flex items-center justify-center">
-              <Utensils size={15} className="text-orange-400" />
-            </div>
-            <div>
-              <div className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cal In</div>
-              <div className="text-[22px] font-bold text-orange-400 tabular-nums leading-tight">
-                {Math.round(summary.calories)}
-                <span className="text-[11px] font-normal text-[var(--color-text-muted)] ml-0.5">/{goals.calories}</span>
-              </div>
-            </div>
-          </div>
-          <div className="w-full bg-[var(--color-border)]/20 rounded-full h-1.5">
-            <div className={cn("h-full rounded-full transition-all duration-500", calInPct >= 100 ? "bg-red-400" : "bg-orange-400")}
-              style={{ width: `${Math.min(100, calInPct)}%` }} />
-          </div>
-          <div className="mt-1.5 text-[10px] text-[var(--color-text-muted)] tabular-nums">{Math.round(calInPct)}% of daily goal</div>
-        </div>
-
-        {/* Calories Out */}
-        <div className="relative overflow-hidden rounded-2xl border border-green-500/20 bg-gradient-to-br from-green-500/5 to-green-500/[0.02] p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-green-500/15 flex items-center justify-center">
-              <Zap size={15} className="text-green-400" />
-            </div>
-            <div>
-              <div className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cal Out</div>
-              <div className="text-[22px] font-bold text-green-400 tabular-nums leading-tight">
-                {Math.round(summary.exercise_calories)}
-                <span className="text-[11px] font-normal text-[var(--color-text-muted)] ml-0.5">kcal</span>
-              </div>
-            </div>
-          </div>
-          <div className="w-full bg-[var(--color-border)]/20 rounded-full h-1.5">
-            <div className="h-full rounded-full bg-green-400 transition-all duration-500"
-              style={{ width: `${Math.min(100, summary.calories > 0 ? (summary.exercise_calories / summary.calories) * 100 : 0)}%` }} />
-          </div>
-          <div className="mt-1.5 text-[10px] text-[var(--color-text-muted)] tabular-nums">
-            {summary.exercise_calories > 0 ? `${Math.round((summary.exercise_calories / Math.max(1, summary.calories)) * 100)}% of intake` : 'No exercise logged'}
-          </div>
-        </div>
-      </div>
-
-      {/* Net Calories pill */}
-      <div className={cn(
-        "px-4 py-3 rounded-2xl border flex items-center justify-between gap-3",
-        netStatus === "over" && "border-red-500/25 bg-red-500/5",
-        netStatus === "under" && "border-blue-500/25 bg-blue-500/5",
-        netStatus === "good" && "border-green-500/25 bg-green-500/5",
-      )}>
-        <div className="flex items-center gap-2">
-          {netStatus === "over" && <TrendingUp size={16} className="text-red-400" />}
-          {netStatus === "under" && <TrendingDown size={16} className="text-blue-400" />}
-          {netStatus === "good" && <Flame size={16} className="text-green-400" />}
-          <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">Net Calories</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={cn("text-[16px] font-bold tabular-nums",
-            netStatus === "over" && "text-red-400",
-            netStatus === "under" && "text-blue-400",
-            netStatus === "good" && "text-green-400",
-          )}>{Math.round(netCal)} kcal</span>
-          <span className="text-[11px] text-[var(--color-text-muted)] tabular-nums bg-[var(--color-surface-elevated)]/50 px-2 py-0.5 rounded-full">
-            {netPct > 0 ? `${Math.round(netPct)}%` : '0%'}
-          </span>
-        </div>
-      </div>
+      {/* ═══ Hero energy ring ═══ */}
+      <CalorieHero
+        caloriesIn={summary.calories}
+        caloriesOut={summary.exercise_calories}
+        goal={goals.calories}
+      />
 
       {/* ═══ Quick Add Favorites ═══ */}
       <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
@@ -265,23 +196,199 @@ export function DashboardTab({
         </div>
       </div>
 
-      {/* Macro Rings */}
-      <div className="grid grid-cols-4 gap-2.5 max-md:grid-cols-2">
-        <Ring value={summary.calories} max={goals.calories} color="#f97316" label="Calories" unit="kcal" />
-        <Ring value={summary.protein} max={goals.protein} color="#22c55e" label="Protein" unit="g" />
-        <Ring value={summary.carbs} max={goals.carbs} color="#eab308" label="Carbs" unit="g" />
-        <Ring value={summary.fat} max={goals.fat} color="#f59e0b" label="Fat" unit="g" />
+      {/* Macro Rings + Bars */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+        <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <Ring value={summary.calories} max={goals.calories} color="#f97316" label="Calories" unit="kcal" />
+          <Ring value={summary.protein} max={goals.protein} color="#38bdf8" label="Protein" unit="g" />
+          <Ring value={summary.carbs} max={goals.carbs} color="#fbbf24" label="Carbs" unit="g" />
+          <Ring value={summary.fat} max={goals.fat} color="#f472b6" label="Fat" unit="g" />
+        </div>
+        <div className="lg:col-span-2">
+          <MacroBars
+            protein={summary.protein}
+            carbs={summary.carbs}
+            fat={summary.fat}
+            goals={goals}
+          />
+        </div>
       </div>
 
       {/* Low protein warning */}
       {goals.calories > 0 && summary.protein < goals.protein * 0.7 && (
-        <div className="text-[12px] text-amber-400 px-4 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center gap-2">
-          <span>⚡</span> Protein is low today. Try chicken, eggs, or tofu.
+        <div className="text-[12px] text-amber-400 px-4 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center gap-2 animate-[fade-up_0.4s_ease]">
+          <Zap size={14} className="shrink-0" /> Protein is low today. Try chicken, eggs, or tofu.
         </div>
       )}
+      {/* ═══ Mobile: Food + Exercise Tab ═══ */}
+      <div className="md:hidden rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+        {/* Tab bar */}
+        <div className="flex border-b border-[var(--color-border)]/50">
+          <button onClick={() => setLogTab("food")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors ${
+              logTab === "food"
+                ? "text-orange-400 border-b-2 border-orange-400 bg-orange-500/5"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+            }`}>
+            <Utensils size={14} /> Food
+            {summary.count > 0 && <span className="text-[10px] text-orange-400/70">({summary.count})</span>}
+          </button>
+          <button onClick={() => setLogTab("exercise")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors ${
+              logTab === "exercise"
+                ? "text-green-400 border-b-2 border-green-400 bg-green-500/5"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+            }`}>
+            <Dumbbell size={14} /> Exercise
+            {exercises.length > 0 && <span className="text-[10px] text-green-400/70">({exercises.length})</span>}
+          </button>
+        </div>
+
+        {/* === Food tab content === */}
+        {logTab === "food" && (<>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-border)]/10">
+            <button onClick={copyYesterday}
+              className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
+              <Copy size={12} />Copy Yesterday
+            </button>
+            <div className="flex gap-1 ml-auto">
+              {MEALS.map(m => (
+                <button key={m.key} onClick={() => setMealFilter(m.key)}
+                  className={cn("min-h-[32px] px-2.5 text-[12px] rounded-full font-medium transition-all active:scale-95",
+                    mealFilter === m.key ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")}
+                >{m.label}</button>
+              ))}
+            </div>
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12"><Loader2 size={22} className="animate-spin text-[var(--color-text-muted)]" /></div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="text-center py-12 text-[13px] text-[var(--color-text-muted)]">
+              <Utensils size={32} className="mx-auto mb-2 opacity-20" />
+              No food logged yet
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--color-border)]/10">
+              {filteredLogs.map(entry => (
+                <div key={entry.id} className="px-4 py-3 space-y-2.5">{/* Food name + actions */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[14px] font-semibold text-[var(--color-text-primary)] truncate">{entry.food_name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] capitalize shrink-0">{entry.meal_type}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => addToFavorites('in', entry.food_name, Math.round(entry.calories), entry.amount, undefined, entry.serving_unit || 'g')}
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl hover:bg-[var(--color-accent)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all">
+                        <Star size={16} />
+                      </button>
+                      <button onClick={() => deleteLog(entry.id)}
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 active:scale-95 transition-all">
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]/50">
+                      <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))}
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                        <Minus size={16} />
+                      </button>
+                      <input type="number" defaultValue={entry.amount}
+                        onBlur={e => { const v = Number(e.target.value); if (v > 0 && v !== entry.amount) updateWeight(entry.id, v); }}
+                        className="w-[48px] text-center bg-transparent py-2 text-[14px] font-semibold tabular-nums outline-none"
+                        inputMode="decimal" style={{ fontSize: '16px' }} />
+                      <button onClick={() => updateWeight(entry.id, entry.amount + 10)}
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <select value={entry.serving_unit || 'g'}
+                      onChange={e => updateLog(entry.id, { serving_unit: e.target.value })}
+                      className="min-h-[40px] px-2 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-xl outline-none text-[var(--color-text-muted)]">
+                      {(servingUnits || ["g","ml","份","碗","杯","罐","瓶","個","包","碟"]).map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 text-[13px] tabular-nums flex-wrap">
+                    <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]/50">
+                      <button onClick={() => updateLog(entry.id, { calories: Math.max(1, Math.round(entry.calories) - 10) })}
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                        <Minus size={14} />
+                      </button>
+                      <input type="number" value={Math.round(entry.calories)}
+                        onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
+                        className="w-[48px] text-center bg-transparent py-1.5 text-[14px] font-bold tabular-nums outline-none text-orange-400"
+                        inputMode="decimal" min="0" style={{ fontSize: '16px' }} />
+                      <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-[var(--color-text-muted)]">kcal</span>
+                    <span className="text-blue-400 font-semibold">P</span>
+                    <input type="number" value={Math.round(entry.protein * 10) / 10}
+                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
+                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
+                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <span className="text-amber-400 font-semibold">C</span>
+                    <input type="number" value={Math.round(entry.carbs * 10) / 10}
+                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
+                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
+                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <span className="text-red-400 font-semibold">F</span>
+                    <input type="number" value={Math.round(entry.fat * 10) / 10}
+                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
+                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
+                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                  </div></div>
+              ))}
+            </div>
+          )}
+        </>)}
+
+        {/* === Exercise tab content === */}
+        {logTab === "exercise" && (<>
+          {exercises.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-green-500/5 border border-dashed border-green-500/20 flex items-center justify-center mb-4">
+                <Dumbbell size={28} className="text-green-400/25" />
+              </div>
+              <p className="text-[14px] font-medium text-[var(--color-text-muted)]">No exercise logged</p>
+              <p className="text-[12px] text-[var(--color-text-muted)]/50 mt-1 max-w-[240px]">Go to Calories Out tab to add workouts</p>
+            </div>
+          ) : (
+            <>
+            <div className="px-4 py-2.5 border-b border-[var(--color-border)]/10 flex items-center justify-between">
+              <span className="text-[12px] text-[var(--color-text-muted)]">{exercises.length} activities</span>
+              {summary.exercise_calories > 0 && (
+                <span className="text-[13px] font-bold text-green-400 tabular-nums">{Math.round(summary.exercise_calories)} kcal</span>
+              )}
+            </div>
+            <div className="divide-y divide-[var(--color-border)]/10">
+              {exercises.map((ex) => (
+                <div key={ex.id} className="flex items-center gap-3 px-4 py-3 group">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                    <Flame size={14} className="text-green-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{ex.exercise_name}</p>
+                    <p className="text-[11px] text-[var(--color-text-muted)]">{ex.duration_min} min · {Math.round(ex.calories_burned)} kcal</p>
+                  </div>
+                  <span className="text-[14px] font-semibold text-green-400 tabular-nums shrink-0">{Math.round(ex.calories_burned)} kcal</span>
+                  <button onClick={() => deleteExercise(ex.id)}
+                    className="opacity-0 group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 transition-all">
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            </>
+          )}
+        </>)}
+      </div>
 
       {/* ═══ Food Log ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+      {/* ═══ Food Log ═══ */}
+      <div className="hidden md:block rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
         <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between flex-wrap gap-2">
           <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Today's Food Log</span>
           <div className="flex items-center gap-2">
@@ -479,9 +586,9 @@ export function DashboardTab({
         )}
       </div>
 
-      {/* ═══ Exercise Section ═══ */}
+      {/* ═══ Exercise Section (Desktop) ═══ */}
       {exercises.length > 0 && (
-        <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+        <div className="hidden md:block rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
           <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-green-500/15 flex items-center justify-center">

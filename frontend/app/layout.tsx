@@ -25,7 +25,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#07070e" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f5fb" },
+  ],
 };
 
 export default function RootLayout({
@@ -34,9 +39,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-[var(--color-surface)] text-[var(--color-text-primary)]">
-        <a href="#main-content" className="skip-to-content">Skip to main content</a>
+    <html lang="zh-Hant" suppressHydrationWarning>
+      <body className="min-h-safe bg-[var(--color-surface)] text-[var(--color-text-primary)] antialiased">
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
         <ThemeProvider>
           <ToastProvider>
             <LayoutShell>{children}</LayoutShell>

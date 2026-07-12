@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 
 
-import { Ring } from "./components/Ring";
 import { DashboardTab } from "./components/DashboardTab";
 import { SearchTab } from "./components/SearchTab";
 import { PhotoTab } from "./components/PhotoTab";
@@ -19,6 +18,7 @@ import { HistoryTab } from "./components/HistoryTab";
 import { CaloriesOutTab } from "./components/CaloriesOutTab";
 import { Tabs } from "@/components/ui/components";
 import { cn } from "@/lib/utils";
+import "./nutrition.css";
 
 /* ================================================================
    Types
@@ -74,7 +74,6 @@ export default function NutritionPage() {
     setMounted(true);
     if (window.innerWidth < 768) setFullscreen(true);
   }, []);
-  // On mobile, auto-enter fullscreen. Show nothing until mounted to avoid flash.
   const showFullscreen = mounted ? fullscreen : false;
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -653,17 +652,22 @@ export default function NutritionPage() {
 
   return (
     <>
-    <div className={`w-full max-w-[960px] mx-auto pb-[calc(80px+max(16px,env(safe-area-inset-bottom,0px)))] md:pb-0 ${showFullscreen ? 'hidden' : ''}`}
+    <div className={`nutrition-root w-full max-w-[960px] mx-auto pb-[calc(80px+max(16px,env(safe-area-inset-bottom,0px)))] md:pb-0 ${showFullscreen ? 'max-md:hidden' : ''}`}
       onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
       {/* ═══ Sticky Header + Tab Bar ═══ */}
-      <div className="sticky top-safe z-30 -mx-4 px-4 bg-[var(--color-surface)]/95 backdrop-blur-xl border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
+      <div className="sticky top-safe z-30 -mx-4 px-4 glass-strong border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0 md:!bg-transparent md:!border-0">
 
         {/* Date row */}
         <div className="flex items-center justify-between py-2 md:py-0 md:mt-2 md:mb-4">
-          <div className="flex items-center gap-2">
-            <Apple size={22} className="text-[var(--color-accent)]" />
-            <h1 className="text-[18px] font-bold text-[var(--color-text-primary)]">NutriSnap</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.35)]">
+              <Apple size={18} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-[17px] font-bold text-[var(--color-text-primary)] leading-tight">NutriSnap</h1>
+              <p className="text-[10px] text-[var(--color-text-muted)] hidden sm:block">Fuel · Burn · Balance</p>
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all"><ChevronLeft size={18} /></button>
@@ -719,7 +723,7 @@ export default function NutritionPage() {
       </div>
 
       {/* ═══ Tab Content ═══ */}
-      <div className="animate-[fadeIn_200ms_ease]">
+      <div key={page} className="nutri-tab-enter">
       {page === "dashboard" && (
         <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
           filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
@@ -779,21 +783,21 @@ export default function NutritionPage() {
           todayStr={todayStr} goals={goals} historyMonth={historyMonth} setHistoryMonth={setHistoryMonth} />
       )}
 
-      </div>{/* end fadeIn */}
+      </div>
 
     </div>
 
     {/* Fullscreen overlay — mobile only */}
     {showFullscreen && (
-      <div className="md:hidden fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col overflow-hidden">
+      <div className="nutrition-root fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col overflow-hidden" data-fullscreen>
         {/* ═══ Top bar — gradient ═══ */}
-        <div className="shrink-0 px-4 pb-3 bg-gradient-to-b from-[var(--color-accent)]/8 via-[var(--color-accent)]/3 to-transparent"
+        <div className="shrink-0 px-4 pb-3 bg-gradient-to-b from-orange-500/12 via-[var(--color-accent)]/5 to-transparent"
           style={{ paddingTop: "max(16px, env(safe-area-inset-top, 0px))" }}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[var(--color-accent)]/15 flex items-center justify-center ring-1 ring-[var(--color-accent)]/20">
-                <Flame size={22} className="text-[var(--color-accent)]" />
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.4)]">
+                <Flame size={20} className="text-white" />
               </div>
               <div>
                 <span className="text-[17px] font-bold text-[var(--color-text-primary)]">NutriSnap</span>
@@ -828,7 +832,7 @@ export default function NutritionPage() {
         </div>
 
         {/* ═══ Content — scrollable ═══ */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div key={page} className="flex-1 overflow-y-auto px-4 pb-4 nutri-tab-enter">
           {page === "dashboard" && (
             <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
               filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
@@ -885,7 +889,7 @@ export default function NutritionPage() {
         </div>
 
         {/* ═══ Bottom Tab Bar ═══ */}
-        <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+        <div className="shrink-0 nutri-bottom-nav px-2"
           style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="flex items-center justify-around py-1.5">
@@ -897,19 +901,21 @@ export default function NutritionPage() {
                   key={p.key}
                   onClick={() => setPage(p.key)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-2xl transition-all duration-200 active:scale-[0.97]",
-                    active
-                      ? "text-white"
-                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                    "flex flex-col items-center justify-center gap-1 flex-1 py-1.5 rounded-2xl transition-all duration-200 active:scale-[0.96] pressable",
+                    active ? p.color : "text-[var(--color-text-muted)]"
                   )}
                 >
                   <div className={cn(
                     "w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300",
-                    active ? "bg-[var(--color-accent)] shadow-lg shadow-[var(--color-accent)]/30 scale-110" : "bg-transparent"
-                  )}>
+                    active
+                      ? "bg-current/15 scale-110 shadow-[0_0_16px_color-mix(in_srgb,currentColor_35%,transparent)]"
+                      : "bg-transparent"
+                  )}
+                    style={active ? { backgroundColor: "color-mix(in srgb, currentColor 15%, transparent)" } : undefined}
+                  >
                     <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
                   </div>
-                  <span className="text-[11px] font-bold leading-none">{p.shortLabel}</span>
+                  <span className={cn("text-[11px] leading-none", active ? "font-bold" : "font-semibold")}>{p.shortLabel}</span>
                 </button>
               );
             })}
@@ -920,7 +926,7 @@ export default function NutritionPage() {
 
     {/* Toast — shared */}
     {toast && (
-      <div className="fixed bottom-[80px] md:bottom-6 right-6 z-[70] px-4 py-2.5 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg shadow-lg text-[13px] text-[var(--color-text-primary)]">
+      <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[70] px-4 py-3 glass-strong border border-[var(--color-border)] rounded-2xl shadow-lg text-[13px] text-[var(--color-text-primary)] animate-[fade-up_0.25s_ease]">
         {toast}
       </div>
     )}

@@ -1,0 +1,199 @@
+/* ================================================================
+   NutriSnap — exclusive visual language
+   Warm health palette: orange in · green out · emerald net
+   ================================================================ */
+
+.nutrition-root {
+  --nutri-in: #f97316;
+  --nutri-in-soft: rgba(249, 115, 22, 0.14);
+  --nutri-in-glow: rgba(249, 115, 22, 0.35);
+  --nutri-out: #22c55e;
+  --nutri-out-soft: rgba(34, 197, 94, 0.14);
+  --nutri-out-glow: rgba(34, 197, 94, 0.35);
+  --nutri-protein: #38bdf8;
+  --nutri-carbs: #fbbf24;
+  --nutri-fat: #f472b6;
+  --nutri-net-good: #34d399;
+  --nutri-net-over: #f87171;
+  --nutri-net-under: #60a5fa;
+}
+
+/* ── Tab content enter ── */
+.nutri-tab-enter {
+  animation: nutri-tab-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes nutri-tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Stagger sections ── */
+.nutri-stagger > * {
+  animation: nutri-fade-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.nutri-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.nutri-stagger > *:nth-child(2) { animation-delay: 55ms; }
+.nutri-stagger > *:nth-child(3) { animation-delay: 110ms; }
+.nutri-stagger > *:nth-child(4) { animation-delay: 165ms; }
+.nutri-stagger > *:nth-child(5) { animation-delay: 220ms; }
+.nutri-stagger > *:nth-child(6) { animation-delay: 275ms; }
+.nutri-stagger > *:nth-child(7) { animation-delay: 330ms; }
+.nutri-stagger > *:nth-child(8) { animation-delay: 385ms; }
+
+@keyframes nutri-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Ring stroke draw ── */
+.nutri-ring-progress {
+  transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* ── Progress bar fill ── */
+.nutri-bar-fill {
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+.nutri-bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  animation: nutri-bar-shine 2.4s ease-in-out infinite;
+}
+
+@keyframes nutri-bar-shine {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
+/* ── Hero ambient ── */
+.nutri-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.nutri-hero::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--nutri-in-glow), transparent 70%);
+  opacity: 0.35;
+  animation: nutri-breathe 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes nutri-breathe {
+  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.45; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+/* ── Cal cards ── */
+.nutri-card-in {
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.02));
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.04), 0 8px 28px rgba(249, 115, 22, 0.06);
+}
+.nutri-card-out {
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.02));
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.04), 0 8px 28px rgba(34, 197, 94, 0.06);
+}
+
+/* ── Chart bars grow ── */
+.nutri-chart-bar {
+  transform-origin: bottom;
+  animation: nutri-bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  border-radius: 8px 8px 4px 4px;
+  transition: filter 0.2s, opacity 0.2s, transform 0.2s;
+}
+.nutri-chart-bar:hover {
+  filter: brightness(1.15);
+  transform: scaleY(1.03);
+}
+
+@keyframes nutri-bar-grow {
+  from { transform: scaleY(0); opacity: 0.4; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+/* ── Count-up number ── */
+.nutri-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── Bottom nav glass (nutrition fullscreen) ── */
+.nutri-bottom-nav {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── Calendar day pulse ── */
+.nutri-day-dot {
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  animation: nutri-dot-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes nutri-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+/* ── Macro chip ── */
+.nutri-macro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .nutri-tab-enter,
+  .nutri-stagger > *,
+  .nutri-chart-bar,
+  .nutri-hero::before,
+  .nutri-bar-fill::after,
+  .nutri-day-dot {
+    animation: none !important;
+  }
+  .nutri-ring-progress,
+  .nutri-bar-fill {
+    transition-duration: 0.01ms !important;
+  }
+}

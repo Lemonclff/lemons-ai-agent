@@ -9,6 +9,8 @@ import {
   Wifi,
   WifiOff,
   Loader2,
+  Sparkles,
+  Activity,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,7 @@ import {
   StatsGrid,
   ContentGrid,
 } from "@/components/ui/layout-components";
+import { Stagger } from "@/components/ui/effects";
 import { cn, fmtNum } from "@/lib/utils";
 
 interface DashboardData {
@@ -49,9 +52,7 @@ export default function DashboardPage() {
     let cancelled = false;
 
     async function load() {
-      // Always start with initial except loading stays true
       const next: DashboardData = { ...INITIAL, loading: true };
-      // Reset systemStatus locally for safe mutation
       const status = { ...INITIAL.systemStatus };
 
       try {
@@ -102,23 +103,21 @@ export default function DashboardPage() {
 
   const { cronCount, cronOk, dbTables, dbRows, systemStatus } = data;
 
-  // ==============================
-  // Loading state
-  // ==============================
   if (data.loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2
-          size={24}
-          className="animate-spin text-[var(--color-text-muted)]"
-        />
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-[var(--color-accent)]/20 blur-xl animate-pulse" />
+          <Loader2
+            size={28}
+            className="relative animate-spin text-[var(--color-accent)]"
+          />
+        </div>
+        <p className="text-sm text-[var(--color-text-muted)]">Loading dashboard…</p>
       </div>
     );
   }
 
-  // ==============================
-  // Stats cards
-  // ==============================
   const statsCards = [
     {
       label: "Active Cron Jobs",
@@ -130,6 +129,7 @@ export default function DashboardPage() {
       href: "/schedule",
       badge: cronCount > 0 ? "Running" : "Idle",
       badgeVariant: cronCount > 0 ? "success" : "warning",
+      glow: "group-hover:shadow-[0_0_24px_rgba(34,197,94,0.15)]",
     } as const,
     {
       label: "DB Records",
@@ -141,24 +141,41 @@ export default function DashboardPage() {
       href: "/data",
       badge: dbRows > 0 ? "Connected" : "Empty",
       badgeVariant: dbRows > 0 ? "success" : "warning",
+      glow: "group-hover:shadow-[0_0_24px_rgba(59,130,246,0.15)]",
     } as const,
   ];
 
+  const healthy = systemStatus.cron && systemStatus.db;
+
   return (
     <PageContainer>
-      {/* Header */}
       <PageHeader
-        title="Welcome to Lemon's AI Agent"
+        badge={
+          <Badge variant="accent" size="sm" className="gap-1.5">
+            <Sparkles size={10} />
+            AI Agent Hub
+          </Badge>
+        }
+        title={
+          <span>
+            Welcome to{" "}
+            <span className="gradient-text">Lemon&apos;s AI Agent</span>
+          </span>
+        }
         description="AI-driven US stock quant dashboard — monitor markets, automate analysis, and track your LLM usage."
       />
 
-      {/* Stats Grid */}
       <StatsGrid cols={2}>
         {statsCards.map((stat) => (
           <Link key={stat.label} href={stat.href} className="block group">
-            <Card hover className="h-full">
+            <Card hover shine gradient className={cn("h-full", stat.glow)}>
               <div className="flex items-start justify-between">
-                <div className={cn("p-2.5 rounded-xl", stat.bg)}>
+                <div
+                  className={cn(
+                    "p-2.5 rounded-xl transition-transform duration-300 group-hover:scale-110",
+                    stat.bg
+                  )}
+                >
                   <stat.icon size={20} className={stat.color} />
                 </div>
                 <Badge variant={stat.badgeVariant} size="sm">
@@ -166,7 +183,7 @@ export default function DashboardPage() {
                 </Badge>
               </div>
               <div className="mt-4">
-                <p className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight tabular-nums">
+                <p className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight tabular-nums">
                   {stat.value}
                 </p>
                 <p className="text-sm font-medium text-[var(--color-text-secondary)] mt-1">
@@ -176,25 +193,31 @@ export default function DashboardPage() {
                   {stat.sub}
                 </p>
               </div>
+              <div className="mt-4 flex items-center gap-1 text-xs font-medium text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-opacity">
+                Open <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+              </div>
             </Card>
           </Link>
         ))}
       </StatsGrid>
 
-      {/* Content Grid */}
       <ContentGrid
         sidebar={
-          /* System Status */
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
-              <CardTitle>System Status</CardTitle>
-              <Badge
-                variant={
-                  systemStatus.cron && systemStatus.db ? "success" : "warning"
-                }
-                size="sm"
-              >
-                {systemStatus.cron && systemStatus.db ? "Healthy" : "Degraded"}
+              <div className="flex items-center gap-2">
+                <Activity size={16} className="text-[var(--color-accent)]" />
+                <CardTitle className="!text-base">System Status</CardTitle>
+              </div>
+              <Badge variant={healthy ? "success" : "warning"} size="sm">
+                {healthy ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="pulse-dot !w-1.5 !h-1.5" />
+                    Healthy
+                  </span>
+                ) : (
+                  "Degraded"
+                )}
               </Badge>
             </CardHeader>
             <div className="space-y-1">
@@ -223,7 +246,7 @@ export default function DashboardPage() {
               ].map((item) => (
                 <div
                   key={item.name}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--color-surface)] transition-colors"
                 >
                   {item.ok ? (
                     <Wifi
@@ -251,7 +274,7 @@ export default function DashboardPage() {
                         item.ok ? "online" : "offline"
                       )}
                     />
-                    <span className="text-xs font-medium text-[var(--color-text-muted)] min-w-[28px] text-right">
+                    <span className="text-xs font-semibold text-[var(--color-text-muted)] min-w-[28px] text-right tabular-nums">
                       {item.ok ? "OK" : "OFF"}
                     </span>
                   </div>
@@ -261,25 +284,52 @@ export default function DashboardPage() {
           </Card>
         }
       >
-        {/* Quick Links */}
-        <Link href="/schedule" className="block group">
-          <Card hover className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent)]/5 to-[var(--color-gold)]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <Clock size={24} className="text-[var(--color-accent)]" />
-                <CardTitle>Schedule & Automation</CardTitle>
+        <Stagger className="space-y-3 sm:space-y-4">
+          <Link href="/schedule" className="block group">
+            <Card hover shine className="relative overflow-hidden">
+              <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br from-[var(--color-accent)]/15 to-transparent blur-2xl group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2.5 rounded-xl bg-[var(--color-accent-muted)]">
+                    <Clock size={20} className="text-[var(--color-accent)]" />
+                  </div>
+                  <CardTitle>Schedule & Automation</CardTitle>
+                </div>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+                  Manage {cronCount} cron jobs for sector rotation analysis,
+                  pre/post-market reports.
+                </p>
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-accent)] group-hover:gap-2.5 transition-all">
+                  Open <ArrowRight size={14} />
+                </span>
               </div>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                Manage {cronCount} cron jobs for sector rotation analysis,
-                pre/post-market reports.
-              </p>
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors">
-                Open <ArrowRight size={14} />
-              </span>
-            </div>
-          </Card>
-        </Link>
+            </Card>
+          </Link>
+
+          <Link href="/ai-analysis" className="block group">
+            <Card hover shine className="relative overflow-hidden">
+              <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br from-purple-500/15 to-transparent blur-2xl group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2.5 rounded-xl bg-purple-500/10">
+                    <Sparkles size={20} className="text-purple-400" />
+                  </div>
+                  <CardTitle>AI 資產分析</CardTitle>
+                  <Badge variant="accent" size="sm">
+                    LLM
+                  </Badge>
+                </div>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+                  LLM-powered portfolio and market analysis with structured
+                  insights.
+                </p>
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-accent)] group-hover:gap-2.5 transition-all">
+                  Open <ArrowRight size={14} />
+                </span>
+              </div>
+            </Card>
+          </Link>
+        </Stagger>
       </ContentGrid>
     </PageContainer>
   );
