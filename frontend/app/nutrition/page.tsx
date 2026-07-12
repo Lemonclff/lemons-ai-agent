@@ -811,7 +811,7 @@ export default function NutritionPage() {
               <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] active:scale-[0.97] transition-all disabled:opacity-20">
                 <ChevronRight size={20} />
               </button>
-              <button onClick={() => setFullscreen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] active:scale-[0.97] transition-all ml-1">
+              <button onClick={() => setFullscreen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 active:scale-[0.97] transition-all ml-1">
                 <Minimize2 size={20} />
               </button>
             </div>
