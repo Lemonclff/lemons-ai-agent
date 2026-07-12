@@ -5,9 +5,21 @@ import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lemon's AI Agent — US Stock Quant & LLM Observability Dashboard",
+  title: "Lemon's AI Dashboard",
   description:
-    "US stock quantitative analysis, sector rotation monitoring, and options volatility dashboard.",
+    "Nutrition tracker, US stock analysis, and LLM observability dashboard.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Lemon AI",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

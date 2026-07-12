@@ -1,0 +1,22 @@
+{
+  "name": "Lemon's AI Dashboard",
+  "short_name": "Lemon AI",
+  "description": "Nutrition tracker, US stock analysis, and LLM observability dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
