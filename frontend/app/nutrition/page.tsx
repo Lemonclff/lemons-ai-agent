@@ -653,11 +653,11 @@ export default function NutritionPage() {
 
   return (
     <>
-    <div className={`w-full max-w-[960px] mx-auto pb-[140px] md:pb-0 ${showFullscreen ? 'hidden' : ''}`}
+    <div className={`w-full max-w-[960px] mx-auto pb-[calc(80px+max(16px,env(safe-area-inset-bottom,0px)))] md:pb-0 ${showFullscreen ? 'hidden' : ''}`}
       onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
       {/* ═══ Sticky Header + Tab Bar ═══ */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 bg-[var(--color-surface)]/95 backdrop-blur-xl border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
+      <div className="sticky top-safe z-30 -mx-4 px-4 bg-[var(--color-surface)]/95 backdrop-blur-xl border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
 
         {/* Date row */}
         <div className="flex items-center justify-between py-2 md:py-0 md:mt-2 md:mb-4">

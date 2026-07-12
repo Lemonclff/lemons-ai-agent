@@ -14,8 +14,10 @@ const NAV_ITEMS = [
 
 export function BottomNav({ page, setPage }: { page: string; setPage: (p: string) => void }) {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-surface)] border-t border-[var(--color-border)] safe-area-bottom shadow-[0_-4px_24px_rgba(0,0,0,0.18)]">
-      <div className="flex items-center justify-around h-[80px] max-w-[480px] mx-auto px-1">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-surface)] border-t border-[var(--color-border)] shadow-[0_-4px_24px_rgba(0,0,0,0.18)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <div className="flex items-center justify-around h-[64px] max-w-[480px] mx-auto px-1">
         {NAV_ITEMS.map(item => {
           const active = page === item.key;
           return (

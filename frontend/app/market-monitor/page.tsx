@@ -717,7 +717,7 @@ export default function MarketMonitorPage() {
               </div>
               <div className="border border-[var(--color-border)] rounded overflow-hidden mb-5 max-h-[60vh] overflow-y-auto">
                 <table className="w-full text-[12px] leading-none">
-                  <thead className="sticky top-0 z-10">
+                  <thead className="sticky top-safe z-10">
                     <tr className="border-b-2 border-[var(--color-border)] bg-[var(--color-surface-elevated)]/50">
                       <th className="text-left py-[7px] px-3 text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Year</th>
                       <th className="text-right py-[7px] px-3 text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Inflation Rate</th>

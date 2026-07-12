@@ -31,7 +31,8 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-end justify-around h-[var(--bottom-nav-height)] pb-[max(6px,env(safe-area-inset-bottom,0px))] border-t border-[var(--color-border)] bg-[var(--color-surface)]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around h-[64px] border-t border-[var(--color-border)] bg-[var(--color-surface)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Main navigation"
     >
       {navItems.map((item) => {

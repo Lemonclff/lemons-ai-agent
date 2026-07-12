@@ -266,7 +266,7 @@ export default function DataPage() {
           <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)] sticky top-0 z-10">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)] sticky top-safe z-10">
                   <th className="text-left py-2 px-2 w-8">#</th>
                   {data.columns.map((col) => (
                     <th key={col} className="text-left py-2 px-2 text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider whitespace-nowrap">{col}</th>
