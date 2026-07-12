@@ -885,7 +885,9 @@ export default function NutritionPage() {
         </div>
 
         {/* ═══ Bottom Tab Bar ═══ */}
-        <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)]/98 backdrop-blur-xl px-1 pb-[max(8px,env(safe-area-inset-bottom,0px))]">
+        <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+          style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}
+        >
           <div className="flex items-center justify-around py-1.5">
             {PAGES.map(p => {
               const active = page === p.key;
