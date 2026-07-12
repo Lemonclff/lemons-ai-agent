@@ -62,7 +62,7 @@ export function CaloriesOutTab({
                 value={exName}
                 onChange={e => setExName(e.target.value)}
                 placeholder="e.g. Running, Walking, Yoga..."
-                className="w-full px-3 py-2.5 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-green-500/50 transition-colors"
+                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-green-500/50 transition-colors"
                 onKeyDown={e => e.key === "Enter" && handleAdd()}
                 autoFocus
               />
