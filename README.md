@@ -883,12 +883,16 @@ Real-time US macro data dashboard pulling from the Federal Reserve Economic Data
 
 > **Page**: `/nutrition` &nbsp;|&nbsp; **API**: `GET|POST /api/nutrition/*` &nbsp;|&nbsp; **DB**: `db/nutrition_schema.sql`
 
-Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, barcode scanning, weight tracking, and calorie budget visualization. **Auto-fullscreen on mobile** with a bold flat-design bottom tab bar.
+Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, barcode scanning, weight tracking, and calorie budget visualization. **Auto-fullscreen on mobile** with a bold flat-design bottom tab bar. **PWA support** for iOS/Android standalone mode with safe-area handling.
 
 #### Features
 
 | Feature | Detail |
 |---------|--------|
+| **PWA (Standalone Mode)** | 📱 `manifest.json` + `apple-mobile-web-app-capable` — add to home screen for fullscreen app experience |
+| **Safe Area Handling** | `env(safe-area-inset-*)` on all sticky headers, bottom navs, and fullscreen overlay — no content hidden behind notch/Dynamic Island |
+| **iOS Anti-Zoom** | All text/number inputs use `font-size: 16px` to prevent iOS Safari auto-zoom on focus |
+| **Mobile-First UX** | All touch targets ≥40-44px, `active:scale-95` press feedback, rounded-2xl cards, icon-badge section headers |
 | **Profile Gate** | ⚠️ Blocks all nutrition tabs until user sets up body profile (age/weight/height/goal) |
 | **User Data Isolation** | Every API filters by authenticated `userId` — no data leakage between users |
 | **TDEE Calculator** | Mifflin-St Jeor or Katch-McArdle (if body fat % provided), 5 goal tiers, goal-aware macros |
@@ -898,7 +902,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Serving Units** | Dynamic from DB; `serving_calories/protein/carbs/fat` stored per favorite for accurate quick-add |
 | **Food Search** | Search 120+ curated Taiwanese foods + custom foods + Open Food Facts API |
 | **Barcode Scanner** | 📷 Scan product barcodes via camera (html5-qrcode) or manual entry; auto-fills nutrition from Open Food Facts |
-| **AI Photo Analysis** | Multi-provider: Agnes AI / Gemini / OpenAI / OpenRouter / Nemotron / Local LLM; identifies dishes with `amount` + `unit` + `grams_per_serving` |
+| **AI Photo Analysis** | Multi-provider: Agnes AI / Gemini / OpenAI / OpenRouter / NVIDIA (qwen3.5-397b) / Local LLM; identifies dishes with `amount` + `unit` + `grams_per_serving` |
 | **AI Nutrition** | Serving nutrition stored per favorite — quick-add uses exact AI values, not cached per-100g estimates |
 | **Exercise Tracking** | Simple form: name + duration + calories(optional) |
 | **Weight Tracking** | 📊 Log daily weight with date + note; SVG sparkline chart; stats (latest/delta/count); auto-updates profile |
@@ -906,7 +910,6 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Custom Foods** | Add custom foods with per-100g nutrition; "Pin to Dashboard" checkbox |
 | **Copy Yesterday** | One-click copy of yesterday's food log |
 | **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
-| **iOS Anti-Zoom** | All number inputs have `fontSize: 16px` to prevent iOS auto-zoom |
 | **Logged-in User Display** | Navbar shows username + avatar (colored circle) + Admin badge |
 
 #### 6-Tab Layout
@@ -939,7 +942,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | `DELETE /api/nutrition/favorites?id=&type=` | DELETE | Remove favorite (type=in sets is_favorite=false, type=out deletes) |
 | `GET /api/nutrition/search?q=` | GET | Search foods (local DB → custom foods → Open Food Facts) |
 | `GET|POST|PUT|DELETE /api/nutrition/custom` | CRUD | Custom foods with `is_favorite`, `default_weight`, `grams_per_serving`, `serving_calories/protein/carbs/fat` |
-| `POST /api/nutrition/analyze-image` | POST | Multi-provider photo analysis (Agnes/Gemini/OpenAI/OpenRouter/Nemotron/Local) |
+| `POST /api/nutrition/analyze-image` | POST | Multi-provider photo analysis (Agnes/Gemini/OpenAI/OpenRouter/NVIDIA-qwen/Local) — Agnes uses reasoning_content fallback |
 | `POST /api/nutrition/confirm-analysis` | POST | Confirm AI dishes → insert (prefers AI nutrition over DB cache) |
 | `GET /api/nutrition/stats/weekly?date=` | GET | 7-day aggregated calorie/protein/carbs/fat |
 | `POST /api/nutrition/copy-yesterday` | POST | Copy yesterday's food log entries to today |
@@ -981,6 +984,25 @@ Setup: `psql -U admin -d ai_dashboard_db -f db/nutrition_schema.sql`
 #### Auth & Privacy
 
 All nutrition APIs authenticate via `lib/nutrition-auth.ts` → reads `auth_token` cookie → HMAC-verified userId. Unauthenticated requests get userId=0 (empty results). Profile API returns 401 if unauthenticated. Nutrition page is gated by middleware (`auth_token` required).
+
+#### PWA Setup
+
+1. **Manifest** — `public/manifest.json` with `"display": "standalone"` for fullscreen mode
+2. **Meta Tags** — `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `viewport-fit=cover`
+3. **Icons** — `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180px), `favicon.ico`
+4. **Middleware** — Allows `/manifest.json`, `/icon-*`, `/apple-touch-icon*` without authentication
+5. **Safe Area CSS** — `.pt-safe`, `.top-safe` utility classes using `env(safe-area-inset-*)` for notched devices
+6. **Usage** — Safari → Share → Add to Home Screen → opens as standalone app
+
+#### PWA Safe Area Architecture
+
+```
+html { background-color: var(--color-surface) }      ← fills safe area behind notch
+<main> { padding-top: env(safe-area-inset-top) }     ← pt-safe class
+Navbar { sticky top-safe }                           ← top: env(safe-area-inset-top)
+BottomNav { padding-bottom: env(safe-area-inset-bottom) }  ← inline style
+Fullscreen overlay { padding-top: max(16px, env(...)) }    ← close button below notch
+```
 
 ---
 

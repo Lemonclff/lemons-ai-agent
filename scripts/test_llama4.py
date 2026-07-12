@@ -1,7 +1,8 @@
 """Test NVIDIA Llama 4 Maverick — direct Python call"""
 import requests, base64, json, sys
 
-API_KEY = "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"
+import os
+API_KEY = os.environ.get("NVIDIA_API_KEY", "")
 MODEL = "meta/llama-4-maverick-17b-128e-instruct"
 
 image_path = sys.argv[1] if len(sys.argv) > 1 else None
