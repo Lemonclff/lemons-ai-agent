@@ -696,6 +696,21 @@ export default function NutritionPage() {
       <div key={page} className="nutri-tab-enter">
         <RenderPage />
       </div>
+
+      {/* Bottom Bar (mobile, normal mode) */}
+      <div className="md:hidden shrink-0 nutri-bottom-nav px-2"
+        style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}>
+        <div className="flex items-center justify-around py-1.5">
+          {PAGES.map(p => (
+            <button key={p.key} onClick={() => setPage(p.key)}
+              className={cn("flex flex-col items-center justify-center gap-1 flex-1 py-1.5 rounded-2xl transition-all active:scale-[0.96]",
+                page === p.key ? p.color : "text-[var(--color-text-muted)]")}>
+              <p.icon size={22} strokeWidth={page === p.key ? 2.5 : 1.75} />
+              <span className="text-[11px] leading-none font-semibold">{p.shortLabel}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
 
     {/* ═══ Fullscreen View ═══ */}

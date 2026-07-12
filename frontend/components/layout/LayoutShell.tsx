@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { AmbientBackground, PageTransition } from "@/components/ui/effects";
 
 const AUTH_PAGES = ["/login", "/register"];
+const STANDALONE_PAGES = ["/nutrition"]; // pages with their own bottom nav
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,7 +35,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
-      <BottomNav />
+      {!STANDALONE_PAGES.some(p => pathname.startsWith(p)) && <BottomNav />}
     </>
   );
 }
