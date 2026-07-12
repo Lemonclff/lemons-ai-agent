@@ -23,7 +23,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
-      <main id="main-content" className="ml-[260px] min-h-dvh flex flex-col max-md:ml-0 max-md:pb-[calc(var(--bottom-nav-height)+max(16px,env(safe-area-inset-bottom,0px)))]">
+      <main id="main-content" className="ml-[260px] min-h-dvh flex flex-col max-md:ml-0 max-md:pb-[calc(var(--bottom-nav-height)+max(16px,env(safe-area-inset-bottom,0px)))] pt-safe">
         <Navbar onMenuClick={() => setMobileOpen(true)} />
         <div className="flex-1 p-6 max-md:p-4 max-w-7xl mx-auto w-full">
           {children}
