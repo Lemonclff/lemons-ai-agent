@@ -8,15 +8,28 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { AmbientBackground, PageTransition } from "@/components/ui/effects";
 
 const AUTH_PAGES = ["/login", "/register"];
-const STANDALONE_PAGES = ["/nutrition"]; // pages with their own bottom nav
+const STANDALONE_PAGES = ["/nutrition"]; // fullscreen pages with own nav
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuth = AUTH_PAGES.some((p) => pathname.startsWith(p));
+  const isStandalone = STANDALONE_PAGES.some(p => pathname.startsWith(p));
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (isAuth) {
     return <>{children}</>;
+  }
+
+  // Standalone pages: no sidebar, no navbar, no bottom nav — just fullscreen content
+  if (isStandalone) {
+    return (
+      <>
+        <AmbientBackground />
+        <main id="main-content" className="relative z-[2] min-h-dvh">
+          {children}
+        </main>
+      </>
+    );
   }
 
   return (
@@ -35,7 +48,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
-      {!STANDALONE_PAGES.some(p => pathname.startsWith(p)) && <BottomNav />}
+      <BottomNav />
     </>
   );
 }
