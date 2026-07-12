@@ -70,7 +70,10 @@ export default function NutritionPage() {
   };
   const [fullscreen, setFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    if (window.innerWidth < 768) setFullscreen(true);
+  }, []);
   const showFullscreen = mounted && fullscreen;
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
