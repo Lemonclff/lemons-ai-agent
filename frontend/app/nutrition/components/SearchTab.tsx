@@ -214,7 +214,7 @@ export function SearchTab({
           <input value={searchQ} onChange={e => { setSearchQ(e.target.value); onSearch(e.target.value); }}
             onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             placeholder="Search food database..."
-            className="flex-1 px-3 py-2 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50"
+            className="flex-1 px-3 py-2 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50"
           />
           <button onClick={() => onSearch(searchQ)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90">
             {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
@@ -245,7 +245,7 @@ export function SearchTab({
           <input value={barcodeCode} onChange={e => setBarcodeCode(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && lookupBarcode()}
             placeholder="Enter barcode number..."
-            className="flex-1 px-3 py-2 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none tabular-nums"
+            className="flex-1 px-3 py-2 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-lg outline-none tabular-nums"
           />
           <button onClick={lookupBarcode} disabled={barcodeLoading || !barcodeCode}
             className="px-4 py-2 text-[12px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5">
@@ -324,11 +324,11 @@ export function SearchTab({
         <div className="border-b border-[var(--color-border)]/30 pb-3 mb-3">
           <div className="text-[11px] font-medium text-[var(--color-text-muted)] mb-2">Add New</div>
           <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
-            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Name</label><input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. Protein shake" className="w-full px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
-            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Calories</label><input value={customCal} onChange={e => setCustomCal(e.target.value)} placeholder="kcal/100g" className="w-full px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
-            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Protein</label><input value={customProtein} onChange={e => setCustomProtein(e.target.value)} placeholder="g/100g" className="w-full px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
-            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Carbs</label><input value={customCarbs} onChange={e => setCustomCarbs(e.target.value)} placeholder="g/100g" className="w-full px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
-            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Fat</label><input value={customFat} onChange={e => setCustomFat(e.target.value)} placeholder="g/100g" className="w-full px-3 py-1.5 text-[13px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
+            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Name</label><input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. Protein shake" className="w-full px-3 py-1.5 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
+            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Calories</label><input value={customCal} onChange={e => setCustomCal(e.target.value)} placeholder="kcal/100g" className="w-full px-3 py-1.5 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
+            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Protein</label><input value={customProtein} onChange={e => setCustomProtein(e.target.value)} placeholder="g/100g" className="w-full px-3 py-1.5 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
+            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Carbs</label><input value={customCarbs} onChange={e => setCustomCarbs(e.target.value)} placeholder="g/100g" className="w-full px-3 py-1.5 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
+            <div><label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Fat</label><input value={customFat} onChange={e => setCustomFat(e.target.value)} placeholder="g/100g" className="w-full px-3 py-1.5 text-[16px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none" /></div>
           </div>
           <div className="flex items-center flex-wrap gap-x-3 gap-y-2 mt-3">
             <button onClick={addCustomFood} className="px-4 py-1.5 text-[12px] font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90">Add to Log</button>
