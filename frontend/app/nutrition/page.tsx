@@ -5,7 +5,7 @@ import {
   Search, Plus, Minus, X, Camera, Apple, Loader2,
   ChevronLeft, ChevronRight, Utensils, TrendingUp,
   Settings, History, PieChart, UtensilsCrossed, Copy,
-  Maximize2, Minimize2, LayoutDashboard, Dumbbell, UserCircle,
+  LayoutDashboard, Dumbbell, UserCircle,
   Flame, Zap,
 } from "lucide-react";
 
@@ -68,13 +68,6 @@ export default function NutritionPage() {
     if (diff > 50 && idx < PAGE_ORDER.length - 1) setPage(PAGE_ORDER[idx + 1]);
     if (diff < -50 && idx > 0) setPage(PAGE_ORDER[idx - 1]);
   };
-  const [fullscreen, setFullscreen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-    if (window.innerWidth < 768) setFullscreen(true);
-  }, []);
-  const showFullscreen = mounted ? fullscreen : false;
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   });
@@ -632,9 +625,13 @@ export default function NutritionPage() {
   /* ---- Render ---- */
   const currentPageIdx = PAGE_ORDER.indexOf(page);
 
-  // ── Profile gate: block all tabs until profile is set ──
-  if (profileChecked && !hasProfile && page !== "profile") {
-    return (
+  // ── Profile gate overlay ──
+  const showProfileGate = profileChecked && !hasProfile && page !== "profile";
+
+  return (
+    <>
+    {/* Profile gate overlay */}
+    {showProfileGate && (
       <div className="fixed inset-0 z-50 bg-[var(--color-surface)] flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-accent)]/15 flex items-center justify-center ring-1 ring-[var(--color-accent)]/20">
@@ -647,80 +644,18 @@ export default function NutritionPage() {
           </button>
         </div>
       </div>
-    );
-  }
+    )}
 
-  return (
-    <>
-    {/* ═══ Normal View ═══ */}
-    <div className={cn("nutrition-root", showFullscreen && "hidden")}
+    {/* ═══ Main Fullscreen View ═══ */}
+    <div className="fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col overflow-hidden"
       onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
-      {/* Sticky Header */}
-      <div className="sticky top-safe z-30 -mx-4 px-4 glass-strong border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
-        <div className="flex items-center justify-between py-2 md:py-0 md:mt-2 md:mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.35)]">
-              <Apple size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-[17px] font-bold text-[var(--color-text-primary)] leading-tight">NutriSnap</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] active:scale-95 transition-all"><ChevronLeft size={18} /></button>
-            <span className="text-[13px] font-semibold text-[var(--color-text-primary)] min-w-[90px] text-center tabular-nums">{dateDisplay()}</span>
-            <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] active:scale-95 transition-all disabled:opacity-20"><ChevronRight size={18} /></button>
-            <button onClick={() => setFullscreen(true)} className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 text-[var(--color-accent)] active:scale-95 transition-all"><Maximize2 size={16} /></button>
-          </div>
-        </div>
-        <div className="md:hidden flex items-center gap-0 pb-1.5 overflow-x-auto scrollbar-none">
-          {PAGES.map(p => (
-            <button key={p.key} onClick={() => setPage(p.key)}
-              className={cn("flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-[52px] px-1 rounded-xl transition-all flex-shrink-0",
-                page === p.key ? "text-[var(--color-accent)] bg-[var(--color-accent)]/8" : "text-[var(--color-text-muted)]")}>
-              <p.icon size={20} strokeWidth={page === p.key ? 2.5 : 1.75} />
-              <span className="text-[10px] font-semibold leading-none">{p.shortLabel}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="md:hidden flex items-center justify-center gap-1.5 py-2">
-        {PAGES.map((_, i) => (
-          <span key={i} className={cn("rounded-full transition-all", i === currentPageIdx ? "w-4 h-1.5 bg-[var(--color-accent)]" : "w-1.5 h-1.5 bg-[var(--color-border)]")} />
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <div key={page} className="nutri-tab-enter">
-        <RenderPage />
-      </div>
-
-      {/* Bottom Bar (mobile, normal mode) */}
-      <div className="md:hidden shrink-0 nutri-bottom-nav px-2"
-        style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}>
-        <div className="flex items-center justify-around py-1.5">
-          {PAGES.map(p => (
-            <button key={p.key} onClick={() => setPage(p.key)}
-              className={cn("flex flex-col items-center justify-center gap-1 flex-1 py-1.5 rounded-2xl transition-all active:scale-[0.96]",
-                page === p.key ? p.color : "text-[var(--color-text-muted)]")}>
-              <p.icon size={22} strokeWidth={page === p.key ? 2.5 : 1.75} />
-              <span className="text-[11px] leading-none font-semibold">{p.shortLabel}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-
-    {/* ═══ Fullscreen View ═══ */}
-    <div className={cn("nutrition-root fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col", !showFullscreen && "hidden")}>
-      {/* Fullscreen Header */}
+      {/* ═══ Header — gradient ═══ */}
       <div className="shrink-0 px-4 pb-3 bg-gradient-to-b from-orange-500/12 via-[var(--color-accent)]/5 to-transparent"
         style={{ paddingTop: "max(16px, env(safe-area-inset-top, 0px))" }}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.4)]">
               <Flame size={20} className="text-white" />
             </div>
             <div>
@@ -729,11 +664,21 @@ export default function NutritionPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] active:scale-[0.97] transition-all"><ChevronLeft size={20} /></button>
-            <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] active:scale-[0.97] transition-all disabled:opacity-20"><ChevronRight size={20} /></button>
-            <button onClick={() => setFullscreen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 active:scale-[0.97] transition-all"><Minimize2 size={20} /></button>
+            <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] active:scale-[0.97] transition-all">
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-[13px] font-semibold text-[var(--color-text-primary)] min-w-[80px] text-center tabular-nums">{dateDisplay()}</span>
+            <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] active:scale-[0.97] transition-all disabled:opacity-20">
+              <ChevronRight size={20} />
+            </button>
+            {currentDate !== todayStr && (
+              <button onClick={() => setCurrentDate(todayStr)} className="min-h-[36px] px-2.5 text-[11px] font-semibold rounded-lg bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 text-[var(--color-accent)] active:scale-95 transition-all">
+                Today
+              </button>
+            )}
           </div>
         </div>
+        {/* Calorie summary strip */}
         <div className="flex items-center gap-3 px-1">
           <div className="flex items-center gap-1.5 bg-orange-500/10 rounded-xl px-3 py-2 flex-1">
             <UtensilsCrossed size={14} className="text-orange-400" />
@@ -748,23 +693,117 @@ export default function NutritionPage() {
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div key={page} className="flex-1 overflow-y-auto px-4 pb-4 nutri-tab-enter">
-        <RenderPage />
+      {/* ═══ Mobile Tab Bar ═══ */}
+      <div className="shrink-0 flex items-center gap-0 overflow-x-auto scrollbar-none px-2 pb-1">
+        {PAGES.map(p => {
+          const active = page === p.key;
+          const Icon = p.icon;
+          return (
+            <button
+              key={p.key}
+              onClick={() => setPage(p.key)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-[52px] px-1 rounded-xl transition-all duration-200 flex-shrink-0",
+                active
+                  ? "text-[var(--color-accent)] bg-[var(--color-accent)]/8"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+              )}
+            >
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />
+              <span className="text-[10px] font-semibold leading-none">{p.shortLabel}</span>
+              {active && <span className="absolute bottom-0 w-5 h-0.5 rounded-full bg-[var(--color-accent)]" />}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Bottom Tab Bar */}
-      <div className="shrink-0 nutri-bottom-nav px-2"
+      {/* ═══ Page indicator dots ═══ */}
+      <div className="flex items-center justify-center gap-1.5 py-1">
+        {PAGES.map((_, i) => (
+          <span key={i} className={cn(
+            "rounded-full transition-all duration-300",
+            i === currentPageIdx ? "w-4 h-1.5 bg-[var(--color-accent)]" : "w-1.5 h-1.5 bg-[var(--color-border)]"
+          )} />
+        ))}
+      </div>
+
+      {/* ═══ Content — scrollable ═══ */}
+      <div key={`content-${page}`} className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-2 nutri-tab-enter">
+        {page === "dashboard" && (
+          <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
+            filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
+            exercises={exercises} deleteExercise={deleteExercise} updateExercise={updateExercise}
+            favorites={favorites} suggested={suggested} quickAddIn={quickAddIn} quickAddOut={quickAddOut}
+            addToFavorites={addToFavorites} removeFavorite={removeFavorite} servingUnits={servingUnits} userWeight={profile.weight_kg} />
+        )}
+        {page === "search" && (
+          <SearchTab searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults} searching={searching}
+            showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
+            addTarget={addTarget} addMeal={addMeal} setAddMeal={setAddMeal} addWeight={addWeight} setAddWeight={setAddWeight}
+            addServingUnit={addServingUnit} setAddServingUnit={setAddServingUnit} adding={adding} addFood={addFood}
+            customName={customName} setCustomName={setCustomName} customCal={customCal} setCustomCal={setCustomCal}
+            customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
+            customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
+            customMeal={customMeal} setCustomMeal={setCustomMeal} customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
+            customFavorite={customFavorite} setCustomFavorite={setCustomFavorite} />
+        )}
+        {page === "calories-out" && (
+          <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
+            exDuration={exDuration} setExDuration={setExDuration} exCalories={exCustomCal} setExCalories={setExCustomCal}
+            addExercise={addExercise} deleteExercise={deleteExercise} />
+        )}
+        {page === "photo" && (
+          <PhotoTab photoFile={photoFile} setPhotoFile={setPhotoFile} photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
+            photoAnalyzing={photoAnalyzing} photoResult={photoResult} photoError={photoError}
+            photoProvider={photoProvider} setPhotoProvider={setPhotoProvider} photoProviders={PHOTO_PROVIDERS}
+            photoMealType={photoMealType} setPhotoMealType={setPhotoMealType}
+            photoConfirming={photoConfirming} photoDragOver={photoDragOver} setPhotoDragOver={setPhotoDragOver}
+            photoNutrition={photoNutrition} photoEditedWeights={photoEditedWeights} setPhotoEditedWeights={setPhotoEditedWeights}
+            selectedDishes={selectedDishes} setSelectedDishes={setSelectedDishes}
+            editedNutrition={editedNutrition} setEditedNutrition={setEditedNutrition}
+            pasteMode={pasteMode} setPasteMode={setPasteMode} pasteText={pasteText} setPasteText={setPasteText}
+            handlePhotoSelect={handlePhotoSelect} handlePhotoDrop={handlePhotoDrop}
+            handleAnalyze={handleAnalyze} handleConfirmAnalysis={handleConfirmAnalysis}
+            resetPhoto={resetPhoto} showToast={showToast} servingUnits={servingUnits}
+            onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />
+        )}
+        {page === "profile" && (
+          <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} showToast={showToast} />
+        )}
+        {page === "history" && (
+          <HistoryTab weeklyData={weeklyData} currentDate={currentDate} setCurrentDate={setCurrentDate}
+            todayStr={todayStr} goals={goals} historyMonth={historyMonth} setHistoryMonth={setHistoryMonth} />
+        )}
+      </div>
+
+      {/* ═══ Bottom Tab Bar ═══ */}
+      <div className="shrink-0 border-t border-[var(--color-border)]/50 bg-[var(--color-surface)] px-2"
         style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}>
         <div className="flex items-center justify-around py-1.5">
-          {PAGES.map(p => (
-            <button key={p.key} onClick={() => setPage(p.key)}
-              className={cn("flex flex-col items-center justify-center gap-1 flex-1 py-1.5 rounded-2xl transition-all active:scale-[0.96]",
-                page === p.key ? p.color : "text-[var(--color-text-muted)]")}>
-              <p.icon size={22} strokeWidth={page === p.key ? 2.5 : 1.75} />
-              <span className="text-[11px] leading-none font-semibold">{p.shortLabel}</span>
-            </button>
-          ))}
+          {PAGES.map(p => {
+            const active = page === p.key;
+            const Icon = p.icon;
+            return (
+              <button
+                key={p.key}
+                onClick={() => setPage(p.key)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-2xl transition-all duration-200 active:scale-[0.97]",
+                  active
+                    ? "text-white"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                )}
+              >
+                <div className={cn(
+                  "w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300",
+                  active ? "bg-[var(--color-accent)] shadow-lg shadow-[var(--color-accent)]/30 scale-110" : "bg-transparent"
+                )}>
+                  <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
+                </div>
+                <span className="text-[11px] font-bold leading-none">{p.shortLabel}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -777,51 +816,4 @@ export default function NutritionPage() {
     )}
     </>
   );
-
-  /* ── Helper: renders the active tab page ── */
-  function RenderPage() {
-    switch (page) {
-      case "dashboard":
-        return <DashboardTab summary={summary} goals={goals} loading={loading} mealFilter={mealFilter} setMealFilter={setMealFilter}
-          filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
-          exercises={exercises} deleteExercise={deleteExercise} updateExercise={updateExercise}
-          favorites={favorites} suggested={suggested} quickAddIn={quickAddIn} quickAddOut={quickAddOut}
-          addToFavorites={addToFavorites} removeFavorite={removeFavorite} servingUnits={servingUnits} userWeight={profile.weight_kg} />;
-      case "search":
-        return <SearchTab searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults} searching={searching}
-          showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
-          addTarget={addTarget} addMeal={addMeal} setAddMeal={setAddMeal} addWeight={addWeight} setAddWeight={setAddWeight}
-          addServingUnit={addServingUnit} setAddServingUnit={setAddServingUnit} adding={adding} addFood={addFood}
-          customName={customName} setCustomName={setCustomName} customCal={customCal} setCustomCal={setCustomCal}
-          customProtein={customProtein} setCustomProtein={setCustomProtein} customCarbs={customCarbs} setCustomCarbs={setCustomCarbs}
-          customFat={customFat} setCustomFat={setCustomFat} addCustomFood={addCustomFood}
-          customMeal={customMeal} setCustomMeal={setCustomMeal} customServingUnit={customServingUnit} setCustomServingUnit={setCustomServingUnit}
-          customFavorite={customFavorite} setCustomFavorite={setCustomFavorite} />;
-      case "calories-out":
-        return <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
-          exDuration={exDuration} setExDuration={setExDuration} exCalories={exCustomCal} setExCalories={setExCustomCal}
-          addExercise={addExercise} deleteExercise={deleteExercise} />;
-      case "photo":
-        return <PhotoTab photoFile={photoFile} setPhotoFile={setPhotoFile} photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
-          photoAnalyzing={photoAnalyzing} photoResult={photoResult} photoError={photoError}
-          photoProvider={photoProvider} setPhotoProvider={setPhotoProvider} photoProviders={PHOTO_PROVIDERS}
-          photoMealType={photoMealType} setPhotoMealType={setPhotoMealType}
-          photoConfirming={photoConfirming} photoDragOver={photoDragOver} setPhotoDragOver={setPhotoDragOver}
-          photoNutrition={photoNutrition} photoEditedWeights={photoEditedWeights} setPhotoEditedWeights={setPhotoEditedWeights}
-          selectedDishes={selectedDishes} setSelectedDishes={setSelectedDishes}
-          editedNutrition={editedNutrition} setEditedNutrition={setEditedNutrition}
-          pasteMode={pasteMode} setPasteMode={setPasteMode} pasteText={pasteText} setPasteText={setPasteText}
-          handlePhotoSelect={handlePhotoSelect} handlePhotoDrop={handlePhotoDrop}
-          handleAnalyze={handleAnalyze} handleConfirmAnalysis={handleConfirmAnalysis}
-          resetPhoto={resetPhoto} showToast={showToast} servingUnits={servingUnits}
-          onPasteResult={handlePasteResult} photoUnits={photoUnits} setPhotoUnits={setPhotoUnits} />;
-      case "profile":
-        return <ProfileTab profile={profile} setProfile={setProfile} goals={goals} saveProfile={saveProfile} showToast={showToast} />;
-      case "history":
-        return <HistoryTab weeklyData={weeklyData} currentDate={currentDate} setCurrentDate={setCurrentDate}
-          todayStr={todayStr} goals={goals} historyMonth={historyMonth} setHistoryMonth={setHistoryMonth} />;
-      default:
-        return null;
-    }
-  }
 }
