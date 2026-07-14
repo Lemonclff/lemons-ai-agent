@@ -70,6 +70,16 @@ function getProviderConfig(provider: string): ProviderCfg {
         "X-Title": "NutriSnap",
       },
     },
+    mimo: {
+      apiKey: process.env.OPENROUTER_API_KEY || "",
+      baseUrl: "https://openrouter.ai/api/v1",
+      model: "xiaomi/mimo-v2.5",
+      hasVision: true,
+      extraHeaders: {
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+        "X-Title": "NutriSnap",
+      },
+    },
     nvidia: {
       apiKey: process.env.NVIDIA_API_KEY || "",
       baseUrl: "https://integrate.api.nvidia.com/v1",

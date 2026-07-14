@@ -164,6 +164,7 @@ export default function NutritionPage() {
     { value: "gemini", label: "Google Gemini (gemini-2.0-flash)", hasVision: true },
     { value: "openai", label: "OpenAI (gpt-4o)", hasVision: true },
     { value: "openrouter", label: "OpenRouter", hasVision: true },
+    { value: "mimo", label: "Xiaomi MiMo V2.5", hasVision: true },
     { value: "nemotron", label: "NVIDIA", hasVision: true },
     { value: "local", label: "Local LLM", hasVision: true },
   ];
