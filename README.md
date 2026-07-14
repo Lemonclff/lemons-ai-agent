@@ -902,7 +902,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Serving Units** | Dynamic from DB; `serving_calories/protein/carbs/fat` stored per favorite for accurate quick-add |
 | **Food Search** | Search 120+ curated Taiwanese foods + custom foods + Open Food Facts API |
 | **Barcode Scanner** | 📷 Scan product barcodes via camera (html5-qrcode) or manual entry; auto-fills nutrition from Open Food Facts |
-| **AI Photo Analysis** | Multi-provider: Agnes AI / Gemini / OpenAI / OpenRouter / NVIDIA (qwen3.5-397b) / Local LLM; identifies dishes with `amount` + `unit` + `grams_per_serving` |
+| **AI Photo Analysis** | Multi-provider: Agnes AI / Gemini / OpenAI / OpenRouter / Xiaomi MiMo V2.5 / NVIDIA (qwen3.5-397b) / Local LLM; identifies dishes with `amount` + `unit` + `grams_per_serving` |
 | **AI Nutrition** | Serving nutrition stored per favorite — quick-add uses exact AI values, not cached per-100g estimates |
 | **Exercise Tracking** | Simple form: name + duration + calories(optional) |
 | **Weight Tracking** | 📊 Log daily weight with date + note; SVG sparkline chart; stats (latest/delta/count); auto-updates profile |
@@ -942,7 +942,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | `DELETE /api/nutrition/favorites?id=&type=` | DELETE | Remove favorite (type=in sets is_favorite=false, type=out deletes) |
 | `GET /api/nutrition/search?q=` | GET | Search foods (local DB → custom foods → Open Food Facts) |
 | `GET|POST|PUT|DELETE /api/nutrition/custom` | CRUD | Custom foods with `is_favorite`, `default_weight`, `grams_per_serving`, `serving_calories/protein/carbs/fat` |
-| `POST /api/nutrition/analyze-image` | POST | Multi-provider photo analysis (Agnes/Gemini/OpenAI/OpenRouter/NVIDIA-qwen/Local) — Agnes uses reasoning_content fallback |
+| `POST /api/nutrition/analyze-image` | POST | Multi-provider photo analysis (Agnes/Gemini/OpenAI/OpenRouter/MiMo/NVIDIA-qwen/Local) |
 | `POST /api/nutrition/confirm-analysis` | POST | Confirm AI dishes → insert (prefers AI nutrition over DB cache) |
 | `GET /api/nutrition/stats/weekly?date=` | GET | 7-day aggregated calorie/protein/carbs/fat |
 | `POST /api/nutrition/copy-yesterday` | POST | Copy yesterday's food log entries to today |
