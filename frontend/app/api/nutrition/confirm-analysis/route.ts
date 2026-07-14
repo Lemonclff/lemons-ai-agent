@@ -5,14 +5,22 @@ import { getUserId } from "@/lib/nutrition-auth";
 
 export async function POST(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const body = await req.json();
     const { dishes, meal_type, log_date } = body;
+    if (!Array.isArray(dishes) || dishes.length === 0) {
+      return NextResponse.json({ error: "dishes array required" }, { status: 400 });
+    }
     const date = log_date || new Date().toISOString().slice(0, 10);
     const added: any[] = [];
 
     for (const dish of dishes) {
       const name: string = dish.name;
+      if (!name) {
+        added.push({ name: "(empty)", status: "error", error: "missing name" });
+        continue;
+      }
       const unit: string = dish.unit || dish.serving_unit || 'g';
       const amount: number = dish.amount ?? dish.grams_per_serving ?? dish.estimated_weight_grams ?? 100;
       const gramsPerServing: number = dish.grams_per_serving || dish.estimated_weight_grams || 100;
@@ -20,6 +28,7 @@ export async function POST(req: NextRequest) {
       const calcGrams = isWeightUnit ? amount : amount * gramsPerServing;
 
       // If AI provided nutrition, use it directly — skip DB lookup
+      // status stays "added" so clients counting successes work consistently
       if (dish.ai_calories !== undefined) {
         await query(
           `INSERT INTO daily_food_logs (user_id, log_date, meal_type, food_name, amount, serving_unit, calories, protein, carbs, fat, source)
@@ -27,7 +36,7 @@ export async function POST(req: NextRequest) {
           [uid, date, meal_type || "lunch", name, amount, unit,
            dish.ai_calories || 0, dish.ai_protein || 0, dish.ai_carbs || 0, dish.ai_fat || 0]
         );
-        added.push({ name, status: "added_ai", amount, unit });
+        added.push({ name, status: "added", amount, unit, source: "ai" });
         continue;
       }
 

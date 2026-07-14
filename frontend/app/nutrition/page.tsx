@@ -262,9 +262,18 @@ export default function NutritionPage() {
 
   const copyYesterday = async () => {
     try {
-      await fetch("/api/nutrition/copy-yesterday", { method: "POST" });
+      const d = new Date(currentDate + "T12:00:00");
+      d.setDate(d.getDate() - 1);
+      const yesterday = formatLocal(d);
+      const r = await fetch("/api/nutrition/copy-yesterday", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ log_date: currentDate, yesterday }),
+      });
+      const json = await r.json();
+      if (json.error) { showToast(`Copy failed: ${json.error}`); return; }
       fetchLogs(currentDate);
-      showToast("Copied yesterday's meals");
+      showToast(json.copied > 0 ? `Copied ${json.copied} meals from yesterday` : "Nothing new to copy");
     } catch { showToast("Copy failed"); }
   };
 
@@ -296,14 +305,23 @@ export default function NutritionPage() {
     if (!addTarget) return;
     setAdding(true);
     try {
-      await fetch("/api/nutrition/logs", {
+      const r = await fetch("/api/nutrition/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ food_name: addTarget.food_name, amount: addWeight, meal_type: addMeal, serving_unit: addServingUnit, log_date: currentDate }),
+        body: JSON.stringify({
+          food_name: addTarget.food_name,
+          amount: addWeight,
+          meal_type: addMeal,
+          serving_unit: addServingUnit,
+          log_date: currentDate,
+        }),
       });
+      const json = await r.json();
+      if (json.error) { showToast(json.error); setAdding(false); return; }
       setAddTarget(null); setAddWeight(100); setAddServingUnit("g");
       fetchLogs(currentDate);
-      showToast(`Added ${addTarget.food_name}`);
+      const kcal = json.entry?.calories != null ? ` (${Math.round(Number(json.entry.calories))} kcal)` : "";
+      showToast(`Added ${addTarget.display_name || addTarget.food_name}${kcal}`);
     } catch { showToast("Failed to add"); }
     setAdding(false);
   };
@@ -324,7 +342,7 @@ export default function NutritionPage() {
         const logRes = await fetch("/api/nutrition/logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ food_name: json.food.food_name, amount: weight, meal_type: customMeal, serving_unit: customServingUnit, log_date: todayStr }),
+          body: JSON.stringify({ food_name: json.food.food_name, amount: weight, meal_type: customMeal, serving_unit: customServingUnit, log_date: currentDate }),
         });
         const logJson = await logRes.json();
         if (logJson.error) { showToast(`Failed to log: ${logJson.error}`); return; }
@@ -499,11 +517,18 @@ export default function NutritionPage() {
   const quickAddOut = async (f: any) => {
     try {
       const duration = f.default_duration || 30;
-      await fetch("/api/nutrition/exercise", {
+      const r = await fetch("/api/nutrition/exercise", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exercise_name: f.name, duration_min: duration, log_date: todayStr }),
+        body: JSON.stringify({
+          exercise_name: f.name,
+          duration_min: duration,
+          log_date: currentDate,
+          ...(f.avg_calories || f.calories ? { calories_burned: Number(f.avg_calories || f.calories) } : {}),
+        }),
       });
+      const json = await r.json();
+      if (json.error) { showToast(json.error); return; }
       fetchExercises(); fetchLogs(currentDate);
       showToast(`Quick added ${f.name} (${duration} min)`);
     } catch { showToast("Failed to add"); }
@@ -604,27 +629,59 @@ export default function NutritionPage() {
     if (!photoResult?.dishes?.length) return;
     setPhotoConfirming(true);
     try {
-      const selectedDishesList = photoResult.dishes.filter((_:any,i:number)=>selectedDishes.has(i)).map((d:any,i:number)=>{
-        const aiNut=editedNutrition[i];
-        const rawGrams = d.grams_per_serving || d.estimated_weight_grams || 100;
-        const unit = photoUnits[i] || d.unit || d.suggested_unit || 'g';
-        const isWeight = unit === 'g' || unit === 'ml';
-        // Use display weight for serving units (1匙, not 47匙)
-        const amount = photoEditedWeights[i] ?? (isWeight ? rawGrams : 1);
-        return {
-          name: d.name,
-          amount: amount,
-          unit: unit,
-          grams_per_serving: rawGrams,
-          ...(aiNut ? { ai_calories: aiNut.cal, ai_protein: aiNut.p, ai_carbs: aiNut.c, ai_fat: aiNut.f } : {}),
-        };
+      // Map with original index first — filter() then map() reindexes and corrupts editedNutrition lookups
+      const selectedDishesList = (photoResult.dishes as any[])
+        .map((d: any, origIdx: number) => ({ d, origIdx }))
+        .filter((item: { d: any; origIdx: number }) => selectedDishes.has(item.origIdx))
+        .map((item: { d: any; origIdx: number }) => {
+          const { d, origIdx } = item;
+          const aiNut = editedNutrition[origIdx];
+          const rawGrams = d.grams_per_serving || d.estimated_weight_grams || 100;
+          const unit = photoUnits[origIdx] || d.unit || d.suggested_unit || "g";
+          const isWeight = unit === "g" || unit === "ml";
+          // Use display weight for serving units (1匙, not 47匙)
+          const amount = photoEditedWeights[origIdx] ?? (isWeight ? rawGrams : 1);
+          return {
+            name: d.name,
+            amount,
+            unit,
+            grams_per_serving: rawGrams,
+            ...(aiNut
+              ? { ai_calories: aiNut.cal, ai_protein: aiNut.p, ai_carbs: aiNut.c, ai_fat: aiNut.f }
+              : {}),
+          };
+        });
+      if (selectedDishesList.length === 0) {
+        showToast("No dishes selected");
+        setPhotoConfirming(false);
+        return;
+      }
+      const r = await fetch("/api/nutrition/confirm-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dishes: selectedDishesList, meal_type: photoMealType, log_date: currentDate }),
       });
-      if (selectedDishesList.length===0) { showToast("No dishes selected"); return; }
-      const r = await fetch("/api/nutrition/confirm-analysis", { method: "POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({dishes:selectedDishesList,meal_type:photoMealType,log_date:currentDate}) });
-      const json = await r.json(); const addedCount = json.added?.filter((a:any)=>a.status==="added").length||0;
-      showToast(`Logged ${addedCount} dishes to ${photoMealType}`);
-      setPhotoFile(null); setPhotoPreview(""); setPhotoResult(null); fetchLogs(currentDate);
-    } catch (e) { showToast("Failed to save"); }
+      const json = await r.json();
+      if (json.error) {
+        showToast(`Failed: ${json.error}`);
+        setPhotoConfirming(false);
+        return;
+      }
+      const addedCount =
+        json.added?.filter((a: any) => a.status === "added" || a.status === "added_ai").length || 0;
+      const unknownCount = json.added?.filter((a: any) => a.status === "unknown").length || 0;
+      showToast(
+        unknownCount > 0
+          ? `Logged ${addedCount} dishes (${unknownCount} with 0 kcal — edit manually)`
+          : `Logged ${addedCount} dishes to ${photoMealType}`
+      );
+      setPhotoFile(null);
+      setPhotoPreview("");
+      setPhotoResult(null);
+      fetchLogs(currentDate);
+    } catch {
+      showToast("Failed to save");
+    }
     setPhotoConfirming(false);
   };
   const resetPhoto = () => { setPhotoFile(null); setPhotoPreview(""); setPhotoResult(null); setPhotoError(""); setPhotoNutrition({}); setPhotoEditedWeights({}); setPhotoUnits({}); setSelectedDishes(new Set()); setEditedNutrition({}); setPasteMode(false); setPasteText(""); };
@@ -803,7 +860,8 @@ export default function NutritionPage() {
       case "calories-out":
         return <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
           exDuration={exDuration} setExDuration={setExDuration} exCalories={exCustomCal} setExCalories={setExCustomCal}
-          addExercise={addExercise} deleteExercise={deleteExercise} />;
+          exList={exList} addExercise={addExercise} deleteExercise={deleteExercise}
+          updateExercise={updateExercise} userWeight={profile.weight_kg} />;
       case "photo":
         return <PhotoTab photoFile={photoFile} setPhotoFile={setPhotoFile} photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
           photoAnalyzing={photoAnalyzing} photoResult={photoResult} photoError={photoError}

@@ -281,7 +281,17 @@ export function SearchTab({
       </div>
 
       {/* ═══ Quick Add ═══ */}
-      {addTarget && (
+      {addTarget && (() => {
+        const isWeightUnit = addServingUnit === "g" || addServingUnit === "ml";
+        const step = isWeightUnit ? 10 : 1;
+        const minAmt = isWeightUnit ? 1 : 0.5;
+        // Non-weight units default to 100g per serving for per-100g data
+        const grams = isWeightUnit ? addWeight : addWeight * 100;
+        const estCal = Math.round((Number(addTarget.calories_per_100g) || 0) * grams / 100);
+        const estP = ((Number(addTarget.protein_per_100g) || 0) * grams / 100).toFixed(1);
+        const estC = ((Number(addTarget.carbs_per_100g) || 0) * grams / 100).toFixed(1);
+        const estF = ((Number(addTarget.fat_per_100g) || 0) * grams / 100).toFixed(1);
+        return (
         <div className="bg-[var(--color-accent)]/5 rounded-2xl p-4 border border-[var(--color-accent)]/10">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center">
@@ -292,21 +302,30 @@ export function SearchTab({
             </h3>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Weight stepper */}
+            {/* Amount stepper — step/min depend on unit type */}
             <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
-              <button onClick={() => setAddWeight(w => Math.max(10, (w || 100) - 10))}
+              <button onClick={() => setAddWeight(w => Math.max(minAmt, Math.round(((w || (isWeightUnit ? 100 : 1)) - step) * 10) / 10))}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
                 <Minus size={18} />
               </button>
-              <input type="number" value={addWeight} onChange={e => setAddWeight(Number(e.target.value) || 100)} min={10} max={2000}
+              <input type="number" value={addWeight}
+                onChange={e => setAddWeight(Number(e.target.value) || minAmt)}
+                min={minAmt} max={isWeightUnit ? 2000 : 50} step={step}
                 className="w-16 text-center text-[16px] font-bold bg-transparent outline-none text-[var(--color-text-primary)] tabular-nums"
-                style={{ fontSize: '16px' }} />
-              <button onClick={() => setAddWeight(w => Math.min(2000, (w || 100) + 10))}
+                style={{ fontSize: "16px" }} />
+              <button onClick={() => setAddWeight(w => Math.min(isWeightUnit ? 2000 : 50, Math.round(((w || (isWeightUnit ? 100 : 1)) + step) * 10) / 10))}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
                 <Plus size={18} />
               </button>
             </div>
-            <select value={addServingUnit} onChange={e => setAddServingUnit(e.target.value)}
+            <select value={addServingUnit} onChange={e => {
+              const next = e.target.value;
+              const wasWeight = addServingUnit === "g" || addServingUnit === "ml";
+              const nowWeight = next === "g" || next === "ml";
+              setAddServingUnit(next);
+              // Reset amount when switching between weight ↔ serving units
+              if (wasWeight !== nowWeight) setAddWeight(nowWeight ? 100 : 1);
+            }}
               className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
               {["g","ml","份","碗","杯","罐","瓶","個","包","碟","匙","片","塊"].map(u => <option key={u} value={u}>{u}</option>)}
             </select>
@@ -322,8 +341,18 @@ export function SearchTab({
               {adding ? "Adding..." : "Add"}
             </button>
           </div>
+          <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[12px]">
+            <span className="text-orange-400 font-semibold tabular-nums">≈ {estCal} kcal</span>
+            <span className="text-blue-400 tabular-nums">P:{estP}g</span>
+            <span className="text-amber-400 tabular-nums">C:{estC}g</span>
+            <span className="text-red-400 tabular-nums">F:{estF}g</span>
+            {!isWeightUnit && (
+              <span className="text-[var(--color-text-muted)] text-[11px]">(1 {addServingUnit} ≈ 100g unless custom serving set)</span>
+            )}
+          </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ═══ Custom Foods ═══ */}
       <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50">

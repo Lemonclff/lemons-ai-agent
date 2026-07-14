@@ -23,10 +23,11 @@ const MET_TABLE: Record<string, number> = {
   "House Cleaning": 3.0, "Walking Dog": 3.0,
 };
 
-async function getUserWeight(): Promise<number> {
+async function getUserWeight(userId: number): Promise<number> {
   try {
-    const r = await query(`SELECT weight_kg FROM user_profiles WHERE user_id = $1`, [uid]);
-    return r.rows[0]?.weight_kg || 70;
+    if (!userId) return 70;
+    const r = await query(`SELECT weight_kg FROM user_profiles WHERE user_id = $1`, [userId]);
+    return Number(r.rows[0]?.weight_kg) || 70;
   } catch { return 70; }
 }
 
@@ -68,11 +69,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   await ensureTable();
   try {
     const body = await req.json();
     const { exercise_name, duration_min, log_date, calories_burned } = body;
-    if (!exercise_name || (!duration_min && !calories_burned)) {
+    const hasCustomCal = calories_burned !== undefined && calories_burned !== null && calories_burned !== "";
+    if (!exercise_name || (!duration_min && !hasCustomCal)) {
       return NextResponse.json({ error: "exercise_name and either duration_min or calories_burned required" }, { status: 400 });
     }
 
@@ -80,18 +83,27 @@ export async function POST(req: NextRequest) {
     let met: number | null = null;
     let calories: number;
 
-    if (calories_burned !== undefined && calories_burned !== null) {
+    if (hasCustomCal) {
       // Custom calories — use directly
       calories = Number(calories_burned);
       met = 0; // custom, no MET
     } else {
-      // Calculate from MET table
-      met = MET_TABLE[exercise_name] || null;
+      // Exact match, then case-insensitive / partial match against MET table
+      met = MET_TABLE[exercise_name] ?? null;
       if (met === null) {
-        return NextResponse.json({ error: `Unknown exercise: ${exercise_name}. Provide calories_burned for custom exercises.` }, { status: 400 });
+        const key = Object.keys(MET_TABLE).find(
+          (k) => k.toLowerCase() === exercise_name.toLowerCase()
+            || k.toLowerCase().includes(exercise_name.toLowerCase())
+            || exercise_name.toLowerCase().includes(k.toLowerCase().split(" (")[0])
+        );
+        met = key ? MET_TABLE[key] : null;
       }
-      const weightKg = await getUserWeight();
-      calories = calcCalories(met, weightKg, Number(duration_min));
+      if (met === null) {
+        // Free-text exercise without known MET: use moderate default (5.0)
+        met = 5.0;
+      }
+      const weightKg = await getUserWeight(uid);
+      calories = calcCalories(met, weightKg, Number(duration_min) || 30);
     }
 
     const result = await query(
@@ -108,6 +120,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
@@ -134,14 +147,17 @@ export async function PUT(req: NextRequest) {
       newCalories = Number(calories_burned);
       newMet = 0;
     } else if (duration_min !== undefined) {
-      // Duration changed — recalculate from MET if known
-      const met = MET_TABLE[rec.exercise_name];
+      // Duration changed — recalculate from MET if known, else scale proportionally
+      const met = MET_TABLE[rec.exercise_name] || (Number(rec.met_value) > 0 ? Number(rec.met_value) : null);
       if (met) {
-        const weightKg = await getUserWeight();
+        const weightKg = await getUserWeight(uid);
         newCalories = calcCalories(met, weightKg, newDuration);
         newMet = met;
+      } else if (Number(rec.duration_min) > 0) {
+        // Scale custom calories by duration ratio
+        const ratio = newDuration / Number(rec.duration_min);
+        newCalories = Math.round(Number(rec.calories_burned) * ratio * 10) / 10;
       } else {
-        // Custom exercise without MET — keep existing calories
         newCalories = rec.calories_burned;
       }
     }
@@ -160,6 +176,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   try {

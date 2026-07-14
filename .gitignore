@@ -52,7 +52,8 @@ env/
 Thumbs.db
 
 # ---- Logs & Runtime ----
-logs/
+# Only ignore project runtime log dir (NOT app/api/nutrition/logs/)
+/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*

@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const body = await req.json();
     const {
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const id = req.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
@@ -122,6 +124,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const id = req.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });

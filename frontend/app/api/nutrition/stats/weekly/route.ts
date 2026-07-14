@@ -3,15 +3,20 @@ import { query } from "@/lib/db";
 import { getUserId } from "@/lib/nutrition-auth";
 
 
+function localYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export async function GET(req: NextRequest) {
   const uid = getUserId(req);
-  const dateStr = req.nextUrl.searchParams.get("date") || new Date().toISOString().slice(0, 10);
+  // Use T12:00 to avoid UTC day-shift; prefer client-local date string
+  const dateStr = req.nextUrl.searchParams.get("date") || localYmd(new Date());
   const endDate = new Date(dateStr + "T12:00:00");
   const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - 6);
 
-  const from = startDate.toISOString().slice(0, 10);
-  const to = endDate.toISOString().slice(0, 10);
+  const from = localYmd(startDate);
+  const to = localYmd(endDate);
 
   try {
     const result = await query(
@@ -24,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     const daily: Record<string, Record<string, number>> = {};
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const key = d.toISOString().slice(0, 10);
+      const key = localYmd(d);
       daily[key] = { calories: 0, protein: 0, carbs: 0, fat: 0 };
     }
     for (const row of result.rows) {

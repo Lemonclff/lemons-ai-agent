@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
     );
 
     // ── Auto-suggested Calories In (from frequently logged, excluding curated) ──
-    const curatedNames = foodFavs.rows.map((r: any) => r.name);
     let suggestedIn: any[] = [];
     try {
       const inResult = await query(
@@ -96,6 +95,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const body = await req.json();
     const { type, name, calories, default_weight, default_duration, serving_unit } = body;
@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   const id = req.nextUrl.searchParams.get("id");
   const type = req.nextUrl.searchParams.get("type") || "in"; // default to food
 
