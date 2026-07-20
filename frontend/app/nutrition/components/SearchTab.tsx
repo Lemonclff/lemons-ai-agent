@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Search, Loader2, Minus, Plus, Star, ScanLine, Camera, X, Package, UtensilsCrossed } from "lucide-react";
+import { NumberField } from "./NumberField";
 
 interface FoodResult {
   food_name: string; display_name: string; calories_per_100g: number;
@@ -308,11 +309,9 @@ export function SearchTab({
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
                 <Minus size={18} />
               </button>
-              <input type="number" value={addWeight}
-                onChange={e => setAddWeight(Number(e.target.value) || minAmt)}
-                min={minAmt} max={isWeightUnit ? 2000 : 50} step={step}
-                className="w-16 text-center text-[16px] font-bold bg-transparent outline-none text-[var(--color-text-primary)] tabular-nums"
-                style={{ fontSize: "16px" }} />
+              <NumberField value={addWeight} onCommit={v => setAddWeight(v ?? minAmt)}
+                  min={minAmt} max={isWeightUnit ? 2000 : 50} step={step}
+                  className="w-16 text-center font-bold tabular-nums" />
               <button onClick={() => setAddWeight(w => Math.min(isWeightUnit ? 2000 : 50, Math.round(((w || (isWeightUnit ? 100 : 1)) + step) * 10) / 10))}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
                 <Plus size={18} />

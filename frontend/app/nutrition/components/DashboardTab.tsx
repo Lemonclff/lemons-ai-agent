@@ -6,6 +6,7 @@ import {
   Flame, Zap, Dumbbell,
 } from "lucide-react";
 import { Ring, CalorieHero, MacroBars } from "./Ring";
+import { NumberField } from "./NumberField";
 import { cn } from "@/lib/utils";
 
 interface LogEntry {
@@ -293,10 +294,8 @@ export function DashboardTab({
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
                         <Minus size={16} />
                       </button>
-                      <input type="number" defaultValue={entry.amount}
-                        onBlur={e => { const v = Number(e.target.value); if (v > 0 && v !== entry.amount) updateWeight(entry.id, v); }}
-                        className="w-[48px] text-center bg-transparent py-2 text-[14px] font-semibold tabular-nums outline-none"
-                        inputMode="decimal" style={{ fontSize: '16px' }} />
+                      <NumberField value={entry.amount} onCommit={v => { if (v && v !== entry.amount) updateWeight(entry.id, v); }}
+                        className="w-[48px] text-center py-2 font-semibold bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateWeight(entry.id, entry.amount + 10)}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
                         <Plus size={16} />
@@ -314,10 +313,8 @@ export function DashboardTab({
                         className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
                         <Minus size={14} />
                       </button>
-                      <input type="number" value={Math.round(entry.calories)}
-                        onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
-                        className="w-[48px] text-center bg-transparent py-1.5 text-[14px] font-bold tabular-nums outline-none text-orange-400"
-                        inputMode="decimal" min="0" style={{ fontSize: '16px' }} />
+                      <NumberField value={Math.round(entry.calories)} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { calories: v }); }}
+                        className="w-[48px] text-center py-1.5 font-bold tabular-nums text-orange-400 bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
                         className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
                         <Plus size={14} />
@@ -325,20 +322,14 @@ export function DashboardTab({
                     </div>
                     <span className="text-[11px] text-[var(--color-text-muted)]">kcal</span>
                     <span className="text-blue-400 font-semibold">P</span>
-                    <input type="number" value={Math.round(entry.protein * 10) / 10}
-                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
-                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
-                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <NumberField value={Math.round(entry.protein * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { protein: v }); }}
+                      className="w-[42px] text-center py-1.5 text-[13px] tabular-nums bg-transparent border-0 rounded-none min-h-[32px] px-0" step={0.1} />
                     <span className="text-amber-400 font-semibold">C</span>
-                    <input type="number" value={Math.round(entry.carbs * 10) / 10}
-                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
-                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
-                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <NumberField value={Math.round(entry.carbs * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { carbs: v }); }}
+                      className="w-[42px] text-center py-1.5 text-[13px] tabular-nums bg-transparent border-0 rounded-none min-h-[32px] px-0" step={0.1} />
                     <span className="text-red-400 font-semibold">F</span>
-                    <input type="number" value={Math.round(entry.fat * 10) / 10}
-                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
-                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
-                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <NumberField value={Math.round(entry.fat * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { fat: v }); }}
+                      className="w-[42px] text-center py-1.5 text-[13px] tabular-nums bg-transparent border-0 rounded-none min-h-[32px] px-0" step={0.1} />
                   </div></div>
               ))}
             </div>
@@ -442,10 +433,8 @@ export function DashboardTab({
                         <div className="flex items-center justify-center gap-0.5">
                           <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))}
                             className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={11} /></button>
-                          <input type="number" defaultValue={entry.amount}
-                            onBlur={e => { const v = Number(e.target.value); if (v > 0 && v !== entry.amount) updateWeight(entry.id, v); }}
-                            className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[12px] tabular-nums outline-none"
-                            inputMode="decimal" style={{ fontSize: '16px' }} />
+                          <NumberField value={entry.amount} onCommit={v => { if (v && v !== entry.amount) updateWeight(entry.id, v); }}
+                            className="w-[44px] text-center py-1 text-[12px] tabular-nums bg-transparent border-0 rounded-none min-h-[28px] px-0" />
                           <button onClick={() => updateWeight(entry.id, entry.amount + 10)}
                             className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={11} /></button>
                           <select value={entry.serving_unit || 'g'}
@@ -459,31 +448,23 @@ export function DashboardTab({
                         <div className="flex items-center justify-end gap-0.5">
                           <button onClick={() => updateLog(entry.id, { calories: Math.max(1, Math.round(entry.calories) - 10) })}
                             className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Minus size={11} /></button>
-                          <input type="number" value={Math.round(entry.calories)}
-                            onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
-                            className="w-[44px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[12px] tabular-nums outline-none text-orange-400 font-medium"
-                            inputMode="decimal" min="0" style={{ fontSize: '16px' }} />
+                          <NumberField value={Math.round(entry.calories)} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { calories: v }); }}
+                            className="w-[44px] text-center py-1 text-[12px] tabular-nums text-orange-400 font-medium bg-transparent border-0 rounded-none min-h-[28px] px-0" />
                           <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
                             className="w-6 h-6 flex items-center justify-center rounded border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 text-[var(--color-text-secondary)]"><Plus size={11} /></button>
                         </div>
                       </td>
                       <td className="text-right py-2.5 px-1 tabular-nums">
-                        <input type="number" value={Math.round(entry.protein * 10) / 10}
-                          onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
-                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[12px] tabular-nums outline-none"
-                          inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                        <NumberField value={Math.round(entry.protein * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { protein: v }); }}
+                          className="w-[38px] text-center py-1 text-[12px] tabular-nums bg-transparent border-0 rounded-none min-h-[28px] px-0" step={0.1} />
                       </td>
                       <td className="text-right py-2.5 px-1 tabular-nums">
-                        <input type="number" value={Math.round(entry.carbs * 10) / 10}
-                          onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
-                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[12px] tabular-nums outline-none"
-                          inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                        <NumberField value={Math.round(entry.carbs * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { carbs: v }); }}
+                          className="w-[38px] text-center py-1 text-[12px] tabular-nums bg-transparent border-0 rounded-none min-h-[28px] px-0" step={0.1} />
                       </td>
                       <td className="text-right py-2.5 px-1 tabular-nums">
-                        <input type="number" value={Math.round(entry.fat * 10) / 10}
-                          onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
-                          className="w-[38px] text-center bg-transparent border border-[var(--color-border)] rounded py-1 text-[12px] tabular-nums outline-none"
-                          inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                        <NumberField value={Math.round(entry.fat * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { fat: v }); }}
+                          className="w-[38px] text-center py-1 text-[12px] tabular-nums bg-transparent border-0 rounded-none min-h-[28px] px-0" step={0.1} />
                       </td>
                       <td className="py-2.5 px-2">
                         <div className="flex items-center gap-0.5">
@@ -531,10 +512,8 @@ export function DashboardTab({
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
                         <Minus size={16} />
                       </button>
-                      <input type="number" defaultValue={entry.amount}
-                        onBlur={e => { const v = Number(e.target.value); if (v > 0 && v !== entry.amount) updateWeight(entry.id, v); }}
-                        className="w-[48px] text-center bg-transparent py-2 text-[14px] font-semibold tabular-nums outline-none"
-                        inputMode="decimal" style={{ fontSize: '16px' }} />
+                      <NumberField value={entry.amount} onCommit={v => { if (v && v !== entry.amount) updateWeight(entry.id, v); }}
+                        className="w-[48px] text-center py-2 font-semibold bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateWeight(entry.id, entry.amount + 10)}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
                         <Plus size={16} />
@@ -553,10 +532,8 @@ export function DashboardTab({
                         className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
                         <Minus size={14} />
                       </button>
-                      <input type="number" value={Math.round(entry.calories)}
-                        onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { calories: v }); }}
-                        className="w-[48px] text-center bg-transparent py-1.5 text-[14px] font-bold tabular-nums outline-none text-orange-400"
-                        inputMode="decimal" min="0" style={{ fontSize: '16px' }} />
+                      <NumberField value={Math.round(entry.calories)} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { calories: v }); }}
+                        className="w-[48px] text-center py-1.5 font-bold tabular-nums text-orange-400 bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
                         className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
                         <Plus size={14} />
@@ -564,20 +541,14 @@ export function DashboardTab({
                     </div>
                     <span className="text-[11px] text-[var(--color-text-muted)]">kcal</span>
                     <span className="text-blue-400 font-semibold">P</span>
-                    <input type="number" value={Math.round(entry.protein * 10) / 10}
-                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { protein: v }); }}
-                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
-                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <NumberField value={Math.round(entry.protein * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { protein: v }); }}
+                      className="w-[42px] text-center py-1.5 text-[13px] tabular-nums bg-transparent border-0 rounded-none min-h-[32px] px-0" step={0.1} />
                     <span className="text-amber-400 font-semibold">C</span>
-                    <input type="number" value={Math.round(entry.carbs * 10) / 10}
-                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { carbs: v }); }}
-                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
-                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <NumberField value={Math.round(entry.carbs * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { carbs: v }); }}
+                      className="w-[42px] text-center py-1.5 text-[13px] tabular-nums bg-transparent border-0 rounded-none min-h-[32px] px-0" step={0.1} />
                     <span className="text-red-400 font-semibold">F</span>
-                    <input type="number" value={Math.round(entry.fat * 10) / 10}
-                      onChange={e => { const v = Number(e.target.value); if (v >= 0) updateLog(entry.id, { fat: v }); }}
-                      className="w-[42px] text-center bg-[var(--color-surface)] border border-[var(--color-border)]/50 rounded-lg py-1.5 text-[13px] tabular-nums outline-none"
-                      inputMode="decimal" min="0" step="0.1" style={{ fontSize: '16px' }} />
+                    <NumberField value={Math.round(entry.fat * 10) / 10} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { fat: v }); }}
+                      className="w-[42px] text-center py-1.5 text-[13px] tabular-nums bg-transparent border-0 rounded-none min-h-[32px] px-0" step={0.1} />
                   </div>
                 </div>
               ))}
@@ -612,19 +583,15 @@ export function DashboardTab({
                     <div className="flex items-center gap-1">
                       <button onClick={() => updateExercise(ex.id, { duration_min: Math.max(1, (ex.duration_min || 30) - 5) })}
                         className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)]/50 hover:bg-[var(--color-border)]/20 text-[var(--color-text-muted)]"><Minus size={9} /></button>
-                      <input type="number" value={ex.duration_min}
-                        onChange={e => { const v = Number(e.target.value); if (v > 0) updateExercise(ex.id, { duration_min: v }); }}
-                        className="w-[40px] text-center bg-transparent border-b border-[var(--color-border)]/50 py-0.5 text-[12px] tabular-nums outline-none"
-                        style={{ fontSize: '16px' }} />
+                      <NumberField value={ex.duration_min} onCommit={v => { if (v && v > 0) updateExercise(ex.id, { duration_min: v }); }}
+                        className="w-[40px] text-center py-0.5 text-[12px] tabular-nums bg-transparent border-0 rounded-none min-h-[24px] px-0" />
                       <button onClick={() => updateExercise(ex.id, { duration_min: (ex.duration_min || 30) + 5 })}
                         className="w-5 h-5 flex items-center justify-center rounded border border-[var(--color-border)]/50 hover:bg-[var(--color-border)]/20 text-[var(--color-text-muted)]"><Plus size={9} /></button>
                       <span className="text-[10px] text-[var(--color-text-muted)]">min</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <input type="number" value={Math.round(Number(ex.calories_burned))}
-                        onChange={e => { const v = Number(e.target.value); if (v >= 0) updateExercise(ex.id, { calories_burned: v }); }}
-                        className="w-[44px] text-center bg-transparent border border-[var(--color-border)]/50 rounded py-1 text-[12px] tabular-nums outline-none text-green-400 font-semibold"
-                        style={{ fontSize: '16px' }} />
+                      <NumberField value={Math.round(Number(ex.calories_burned))} onCommit={v => { if (v !== null && v >= 0) updateExercise(ex.id, { calories_burned: v }); }}
+                        className="w-[44px] text-center py-1 text-[12px] tabular-nums text-green-400 font-semibold bg-transparent border-0 rounded-none min-h-[24px] px-0" />
                       <span className="text-[10px] text-[var(--color-text-muted)]">kcal</span>
                     </div>
                   </div>

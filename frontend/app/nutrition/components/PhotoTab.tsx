@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { Camera, X, Loader2, Copy } from "lucide-react";
+import { NumberField } from "./NumberField";
 
 interface PhotoProvider { value: string; label: string; hasVision: boolean; }
 
@@ -324,9 +325,9 @@ export function PhotoTab({
                   <div className="flex items-center gap-3 ml-6 mt-2">
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, weight - 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">−</button>
-                      <input type="number" value={weight} min={10} max={2000}
-                        onChange={e => setPhotoEditedWeights(w => ({...w, [i]: Number(e.target.value) || 10}))}
-                        className="w-14 text-center text-[13px] font-semibold bg-transparent border-b border-[var(--color-border)] outline-none text-[var(--color-text-primary)] tabular-nums" style={{ fontSize: '16px' }} />
+                      <NumberField value={weight} onCommit={v => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, Math.min(2000, v ?? 10))}))}
+                        min={10} max={2000}
+                        className="w-14 text-center text-[13px] font-semibold bg-transparent border-0 rounded-none min-h-[28px] px-0" />
                       <select value={photoUnits?.[i] || d.suggested_unit || 'g'}
                         onChange={e => setPhotoUnits?.(u => ({...u, [i]: e.target.value}))}
                         className="text-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)]">
@@ -339,17 +340,21 @@ export function PhotoTab({
                   </div>
                   <div className="ml-6 mt-1.5 flex items-center gap-1.5 flex-wrap">
                     {hasNutrition ? (<>
-                      <input type="number" value={cal} step={5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), cal: Number(e.target.value)||0}}))} className="w-14 text-center text-[11px] font-semibold bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-orange-400 tabular-nums" style={{ fontSize: '16px' }} />
+                      <NumberField value={cal} onCommit={v => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), cal: Math.round(v ?? 0)}}))}
+                        className="w-14 text-center text-[11px] font-semibold text-orange-400 bg-transparent border-0 rounded-none min-h-[28px] px-0" step={5} />
                       <span className="text-[9px] text-orange-400/70">kcal</span>
                       <span className="text-[9px] text-[var(--color-text-muted)]/40 mx-0.5">|</span>
                       <span className="text-[9px] text-blue-400/70">P</span>
-                      <input type="number" value={prot} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), p: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-blue-400 tabular-nums" style={{ fontSize: '16px' }} />
+                      <NumberField value={prot} onCommit={v => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), p: Math.round((v ?? 0) * 10) / 10}}))}
+                        className="w-12 text-center text-[11px] text-blue-400 bg-transparent border-0 rounded-none min-h-[28px] px-0" step={0.5} />
                       <span className="text-[9px] text-[var(--color-text-muted)]/40 mx-0.5">|</span>
                       <span className="text-[9px] text-amber-400/70">C</span>
-                      <input type="number" value={carb} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), c: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-amber-400 tabular-nums" style={{ fontSize: '16px' }} />
+                      <NumberField value={carb} onCommit={v => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), c: Math.round((v ?? 0) * 10) / 10}}))}
+                        className="w-12 text-center text-[11px] text-amber-400 bg-transparent border-0 rounded-none min-h-[28px] px-0" step={0.5} />
                       <span className="text-[9px] text-[var(--color-text-muted)]/40 mx-0.5">|</span>
                       <span className="text-[9px] text-red-400/70">F</span>
-                      <input type="number" value={fat} step={0.5} onChange={e => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), f: Number(e.target.value)||0}}))} className="w-12 text-center text-[11px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 outline-none text-red-400 tabular-nums" style={{ fontSize: '16px' }} />
+                      <NumberField value={fat} onCommit={v => setEditedNutrition(n => ({...n, [i]: {...(n[i]||{cal:0,p:0,c:0,f:0}), f: Math.round((v ?? 0) * 10) / 10}}))}
+                        className="w-12 text-center text-[11px] text-red-400 bg-transparent border-0 rounded-none min-h-[28px] px-0" step={0.5} />
                     </>) : (
                       <span className="text-[10px] text-[var(--color-text-muted)]/50 italic">no nutrition data — edit below</span>
                     )}

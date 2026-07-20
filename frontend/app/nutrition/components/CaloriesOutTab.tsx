@@ -1,6 +1,7 @@
 "use client";
 
 import { X, TrendingUp, Dumbbell, Flame, Clock, Plus } from "lucide-react";
+import { NumberField } from "./NumberField";
 
 export function CaloriesOutTab({
   summary, exercises, exName, setExName, exDuration, setExDuration,
@@ -74,18 +75,15 @@ export function CaloriesOutTab({
             <div className="w-[100px] max-md:flex-1">
               <label className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block mb-1.5">Duration</label>
               <div className="flex items-center gap-1">
-                <input type="number" value={exDuration} onChange={e => setExDuration(Number(e.target.value)||1)} min={1}
-                  className="w-full text-center py-3 text-[16px] font-semibold bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-green-500/50 tabular-nums"
-                  inputMode="numeric" onKeyDown={e => e.key === "Enter" && handleAdd()} style={{ fontSize: '16px' }} />
+              <NumberField value={exDuration} onCommit={v => { setExDuration(v ?? 1); }}
+                  min={1} className="w-full text-center py-3 font-semibold tabular-nums" />
                 <span className="text-[11px] text-[var(--color-text-muted)] shrink-0">min</span>
               </div>
             </div>
             <div className="w-[90px] max-md:flex-1">
               <label className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block mb-1.5">Calories</label>
-              <input type="number" value={exCalories} onChange={e => setExCalories(e.target.value)}
-                placeholder="Auto"
-                className="w-full text-center py-3 text-[16px] font-semibold bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-green-500/50 tabular-nums"
-                inputMode="decimal" onKeyDown={e => e.key === "Enter" && handleAdd()} style={{ fontSize: '16px' }} />
+              <NumberField value={exCalories ? Number(exCalories) : null} onCommit={v => setExCalories(v?.toString() ?? "")}
+                  placeholder="Auto" nullable allowEmpty className="w-full text-center py-3 font-semibold tabular-nums" />
             </div>
             <button onClick={handleAdd} disabled={!exName.trim()}
               className="min-h-[48px] px-6 text-[14px] font-semibold rounded-xl bg-green-500 text-white hover:bg-green-400 disabled:opacity-30 transition-all active:scale-95 shrink-0 max-md:w-full">
