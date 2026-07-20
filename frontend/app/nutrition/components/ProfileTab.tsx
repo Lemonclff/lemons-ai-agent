@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { TrendingDown, TrendingUp, Trash2, Plus, Scale, Calendar, Flame, Target } from "lucide-react";
+import { NumberField } from "./NumberField";
 
 interface WeightEntry {
   id: number; weight_kg: string; log_date: string; notes: string | null;
@@ -28,7 +29,7 @@ const GOAL_OPTIONS = [
   { value: "lose", label: "Moderate Cut", sub: "~15% deficit" },
   { value: "maintain", label: "Maintain", sub: "weight stable" },
   { value: "gain", label: "Lean Bulk", sub: "+10% surplus" },
-  { value: "gain_fast", label: "Aggressive Bulk", sub: "+15% surplus" },
+  { value: "gain_fast", label: "Aggressive Bulk", sub: "~15% surplus" },
 ];
 
 function WeightChart({ entries }: { entries: WeightEntry[] }) {
@@ -45,9 +46,15 @@ function WeightChart({ entries }: { entries: WeightEntry[] }) {
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-24">
+        <defs>
+          <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
         <line x1={padX} y1={padY} x2={padX} y2={H - padY} stroke="var(--color-border)" strokeWidth="0.5" opacity="0.2" />
         <line x1={padX} y1={H - padY} x2={W - padX} y2={H - padY} stroke="var(--color-border)" strokeWidth="0.5" opacity="0.2" />
-        <polygon points={`${padX},${H - padY} ${points} ${W - padX},${H - padY}`} fill="var(--color-accent)" opacity="0.08" />
+        <polygon points={`${padX},${H - padY} ${points} ${W - padX},${H - padY}`} fill="url(#weightGrad)" />
         <polyline points={points} fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {data.map((e, i) => (
           <circle key={i} cx={padX + i * stepX} cy={padY + ((max - parseFloat(e.weight_kg)) / range) * (H - padY * 2)} r="2.5" fill="var(--color-accent)" />
@@ -136,44 +143,69 @@ export function ProfileTab({
         </div>
 
         <div className="grid grid-cols-2 gap-2.5 max-md:grid-cols-1 mb-3">
-          {[
-            { label: "Gender", key: "gender", type: "select", options: ["male","female"] },
-            { label: "Age", key: "age", type: "number" },
-            { label: "Height (cm)", key: "height_cm", type: "number" },
-            { label: "Weight (kg)", key: "weight_kg", type: "number", step: "0.1" },
-          ].map(f => (
-            <div key={f.key}>
-              <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">{f.label}</label>
-              {f.type === "select" ? (
-                <select value={(profile as any)[f.key]} onChange={e => setProfile(p => ({ ...p, [f.key]: e.target.value }))}
-                  className="w-full min-h-[42px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
-                  {f.options?.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              ) : (
-                <input type="number" value={(profile as any)[f.key]} step={f.step || "1"}
-                  onChange={e => setProfile(p => ({ ...p, [f.key]: Number(e.target.value) }))}
-                  className="w-full min-h-[42px] px-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]" style={{ fontSize: '16px' }} />
-              )}
-            </div>
-          ))}
+          <div>
+            <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Gender</label>
+            <select
+              value={profile.gender}
+              onChange={e => setProfile(p => ({ ...p, gender: e.target.value }))}
+              className="w-full min-h-[42px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Age</label>
+            <NumberField
+              value={profile.age}
+              min={10} max={120}
+              onCommit={(v) => setProfile(p => ({ ...p, age: v ?? 30 }))}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Height (cm)</label>
+            <NumberField
+              value={profile.height_cm}
+              min={100} max={250}
+              onCommit={(v) => setProfile(p => ({ ...p, height_cm: v ?? 170 }))}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Weight (kg)</label>
+            <NumberField
+              value={profile.weight_kg}
+              min={30} max={300} step={0.1}
+              onCommit={(v) => setProfile(p => ({ ...p, weight_kg: v ?? 70 }))}
+            />
+          </div>
           <div>
             <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Body Fat % <span className="opacity-40">(opt)</span></label>
-            <input type="number" value={profile.body_fat_pct || ""} step="0.1" min="3" max="60"
-              onChange={e => setProfile(p => ({ ...p, body_fat_pct: e.target.value ? Number(e.target.value) : undefined }))}
+            <NumberField
+              value={profile.body_fat_pct}
+              min={3} max={60} step={0.1}
               placeholder="e.g. 18"
-              className="w-full min-h-[42px] px-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none" style={{ fontSize: '16px' }} />
+              allowEmpty nullable
+              emptyValue={undefined}
+              onCommit={(v) => setProfile(p => ({ ...p, body_fat_pct: v ?? undefined }))}
+            />
           </div>
           <div>
             <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Activity Level</label>
-            <select value={profile.activity_level} onChange={e => setProfile(p => ({ ...p, activity_level: e.target.value }))}
-              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+            <select
+              value={profile.activity_level}
+              onChange={e => setProfile(p => ({ ...p, activity_level: e.target.value }))}
+              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50"
+            >
               {ACTIVITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label} — {o.sub}</option>)}
             </select>
           </div>
           <div>
             <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Goal</label>
-            <select value={profile.goal} onChange={e => setProfile(p => ({ ...p, goal: e.target.value }))}
-              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+            <select
+              value={profile.goal}
+              onChange={e => setProfile(p => ({ ...p, goal: e.target.value }))}
+              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50"
+            >
               {GOAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label} ({o.sub})</option>)}
             </select>
           </div>
@@ -246,10 +278,13 @@ export function ProfileTab({
           <div className="flex gap-2">
             <div className="flex-[2]">
               <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1">Weight (kg)</label>
-              <input type="number" value={newWeight} step="0.1" min="20" max="300"
-                onChange={e => setNewWeight(e.target.value)} onKeyDown={e => e.key === 'Enter' && addWeight()}
+              <NumberField
+                value={parseFloat(newWeight) || null}
+                min={20} max={300} step={0.1}
+                allowEmpty
                 placeholder="70.0"
-                className="w-full min-h-[46px] px-4 text-[16px] font-bold bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none tabular-nums focus:border-indigo-400/50" style={{ fontSize: '16px' }} />
+                onCommit={(v) => setNewWeight(v === null ? "" : String(v))}
+              />
             </div>
             <div className="flex-1">
               <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1"><Calendar size={10} className="inline mr-0.5" />Date</label>

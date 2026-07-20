@@ -907,6 +907,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Exercise Tracking** | Simple form: name + duration + calories(optional) |
 | **Weight Tracking** | 📊 Log daily weight with date + note; SVG sparkline chart; stats (latest/delta/count); auto-updates profile |
 | **Inline Editing** | Editable Amount (onBlur, no auto-zoom), Cal/P/C/F + serving unit; Amount changes don't recalculate macros |
+| **NumberField Component** | Shared `NumberField` defers commit until blur/Enter — prevents iOS keyboard cursor-jump on Profile tab (age/height/weight/body fat) |
 | **Custom Foods** | Add custom foods with per-100g nutrition; "Pin to Dashboard" checkbox |
 | **Copy Yesterday** | One-click copy of yesterday's food log |
 | **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
