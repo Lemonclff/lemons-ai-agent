@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     const daily: Record<string, Record<string, number>> = {};
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const key = localYmd(d);
-      daily[key] = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+      daily[key] = { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0 };
     }
     for (const row of result.rows) {
       const raw = row.log_date;
@@ -49,6 +49,31 @@ export async function GET(req: NextRequest) {
         fat: parseFloat((Number(row.total_fat) || 0).toFixed(1)),
       };
     }
+
+    // ── Water totals ──
+    try {
+      const waterResult = await query(
+        `SELECT log_date, SUM(amount_ml) as total_ml
+         FROM water_logs
+         WHERE user_id = $1 AND log_date BETWEEN $2 AND $3
+         GROUP BY log_date ORDER BY log_date`,
+        [uid, from, to]
+      );
+      for (const row of waterResult.rows) {
+        const raw = row.log_date;
+        let d: string;
+        if (typeof raw === "string") {
+          d = raw.slice(0, 10);
+        } else if (raw instanceof Date) {
+          d = `${raw.getFullYear()}-${String(raw.getMonth()+1).padStart(2,"0")}-${String(raw.getDate()).padStart(2,"0")}`;
+        } else {
+          d = String(raw).slice(0, 10);
+        }
+        if (daily[d]) {
+          daily[d].water = Math.round(Number(row.total_ml) || 0);
+        }
+      }
+    } catch {}
 
     return NextResponse.json({ weekly: daily });
   } catch (e) {

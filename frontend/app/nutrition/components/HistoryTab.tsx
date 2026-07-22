@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChevronLeft, ChevronRight, History, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, TrendingUp, Droplets } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -91,6 +91,7 @@ export function HistoryTab({
           protein: Math.round(vals.protein || 0),
           carbs: Math.round(vals.carbs || 0),
           fat: Math.round(vals.fat || 0),
+          water: Math.round(vals.water || 0),
           over: goals.calories > 0 && (vals.calories || 0) > goals.calories,
           selected: date === currentDate,
         };
@@ -105,11 +106,13 @@ export function HistoryTab({
     const totalP = entries.reduce((s, [, v]) => s + (v.protein || 0), 0);
     const totalC = entries.reduce((s, [, v]) => s + (v.carbs || 0), 0);
     const totalF = entries.reduce((s, [, v]) => s + (v.fat || 0), 0);
+    const totalWater = entries.reduce((s, [, v]) => s + (v.water || 0), 0);
     return {
       avgCal: Math.round(totalCal / days),
       totalP: Math.round(totalP),
       totalC: Math.round(totalC),
       totalF: Math.round(totalF),
+      avgWater: Math.round(totalWater / days),
       days,
     };
   }, [entries]);
@@ -123,7 +126,7 @@ export function HistoryTab({
           No history data yet. Start logging food to see trends.
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
           {[
             {
               val: stats.avgCal,
@@ -148,6 +151,13 @@ export function HistoryTab({
               label: "Fat (g)",
               color: "text-pink-400",
               bg: "from-pink-500/10 to-transparent",
+            },
+            {
+              val: stats.avgWater,
+              label: "Avg water (ml)",
+              color: "text-sky-400",
+              bg: "from-sky-500/10 to-transparent",
+              icon: Droplets,
             },
           ].map((s) => (
             <div
@@ -347,6 +357,70 @@ export function HistoryTab({
         </div>
       )}
 
+      {/* Water bar chart */}
+      {chartData.length > 0 && (
+        <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+          <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)] mb-1">
+            Daily Water Intake
+          </h3>
+          <p className="text-[10px] text-[var(--color-text-muted)] mb-3">
+            ml per day · dashed line = target
+          </p>
+          <div className="h-[160px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 4, right: 8, left: -18, bottom: 0 }}
+                onClick={(state: any) => {
+                  const d = state?.activePayload?.[0]?.payload?.date;
+                  if (d) setCurrentDate(d);
+                }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 6"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: "var(--color-text-muted)", fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "var(--color-text-muted)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                />
+                <Tooltip content={<ChartTooltip />} />
+                <ReferenceLine
+                  y={goals.calories ? 2000 : 2000}
+                  stroke="#38bdf8"
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.5}
+                />
+                <Bar
+                  dataKey="water"
+                  name="water"
+                  fill="#38bdf8"
+                  radius={[4, 4, 0, 0]}
+                  animationDuration={700}
+                >
+                  {chartData.map((entry: any) => (
+                    <Cell
+                      key={entry.date}
+                      fill={entry.water > 0 ? "#38bdf8" : "#38bdf830"}
+                      opacity={entry.selected ? 1 : 0.85}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Mini Calendar */}
       <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
         <div className="flex items-center justify-between mb-3">
@@ -392,6 +466,11 @@ export function HistoryTab({
             const firstDay = new Date(y, m, 1).getDay();
             const daysInMonth = new Date(y, m + 1, 0).getDate();
             const loggedDates = new Set(Object.keys(weeklyData));
+            const waterDates = new Set(
+              Object.entries(weeklyData)
+                .filter(([, v]) => (v.water || 0) > 0)
+                .map(([k]) => k)
+            );
             const cells = [];
             for (let i = 0; i < firstDay; i++)
               cells.push(<div key={`e${i}`} />);
@@ -418,18 +497,23 @@ export function HistoryTab({
                   )}
                 >
                   {d}
-                  {hasLog && !isToday && (
-                    <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-400 nutri-day-dot" />
-                  )}
+                  <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                    {hasLog && <span className="w-1 h-1 rounded-full bg-green-400" />}
+                    {waterDates.has(ds) && <span className="w-1 h-1 rounded-full bg-sky-400" />}
+                  </div>
                 </button>
               );
             }
             return cells;
           })()}
         </div>
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
-          <span className="w-2 h-2 rounded-full bg-green-400 nutri-day-dot inline-block" />{" "}
-          Food logged
+        <div className="mt-3 flex items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-green-400 nutri-day-dot inline-block" /> Food
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-sky-400 inline-block" /> Water
+          </span>
         </div>
       </div>
     </div>
