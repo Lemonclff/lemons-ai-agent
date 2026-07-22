@@ -328,7 +328,7 @@ export function DashboardTab({
                   if (v > 0) { transferWater(waterTotal + v); setWaterInput(""); }
                 }
               }}
-              className="w-[54px] min-h-[44px] px-2 text-[13px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-l-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none border-r-0 nutri-input-glow" />
+              className="w-[54px] min-h-[44px] px-2 text-[16px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-l-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none border-r-0 nutri-input-glow" />
             <button onClick={() => {
               const v = parseInt(waterInput);
               if (v > 0) { transferWater(waterTotal + v); setWaterInput(""); }
