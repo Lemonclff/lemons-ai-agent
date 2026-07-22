@@ -741,11 +741,11 @@ export function DashboardTab({
 
       {/* ═══ Copy Modal ═══ */}
       {showCopyModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-[fadeIn_150ms_ease]" onClick={() => setShowCopyModal(false)} aria-hidden="true" />
-          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] shadow-xl animate-[scale-in_220ms_var(--ease-out-expo)] my-auto max-h-[90dvh] flex flex-col">
-            {/* Header — sticky */}
-            <div className="sticky top-0 z-10 bg-[var(--color-surface-secondary)] flex items-center justify-between px-5 pt-4 pb-3 rounded-t-2xl border-b border-[var(--color-border)]/10">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md animate-[fadeIn_150ms_ease]" onClick={() => setShowCopyModal(false)} aria-hidden="true" />
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] shadow-xl animate-[scale-in_220ms_var(--ease-out-expo)] max-h-[85dvh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] tracking-tight flex items-center gap-2">
                 <Calendar size={18} className="text-[var(--color-accent)]" />
                 Copy From...
@@ -755,7 +755,7 @@ export function DashboardTab({
                 <X size={18} />
               </button>
             </div>
-            <div className="px-5 py-4 space-y-5 overflow-y-auto flex-1">
+            <div className="px-5 pb-1 space-y-4 overflow-y-auto flex-1 min-h-0">
               {/* Date Picker */}
               <div>
                 <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-2">From Date</label>
@@ -822,7 +822,7 @@ export function DashboardTab({
                   </div>
                 </div>
               ) : (
-                <div className="max-h-[260px] overflow-y-auto space-y-2 -mx-1 px-1">
+                <div className="space-y-2 -mx-1 px-1">
                   {/* Food items */}
                   {copyFood && previewItems.foods.length > 0 && (
                     <div>
