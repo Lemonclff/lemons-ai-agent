@@ -741,15 +741,15 @@ export function DashboardTab({
 
       {/* ═══ Copy Modal ═══ */}
       {showCopyModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center sm:p-4 modal-sheet overflow-y-auto" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 modal-sheet" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-[fadeIn_150ms_ease]" onClick={() => setShowCopyModal(false)} aria-hidden="true" />
-          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] shadow-xl animate-[scale-in_220ms_var(--ease-out-expo)] overflow-hidden modal-sheet-content my-auto">
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] shadow-xl animate-[scale-in_220ms_var(--ease-out-expo)] overflow-hidden modal-sheet-content">
             {/* Drag handle */}
             <div className="sm:hidden flex justify-center pt-3 pb-1" aria-hidden="true">
               <span className="w-10 h-1 rounded-full bg-[var(--color-border-strong)]" />
             </div>
-            {/* Header — sticky on mobile */}
-            <div className="sticky top-0 z-10 bg-[var(--color-surface-secondary)] flex items-center justify-between px-5 pt-4 pb-0 border-b border-[var(--color-border)]/0">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-0">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] tracking-tight flex items-center gap-2">
                 <Calendar size={18} className="text-[var(--color-accent)]" />
                 Copy From...
@@ -759,7 +759,7 @@ export function DashboardTab({
                 <X size={18} />
               </button>
             </div>
-            <div className="px-5 py-5 space-y-5 overflow-y-auto" style={{ maxHeight: "calc(92dvh - 60px)" }}>
+            <div className="px-5 py-5 space-y-5">
               {/* Date Picker */}
               <div>
                 <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-2">From Date</label>
