@@ -77,6 +77,7 @@ export function DashboardTab({
   const [selectedFoods, setSelectedFoods] = useState<Set<string>>(new Set());
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [waterInput, setWaterInput] = useState("");
 
   /* ── Preview items when modal opens ── */
   useEffect(() => {
@@ -308,6 +309,33 @@ export function DashboardTab({
           <div className="flex justify-between text-[10px] text-[var(--color-text-muted)]">
             <span>{waterTarget > 0 ? `${Math.round((waterTotal / waterTarget) * 100)}%` : "—"}</span>
             <span>{waterTotal >= waterTarget ? "Goal met! 🎉" : `${waterTarget - Math.round(waterTotal)} ml left`}</span>
+          </div>
+        </div>
+        {/* Quick-add chips + custom input */}
+        <div className="px-4 pb-4 flex gap-2 items-center">
+          {[250, 500, 750].map(ml => (
+            <button key={ml} onClick={() => transferWater(waterTotal + ml)}
+              className="flex-1 min-h-[44px] rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 hover:bg-[var(--color-surface-elevated)]/30 hover:border-sky-400/30 hover:shadow-[0_0_12px_rgba(56,189,248,0.15)] text-[13px] font-medium text-[var(--color-text-secondary)] hover:text-sky-400 transition-all active:scale-95 nutri-press">
+              +{ml}
+            </button>
+          ))}
+          <div className="flex items-center gap-0">
+            <input type="number" inputMode="decimal" placeholder="ml" value={waterInput}
+              onChange={e => setWaterInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  const v = parseInt(waterInput);
+                  if (v > 0) { transferWater(waterTotal + v); setWaterInput(""); }
+                }
+              }}
+              className="w-[54px] min-h-[44px] px-2 text-[13px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-l-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none border-r-0 nutri-input-glow" />
+            <button onClick={() => {
+              const v = parseInt(waterInput);
+              if (v > 0) { transferWater(waterTotal + v); setWaterInput(""); }
+            }}
+              className="min-h-[44px] min-w-[36px] flex items-center justify-center rounded-r-xl border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 hover:bg-[var(--color-surface-elevated)]/30 hover:border-sky-400/30 text-[var(--color-text-muted)] hover:text-sky-400 transition-all active:scale-95 nutri-press">
+              <Plus size={16} />
+            </button>
           </div>
         </div>
       </div>

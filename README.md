@@ -910,7 +910,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **NumberField Component** | Shared `NumberField` defers commit until blur/Enter — replaces ALL raw `<input type="number">` across SearchTab, Home, Profile, CaloriesOut; prevents iOS keyboard cursor-jump |
 | **Custom Foods** | Add custom foods with per-100g nutrition; "Pin to Dashboard" checkbox |
 | **Copy From** | 📋 Copy food + exercise records from any past date to current view; modal with per-item checkboxes, preview counts, 3-state loading (loading/empty/items), and Food/Exercise type toggle |
-| **Water Tracking** | 💧 Drag-to-set water slider — directly adjust daily total by dragging the handle (range 0–150% of target); replaces quick-add buttons, manual input, and individual entry list |
+| **Water Tracking** | 💧 Drag-to-set water slider + quick-add chips (+250/+500/+750ml) + custom ml input — three ways to adjust daily total |
 | **Water History** | 📊 History tab shows avg water/day stat card, daily water bar chart with target line, and blue dots on calendar for water-logged days |
 | **Calculated Water Target** | Auto-calculated from body weight × activity multiplier (30-40ml/kg); shown in Profile tab next to macro targets |
 | **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
