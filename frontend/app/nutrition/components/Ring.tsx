@@ -26,6 +26,7 @@ export function Ring({
 }) {
   const uid = useId().replace(/:/g, "");
   const [mounted, setMounted] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
@@ -62,9 +63,12 @@ export function Ring({
       className={cn(
         "flex flex-col items-center p-3 rounded-2xl",
         "bg-[var(--color-surface-elevated)]/40 border border-[var(--color-border)]/40",
-        "hover:border-[var(--color-border-strong)] transition-colors duration-300",
+        "hover:border-[var(--color-border-strong)] transition-all duration-300",
+        "nutri-card-hover cursor-pointer",
         className
       )}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         className="relative"
@@ -135,7 +139,8 @@ export function Ring({
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
             className={cn(
-              "font-bold nutri-num text-[var(--color-text-primary)] leading-none",
+              "font-bold nutri-num text-[var(--color-text-primary)] leading-none transition-transform duration-300",
+              hovered && "scale-110",
               dims.font
             )}
           >
@@ -146,7 +151,8 @@ export function Ring({
 
       <div
         className={cn(
-          "font-bold nutri-num text-[var(--color-text-primary)] mt-1.5 leading-none",
+          "font-bold nutri-num text-[var(--color-text-primary)] mt-1.5 leading-none transition-all duration-300",
+          hovered && "text-[var(--color-accent)]",
           dims.val
         )}
       >

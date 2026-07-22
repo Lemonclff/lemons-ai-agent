@@ -163,7 +163,7 @@ export function HistoryTab({
             <div
               key={s.label}
               className={cn(
-                "rounded-2xl border border-[var(--color-border)]/50 p-3.5 text-center",
+                "rounded-2xl border border-[var(--color-border)]/50 p-3.5 text-center nutri-card-hover",
                 "bg-gradient-to-b",
                 s.bg
               )}
@@ -184,11 +184,11 @@ export function HistoryTab({
         </div>
       )}
 
-      {/* Area chart — calorie trend */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+      {/* ══ Area chart — calorie trend ═══ */}
+      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4 nutri-card-hover">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[var(--color-accent-muted)] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-[var(--color-accent-muted)] flex items-center justify-center nutri-icon-bounce">
               <TrendingUp size={15} className="text-[var(--color-accent)]" />
             </div>
             <div>
@@ -212,7 +212,7 @@ export function HistoryTab({
               <AreaChart
                 data={chartData}
                 margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-                onClick={(state) => {
+                onClick={(state: any) => {
                   const d = state?.activePayload?.[0]?.payload?.date;
                   if (d) setCurrentDate(d);
                 }}
@@ -271,9 +271,9 @@ export function HistoryTab({
         )}
       </div>
 
-      {/* Macro stacked bars */}
+      {/* ═══ Macro stacked bars ═══ */}
       {chartData.length > 0 && (
-        <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+        <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4 nutri-card-hover">
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)] mb-1">
             Daily Macros
           </h3>
@@ -285,7 +285,7 @@ export function HistoryTab({
               <BarChart
                 data={chartData}
                 margin={{ top: 4, right: 8, left: -18, bottom: 0 }}
-                onClick={(state) => {
+                onClick={(state: any) => {
                   const d = state?.activePayload?.[0]?.payload?.date;
                   if (d) setCurrentDate(d);
                 }}
@@ -357,9 +357,9 @@ export function HistoryTab({
         </div>
       )}
 
-      {/* Water bar chart */}
+      {/* ═══ Water bar chart ═══ */}
       {chartData.length > 0 && (
-        <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+        <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4 nutri-card-hover">
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)] mb-1">
             Daily Water Intake
           </h3>
@@ -421,8 +421,8 @@ export function HistoryTab({
         </div>
       )}
 
-      {/* Mini Calendar */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+      {/* ══ Mini Calendar ═══ */}
+      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4 nutri-card-hover">
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => {
@@ -430,7 +430,7 @@ export function HistoryTab({
               d.setMonth(d.getMonth() - 1);
               setHistoryMonth(d);
             }}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all nutri-press"
           >
             <ChevronLeft size={16} />
           </button>
@@ -446,7 +446,7 @@ export function HistoryTab({
               d.setMonth(d.getMonth() + 1);
               setHistoryMonth(d);
             }}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all pressable"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-95 transition-all nutri-press"
           >
             <ChevronRight size={16} />
           </button>
@@ -484,7 +484,7 @@ export function HistoryTab({
                   key={d}
                   onClick={() => setCurrentDate(ds)}
                   className={cn(
-                    "min-h-[40px] text-[12px] rounded-xl hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all relative",
+                    "min-h-[40px] text-[12px] rounded-xl hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all relative nutri-press",
                     isToday &&
                       "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent)] font-bold shadow-glow-sm",
                     isSelected &&

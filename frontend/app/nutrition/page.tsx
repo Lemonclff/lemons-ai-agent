@@ -39,6 +39,7 @@ interface UserProfile {
   body_fat_pct?: number;
   activity_level: string; goal: string;
   daily_calorie_target: number; daily_protein_target: number; daily_carbs_target: number; daily_fat_target: number;
+  daily_water_target_ml?: number;
   daily_bmr?: number; daily_tdee?: number;
 }
 interface CustomFood { id: number; food_name: string; calories_per_100g: number; protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; }
@@ -514,33 +515,24 @@ export default function NutritionPage() {
   const fetchWater = async () => {
     try {
       const r = await fetch(`/api/nutrition/water?date=${currentDate}`);
-      const json = await r.json();
-      if (!json.error) {
+      if (r.ok) {
+        const json = await r.json();
         setWaterEntries(json.entries || []);
         setWaterTotal(json.total_ml || 0);
         setWaterTarget(json.target_ml || 2000);
       }
     } catch {}
   };
-  const addWater = async (amountMl: number) => {
+  const transferWater = async (totalMl: number) => {
     try {
       const r = await fetch("/api/nutrition/water", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount_ml: amountMl, log_date: currentDate }),
+        body: JSON.stringify({ amount_ml: totalMl, log_date: currentDate }),
       });
-      const json = await r.json();
-      if (json.entry) {
-        setWaterEntries(prev => [json.entry, ...prev]);
-        setWaterTotal(prev => prev + amountMl);
+      if (r.ok) {
+        setWaterTotal(totalMl);
       }
-    } catch {}
-  };
-  const deleteWater = async (id: number) => {
-    setWaterEntries(prev => prev.filter(e => e.id !== id));
-    try {
-      await fetch(`/api/nutrition/water?id=${id}`, { method: "DELETE" });
-      fetchWater();
     } catch {}
   };
 
@@ -925,8 +917,8 @@ export default function NutritionPage() {
           showCopyModal={showCopyModal} setShowCopyModal={setShowCopyModal}
           copySourceDate={copySourceDate} setCopySourceDate={setCopySourceDate}
           copyFromDate={copyFromDate}
-          waterEntries={waterEntries} waterTotal={waterTotal} waterTarget={waterTarget}
-          addWater={addWater} deleteWater={deleteWater} />
+          waterTotal={waterTotal} waterTarget={waterTarget}
+          transferWater={transferWater} />
       case "search":
         return <SearchTab searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults} searching={searching}
           showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}
@@ -940,8 +932,7 @@ export default function NutritionPage() {
       case "calories-out":
         return <CaloriesOutTab summary={summary} exercises={exercises} exName={exName} setExName={setExName}
           exDuration={exDuration} setExDuration={setExDuration} exCalories={exCustomCal} setExCalories={setExCustomCal}
-          exList={exList} addExercise={addExercise} deleteExercise={deleteExercise}
-          updateExercise={updateExercise} userWeight={profile.weight_kg} />;
+          addExercise={addExercise} deleteExercise={deleteExercise} />;
       case "photo":
         return <PhotoTab photoFile={photoFile} setPhotoFile={setPhotoFile} photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
           photoAnalyzing={photoAnalyzing} photoResult={photoResult} photoError={photoError}

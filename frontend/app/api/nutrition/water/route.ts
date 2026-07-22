@@ -4,9 +4,10 @@ import { getUserId } from "@/lib/nutrition-auth";
 
 /* ================================================================
    Water Logs API
-   GET    /api/nutrition/water?date=  — day's water entries + total
-   POST   /api/nutrition/water        — add water entry {amount_ml}
-   DELETE /api/nutrition/water?id=    — remove entry
+   GET    /api/nutrition/water?date=     — day's water entries + total
+   POST   /api/nutrition/water           — add water entry {amount_ml}
+   PUT    /api/nutrition/water           — set daily total (replaces all entries)
+   DELETE /api/nutrition/water?id=       — remove entry
    ================================================================ */
 
 export async function GET(req: NextRequest) {
@@ -86,6 +87,34 @@ export async function POST(req: NextRequest) {
         created_at: result.rows[0].created_at,
       },
     });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  const uid = getUserId(req);
+  if (uid === 0) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+
+  try {
+    const body = await req.json();
+    const { amount_ml, log_date } = body;
+    const totalMl = Math.max(0, Number(amount_ml) || 0);
+    const date = log_date || new Date().toISOString().slice(0, 10);
+
+    // Clear all entries for the day
+    await query(`DELETE FROM water_logs WHERE user_id = $1 AND log_date = $2`, [uid, date]);
+
+    // Insert one entry with the total (if > 0)
+    if (totalMl > 0) {
+      await query(
+        `INSERT INTO water_logs (user_id, log_date, amount_ml)
+         VALUES ($1, $2, $3)`,
+        [uid, date, totalMl]
+      );
+    }
+
+    return NextResponse.json({ ok: true, total_ml: totalMl });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

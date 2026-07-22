@@ -69,7 +69,7 @@ function WeightChart({ entries }: { entries: WeightEntry[] }) {
 }
 
 const MacroBadge = ({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) => (
-  <div className="flex flex-col items-center p-2.5 rounded-xl bg-[var(--color-surface-elevated)]/40">
+  <div className="flex flex-col items-center p-2.5 rounded-xl bg-[var(--color-surface-elevated)]/40 nutri-card-hover transition-all duration-300">
     <span className={`text-[18px] font-bold tabular-nums ${color}`}>{value}</span>
     <span className="text-[10px] text-[var(--color-text-muted)]">{unit}</span>
     <span className="text-[10px] text-[var(--color-text-muted)]/60">{label}</span>
@@ -129,12 +129,12 @@ export function ProfileTab({
   const previewTdee = bmr && selectedActivity ? Math.round(bmr * selectedActivity.mult) : null;
 
   return (
-    <div className="space-y-3 max-w-[560px]">
+    <div className="space-y-3 max-w-[560px] nutri-stagger">
 
       {/* ═══ TDEE Calculator ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4">
+      <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4 nutri-card-hover">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/15 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/15 flex items-center justify-center nutri-icon-bounce">
             <Flame size={15} className="text-[var(--color-accent)]" />
           </div>
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">TDEE Calculator</h3>
@@ -149,7 +149,7 @@ export function ProfileTab({
             <select
               value={profile.gender}
               onChange={e => setProfile(p => ({ ...p, gender: e.target.value }))}
-              className="w-full min-h-[42px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50"
+              className="w-full min-h-[42px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -195,7 +195,7 @@ export function ProfileTab({
             <select
               value={profile.activity_level}
               onChange={e => setProfile(p => ({ ...p, activity_level: e.target.value }))}
-              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50"
+              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow"
             >
               {ACTIVITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label} — {o.sub}</option>)}
             </select>
@@ -205,7 +205,7 @@ export function ProfileTab({
             <select
               value={profile.goal}
               onChange={e => setProfile(p => ({ ...p, goal: e.target.value }))}
-              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50"
+              className="w-full min-h-[42px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow"
             >
               {GOAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label} ({o.sub})</option>)}
             </select>
@@ -213,7 +213,7 @@ export function ProfileTab({
         </div>
 
         {bmr && (
-          <div className="flex items-center gap-3 mb-3 px-4 py-2.5 rounded-xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/10 text-[13px]">
+          <div className="flex items-center gap-3 mb-3 px-4 py-2.5 rounded-xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/10 text-[13px] animate-[fade-up_0.3s_ease]">
             <span className="text-[var(--color-text-muted)]">BMR <b className="text-[var(--color-text-primary)] tabular-nums ml-1">{bmr}</b></span>
             <span className="text-[var(--color-border)]/50">|</span>
             <span className="text-[var(--color-text-muted)]">TDEE <b className="text-[var(--color-accent)] tabular-nums ml-1">{previewTdee ?? "—"}</b></span>
@@ -222,7 +222,7 @@ export function ProfileTab({
         )}
 
         <button onClick={saveProfile}
-          className="w-full min-h-[48px] text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-[0.98] transition-all">
+          className="w-full min-h-[48px] text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-[0.98] transition-all nutri-press">
           Calculate & Save Goals
         </button>
 
@@ -235,7 +235,7 @@ export function ProfileTab({
           </div>
         )}
         {profile.daily_water_target_ml && (
-          <div className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/8 border border-sky-500/20">
+          <div className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/8 border border-sky-500/20 nutri-card-hover">
             <Droplets size={16} className="text-sky-400 shrink-0" />
             <span className="text-[13px] text-[var(--color-text-secondary)]">
               Water target: <strong className="text-sky-400">{profile.daily_water_target_ml} ml</strong>
@@ -246,9 +246,9 @@ export function ProfileTab({
       </div>
 
       {/* ═══ Weight Tracking ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border)]/50">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center nutri-icon-bounce">
             <Scale size={15} className="text-indigo-400" />
           </div>
           <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Weight Tracking</span>
@@ -299,17 +299,17 @@ export function ProfileTab({
             <div className="flex-1">
               <label className="text-[11px] font-medium text-[var(--color-text-muted)] block mb-1"><Calendar size={10} className="inline mr-0.5" />Date</label>
               <input type="date" value={weightDate} onChange={e => setWeightDate(e.target.value)}
-                className="w-full min-h-[46px] px-2 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none" />
+                className="w-full min-h-[46px] px-2 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
             </div>
           </div>
           <div className="flex gap-2 mt-2">
             <div className="flex-[3]">
               <input type="text" value={weightNote} onChange={e => setWeightNote(e.target.value)}
                 placeholder="Note (e.g. morning, after workout)"
-                className="w-full min-h-[44px] px-4 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none" />
+                className="w-full min-h-[44px] px-4 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
             </div>
             <button onClick={addWeight} disabled={addingWeight || !newWeight}
-              className="flex-1 min-h-[44px] text-[14px] font-semibold rounded-xl bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-30 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+              className="flex-1 min-h-[44px] text-[14px] font-semibold rounded-xl bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-30 active:scale-95 transition-all flex items-center justify-center gap-1.5 nutri-press">
               <Plus size={15} /> Log
             </button>
           </div>
@@ -332,7 +332,7 @@ export function ProfileTab({
                   ) : diff ? <span className="text-[12px] text-[var(--color-text-muted)]/40 tabular-nums">−</span> : null}
                   <span className="text-[var(--color-text-muted)]/40 truncate flex-1 text-[11px]">{e.notes || ''}</span>
                   <button onClick={() => deleteWeight(e.id)}
-                    className="opacity-0 group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 transition-all shrink-0">
+                    className="opacity-0 group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 transition-all shrink-0 nutri-press">
                     <Trash2 size={14} />
                   </button>
                 </div>

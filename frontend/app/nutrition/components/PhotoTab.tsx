@@ -159,26 +159,26 @@ export function PhotoTab({
   };
 
   return (
-    <div className="max-w-[520px] mx-auto space-y-4">
+    <div className="max-w-[520px] mx-auto space-y-4 nutri-stagger">
       <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoSelect(f); }} />
 
       {/* Upload zone + external AI tools */}
       {!photoFile && !pasteMode && (
-        <div>
+        <div className="nutri-card-hover">
           <div
-            className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors ${photoDragOver ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5" : "border-[var(--color-border)] hover:border-[var(--color-accent)]/40"}`}
+            className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${photoDragOver ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5 scale-[1.02]" : "border-[var(--color-border)] hover:border-[var(--color-accent)]/40 hover:shadow-[0_0_20px_rgba(var(--color-accent-rgb),0.05)]"}`}
             onClick={() => photoInputRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
             onDragLeave={() => setPhotoDragOver(false)}
             onDrop={handlePhotoDrop}
           >
-            <Camera size={40} className="mx-auto text-[var(--color-text-muted)] mb-3" />
+            <Camera size={40} className="mx-auto text-[var(--color-text-muted)] mb-3 transition-transform duration-300 group-hover:scale-110" />
             <div className="text-[14px] text-[var(--color-text-muted)] mb-1">Click or drag to upload food photo</div>
             <div className="text-[11px] text-[var(--color-text-muted)]/60 mb-3">Supports JPG, PNG up to 10MB</div>
             <select value={photoProvider} onChange={e => setPhotoProvider(e.target.value)}
               onClick={e => e.stopPropagation()}
-              className="px-3 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-muted)]">
+              className="px-3 py-1.5 text-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded outline-none text-[var(--color-text-muted)] focus:border-[var(--color-accent)]/50 transition-colors">
               {photoProviders.map(p => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
@@ -186,11 +186,11 @@ export function PhotoTab({
           </div>
           <div className="flex items-center gap-2 mt-3">
             <button onClick={handleCopyPrompt}
-              className="flex-1 px-3 py-1.5 text-[11px] rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-text-secondary)] flex items-center justify-center gap-1">
+              className="flex-1 px-3 py-1.5 text-[11px] rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-text-secondary)] flex items-center justify-center gap-1 transition-all active:scale-95 nutri-press">
               <Copy size={12} /> Copy Prompt for External AI
             </button>
             <button onClick={() => setPasteMode(true)}
-              className="px-3 py-1.5 text-[11px] rounded-lg border border-dashed border-[var(--color-accent)]/40 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5">
+              className="px-3 py-1.5 text-[11px] rounded-lg border border-dashed border-[var(--color-accent)]/40 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 transition-all active:scale-95 nutri-press">
               Paste Response
             </button>
           </div>
@@ -199,10 +199,10 @@ export function PhotoTab({
 
       {/* Paste mode */}
       {pasteMode && !photoFile && (
-        <div className="border border-dashed border-[var(--color-accent)]/40 rounded-2xl p-4 space-y-3">
+        <div className="border border-dashed border-[var(--color-accent)]/40 rounded-2xl p-4 space-y-3 nutri-card-hover animate-[fade-up_0.3s_ease]">
           <div className="flex items-center justify-between">
             <span className="text-[14px] font-semibold text-[var(--color-accent)]">Paste AI Response</span>
-            <button onClick={() => { setPasteMode(false); setPasteText(""); }} className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)]"><X size={15} /></button>
+            <button onClick={() => { setPasteMode(false); setPasteText(""); }} className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-muted)] transition-colors nutri-press"><X size={15} /></button>
           </div>
           <div className="text-[12px] text-[var(--color-text-muted)]">
             1. Copy prompt above → paste into ChatGPT/Claude/etc with your food photo<br/>
@@ -210,14 +210,14 @@ export function PhotoTab({
           </div>
           <textarea value={pasteText} onChange={e => setPasteText(e.target.value)}
             placeholder={`Paste the JSON response here...\n{"status":"success","dishes":[...]}`}
-            className="w-full h-[120px] text-[16px] p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none resize-none text-[var(--color-text-primary)] font-mono" />
+            className="w-full h-[120px] text-[16px] p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none resize-none text-[var(--color-text-primary)] font-mono focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
           <div className="flex gap-2">
             <button onClick={handlePasteResponse} disabled={!pasteText.trim()}
-              className="flex-1 min-h-[44px] text-[13px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all">
+              className="flex-1 min-h-[44px] text-[13px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all nutri-press">
               Parse & Show Results
             </button>
             <button onClick={handleCopyPrompt}
-              className="min-h-[44px] px-4 text-[12px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all flex items-center gap-1">
+              className="min-h-[44px] px-4 text-[12px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all flex items-center gap-1 nutri-press">
               <Copy size={12} /> Copy Prompt
             </button>
           </div>
@@ -226,27 +226,27 @@ export function PhotoTab({
 
       {/* Image preview + Analyze */}
       {photoFile && !photoResult && !photoAnalyzing && (
-        <div className="space-y-3">
-          <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)]">
+        <div className="space-y-3 animate-[fade-up_0.3s_ease]">
+          <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)] nutri-card-hover">
             <img src={photoPreview} alt="Food preview" className="w-full max-h-[400px] object-contain" />
-            <button onClick={resetPhoto} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80"><X size={16} /></button>
+            <button onClick={resetPhoto} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors nutri-press"><X size={16} /></button>
           </div>
           <div className="flex items-center gap-2">
             <select value={photoProvider} onChange={e => setPhotoProvider(e.target.value)}
-              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors">
               {photoProviders.map(p => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </select>
-            <button onClick={handleAnalyze} className="flex-1 min-h-[44px] px-4 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all">Analyze with AI</button>
-            <button onClick={resetPhoto} className="min-h-[44px] px-4 text-[13px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all">Cancel</button>
+            <button onClick={handleAnalyze} className="flex-1 min-h-[44px] px-4 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all nutri-press">Analyze with AI</button>
+            <button onClick={resetPhoto} className="min-h-[44px] px-4 text-[13px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all nutri-press">Cancel</button>
           </div>
         </div>
       )}
 
       {/* Analyzing spinner */}
       {photoAnalyzing && (
-        <div className="border border-[var(--color-border)] rounded-xl p-8 text-center space-y-3">
+        <div className="border border-[var(--color-border)] rounded-xl p-8 text-center space-y-3 nutri-card-hover">
           {photoPreview && <img src={photoPreview} alt="Food" className="w-full max-h-[180px] object-contain rounded-lg opacity-60" />}
           <Loader2 size={28} className="mx-auto animate-spin text-[var(--color-accent)]" />
           <div className="text-[14px] text-[var(--color-text-secondary)]">Analyzing your meal...</div>
@@ -256,23 +256,23 @@ export function PhotoTab({
 
       {/* Error */}
       {photoError && (
-        <div className="border border-red-500/30 rounded-lg p-4 bg-red-500/5 space-y-2">
+        <div className="border border-red-500/30 rounded-lg p-4 bg-red-500/5 space-y-2 animate-[fade-up_0.3s_ease]">
           <div className="flex items-center gap-2 text-[13px] font-medium text-red-400"><X size={16} /> Analysis failed</div>
           <div className="text-[12px] text-red-300/80">{photoError}</div>
-          <button onClick={resetPhoto} className="text-[12px] text-red-400 underline hover:text-red-300">Try again</button>
+          <button onClick={resetPhoto} className="text-[12px] text-red-400 underline hover:text-red-300 transition-colors">Try again</button>
         </div>
       )}
 
       {/* Results */}
       {photoResult && !photoAnalyzing && (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-[fade-up_0.3s_ease]">
           <div className="flex items-center gap-2">
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
               {photoProviders.find(p => p.value === photoProvider)?.label || photoProvider}
             </span>
             {photoResult.status === "demo_no_api_key" && <span className="text-[10px] text-yellow-400">Demo Mode</span>}
             <button onClick={handleCopyPrompt}
-              className="ml-auto text-[10px] px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] flex items-center gap-1">
+              className="ml-auto text-[10px] px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] flex items-center gap-1 transition-colors nutri-press">
               <Copy size={10} /> Prompt
             </button>
           </div>
@@ -304,7 +304,7 @@ export function PhotoTab({
               const fat = aiNut ? aiNut.f : (nutrition ? parseFloat((nutrition.fat_per_100g * dbFactor).toFixed(1)) : 0);
               const hasNutrition = !!(aiNut || nutrition);
               return (
-                <div key={i} className={`p-3 rounded-lg border transition-colors ${isSelected ? "bg-[var(--color-surface-elevated)]/30 border-[var(--color-border)]/20" : "bg-transparent border-[var(--color-border)]/10 opacity-60"}`}>
+                <div key={i} className={`p-3 rounded-lg border transition-all duration-300 ${isSelected ? "bg-[var(--color-surface-elevated)]/30 border-[var(--color-border)]/20 nutri-card-hover" : "bg-transparent border-[var(--color-border)]/10 opacity-60"}`}>
                   <div className="flex items-center gap-2">
                     <input type="checkbox" checked={isSelected}
                       onChange={e => {
@@ -312,7 +312,7 @@ export function PhotoTab({
                         e.target.checked ? next.add(i) : next.delete(i);
                         setSelectedDishes(next);
                       }}
-                      className="w-4 h-4 rounded accent-[var(--color-accent)] shrink-0" />
+                      className="w-4 h-4 rounded accent-[var(--color-accent)] shrink-0 transition-transform hover:scale-110" />
                     <span className="text-[13px] font-medium text-[var(--color-text-primary)] truncate flex-1">{d.name}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${d.confidence >= 80 ? "bg-green-500/20 text-green-400" : d.confidence >= 60 ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"}`}>{d.confidence}%</span>
                   </div>
@@ -324,18 +324,18 @@ export function PhotoTab({
                   </div>
                   <div className="flex items-center gap-3 ml-6 mt-2">
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, weight - 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">−</button>
+                      <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, weight - 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px] transition-all active:scale-90 nutri-press">−</button>
                       <NumberField value={weight} onCommit={v => setPhotoEditedWeights(w => ({...w, [i]: Math.max(10, Math.min(2000, v ?? 10))}))}
                         min={10} max={2000}
                         className="w-14 text-center text-[13px] font-semibold bg-transparent border-0 rounded-none min-h-[28px] px-0" />
                       <select value={photoUnits?.[i] || d.suggested_unit || 'g'}
                         onChange={e => setPhotoUnits?.(u => ({...u, [i]: e.target.value}))}
-                        className="text-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)]">
+                        className="text-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5 outline-none text-[var(--color-text-muted)] focus:border-[var(--color-accent)]/50 transition-colors">
                         {(servingUnits || ["g","ml","份","碗","杯","罐","瓶","個","包","碟"]).map(u => (
                           <option key={u} value={u}>{u}</option>
                         ))}
                       </select>
-                      <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.min(2000, weight + 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px]">+</button>
+                      <button onClick={() => setPhotoEditedWeights(w => ({...w, [i]: Math.min(2000, weight + 10)}))} className="w-6 h-6 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center justify-center text-[14px] transition-all active:scale-90 nutri-press">+</button>
                     </div>
                   </div>
                   <div className="ml-6 mt-1.5 flex items-center gap-1.5 flex-wrap">
@@ -386,7 +386,7 @@ export function PhotoTab({
               }
             });
             return totCal > 0 ? (
-              <div key="totals" className="flex items-center gap-3 p-2 rounded bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20">
+              <div key="totals" className="flex items-center gap-3 p-2 rounded bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 nutri-card-hover">
                 <span className="text-[11px] font-semibold text-[var(--color-text-secondary)]">Total</span>
                 <span className="text-[13px] font-bold text-orange-400 tabular-nums">{Math.round(totCal)} kcal</span>
                 <span className="text-[11px] text-blue-400 tabular-nums">P:{totP.toFixed(1)}</span>
@@ -402,18 +402,18 @@ export function PhotoTab({
 
           <div className="flex items-center gap-2 pt-1">
             <select value={photoMealType} onChange={e => setPhotoMealType(e.target.value)}
-              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors">
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
               <option value="dinner">Dinner</option>
               <option value="snack">Snack</option>
             </select>
             <button onClick={handleConfirmAnalysis} disabled={photoConfirming}
-              className="flex-1 min-h-[44px] px-4 text-[14px] font-semibold rounded-xl bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+              className="flex-1 min-h-[44px] px-4 text-[14px] font-semibold rounded-xl bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-1.5 nutri-press">
               {photoConfirming && <Loader2 size={14} className="animate-spin" />}
               {photoConfirming ? "Saving..." : "Log to Diary"}
             </button>
-            <button onClick={resetPhoto} className="min-h-[44px] px-4 text-[13px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all">New Photo</button>
+            <button onClick={resetPhoto} className="min-h-[44px] px-4 text-[13px] rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-elevated)] active:scale-95 transition-all nutri-press">New Photo</button>
           </div>
           {photoResult.status === "demo_no_api_key" && (
             <div className="text-[11px] text-yellow-400/80 text-center">Demo mode — set API key for real AI analysis</div>

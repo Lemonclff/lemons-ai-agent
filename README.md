@@ -53,7 +53,7 @@ Lemon's AI Agent is a **local-first, privacy-respecting dashboard** that runs en
 | 📊 **FRED** | US Treasury yields, mortgage rates, corporate bonds, CPI inflation, macro risk scoring |
 | 🤖 **AI** | LLM-powered stock analysis (zh-TW), AI OCR receipt parsing, 7-sector macro impact |
 | 💰 **Finance** | Bank statement OCR → structured transactions → dashboard with 4 chart types |
-| 🍎 **Nutrition** | Food logging + exercise tracking + AI photo analysis + dual-ring calorie budget + water intake tracking |
+| 🍎 **Nutrition** | Food logging + exercise tracking + AI photo analysis + dual-ring calorie budget + water slider with per-item Copy From |
 | 🎤 **Voice** | Cantonese-optimized speech-to-text with speaker diarization |
 | 📅 **Macro** | Economic calendar with auto BEAT/MISS detection, Telegram push |
 | 🔐 **Auth** | bcrypt login, HMAC-SHA256 tokens, httpOnly cookies, admin role |
@@ -907,10 +907,10 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Exercise Tracking** | Simple form: name + duration + calories(optional) |
 | **Weight Tracking** | 📊 Log daily weight with date + note; SVG sparkline chart; stats (latest/delta/count); auto-updates profile |
 | **Inline Editing** | Editable Amount (onBlur, no auto-zoom), Cal/P/C/F + serving unit; Amount changes don't recalculate macros |
-| **NumberField Component** | Shared `NumberField` defers commit until blur/Enter — prevents iOS keyboard cursor-jump on Profile tab (age/height/weight/body fat) |
+| **NumberField Component** | Shared `NumberField` defers commit until blur/Enter — replaces ALL raw `<input type="number">` across SearchTab, Home, Profile, CaloriesOut; prevents iOS keyboard cursor-jump |
 | **Custom Foods** | Add custom foods with per-100g nutrition; "Pin to Dashboard" checkbox |
-| **Copy From** | 📋 Copy food + exercise records from any past date to current view; modal with per-item checkboxes, preview counts, and Food/Exercise type toggle |
-| **Water Tracking** | 💧 Log daily water intake with quick-add buttons (+250/+500/+750ml) or manual input with + button; progress bar against calculated daily target |
+| **Copy From** | 📋 Copy food + exercise records from any past date to current view; modal with per-item checkboxes, preview counts, 3-state loading (loading/empty/items), and Food/Exercise type toggle |
+| **Water Tracking** | 💧 Drag-to-set water slider — directly adjust daily total by dragging the handle (range 0–150% of target); replaces quick-add buttons, manual input, and individual entry list |
 | **Water History** | 📊 History tab shows avg water/day stat card, daily water bar chart with target line, and blue dots on calendar for water-logged days |
 | **Calculated Water Target** | Auto-calculated from body weight × activity multiplier (30-40ml/kg); shown in Profile tab next to macro targets |
 | **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
@@ -950,7 +950,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | `POST /api/nutrition/confirm-analysis` | POST | Confirm AI dishes → insert (prefers AI nutrition over DB cache) |
 | `GET /api/nutrition/stats/weekly?date=` | GET | 7-day aggregated calorie/protein/carbs/fat |
 | `POST /api/nutrition/copy-yesterday` | POST | Copy food + exercise records from any past date to today; accepts `source_date`, `copy_food`, `copy_exercise`, `food_names[]`, `exercise_names[]`; `preview=true` returns available items without copying |
-| `GET|POST|DELETE /api/nutrition/water` | CRUD | Water intake tracking: GET `?date=` returns entries + total_ml + target_ml; POST `{amount_ml, log_date}` adds entry; DELETE `?id=` removes entry |
+| `GET|POST|PUT|DELETE /api/nutrition/water` | CRUD | Water intake tracking: GET `?date=` returns entries + total_ml + target_ml; POST `{amount_ml}` adds entry; PUT `{amount_ml}` sets daily total (replaces all entries); DELETE `?id=` removes entry |
 | `GET|POST|DELETE /api/nutrition/weight` | CRUD | Weight tracking: `weight_logs` table with UNIQUE(user_id, log_date); auto-updates profile weight |
 | `GET /api/nutrition/barcode?code=` | GET | Open Food Facts barcode lookup with `_prepared_100g` fallback |
 

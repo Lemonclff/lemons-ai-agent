@@ -44,8 +44,8 @@ export function DashboardTab({
   showCopyModal, setShowCopyModal,
   copySourceDate, setCopySourceDate,
   copyFromDate,
-  waterEntries, waterTotal, waterTarget,
-  addWater, deleteWater,
+  waterTotal, waterTarget,
+  transferWater,
 }: {
   summary: DaySummary; goals: {calories:number,protein:number,carbs:number,fat:number};
   loading: boolean; mealFilter: string; setMealFilter: (v:string) => void;
@@ -64,10 +64,8 @@ export function DashboardTab({
   copySourceDate: string; setCopySourceDate: (v:string) => void;
   copyFromDate: (sourceDate: string, copyFood: boolean, copyExercise: boolean,
     foodNames?: string[], exerciseNames?: string[]) => Promise<void>;
-  waterEntries: {id:number;amount_ml:number}[];
   waterTotal: number; waterTarget: number;
-  addWater: (ml: number) => void;
-  deleteWater: (id: number) => void;
+  transferWater: (ml: number) => void;
 }) {
   const [logTab, setLogTab] = useState<'food'|'exercise'>('food');
   const [favTab, setFavTab] = useState<'in'|'out'>('in');
@@ -79,7 +77,6 @@ export function DashboardTab({
   const [selectedFoods, setSelectedFoods] = useState<Set<string>>(new Set());
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [previewLoaded, setPreviewLoaded] = useState(false);
-  const [waterInput, setWaterInput] = useState("");
 
   /* ── Preview items when modal opens ── */
   useEffect(() => {
@@ -182,7 +179,7 @@ export function DashboardTab({
       />
 
       {/* ═══ Quick Add Favorites ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
         <div className="flex border-b border-[var(--color-border)]/50">
           <button onClick={() => setFavTab('in')}
             className={cn(
@@ -272,11 +269,11 @@ export function DashboardTab({
         </div>
       </div>
 
-      {/* ═══ Water Tracker ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+      {/* ═══ Water Tracker — Slider ═══ */}
+      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
         <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-sky-500/15 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-sky-500/15 flex items-center justify-center nutri-icon-bounce">
               <Droplets size={14} className="text-sky-400" />
             </div>
             <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Water</span>
@@ -287,77 +284,46 @@ export function DashboardTab({
             <span>{waterTarget}</span> ml
           </span>
         </div>
-        {/* Progress bar */}
-        <div className="px-4 pt-3 pb-1">
-          <div className="h-2.5 rounded-full bg-[var(--color-border)]/35 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
-              style={{ width: `${Math.min(100, waterTarget > 0 ? (waterTotal / waterTarget) * 100 : 0)}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-1 text-[10px] text-[var(--color-text-muted)]">
-            <span>{waterTarget > 0 ? `${Math.round((waterTotal / waterTarget) * 100)}%` : "—"}</span>
-            <span>{waterTarget > 0 ? `${Math.round(waterTarget - waterTotal)} ml left` : ""}</span>
-          </div>
-        </div>
-        {/* Quick-add chips */}
-        <div className="px-4 py-2 flex gap-2">
-          {[250, 500, 750].map(ml => (
-            <button key={ml} onClick={() => addWater(ml)}
-              className="flex-1 min-h-[44px] rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 hover:bg-[var(--color-surface-elevated)]/30 hover:border-sky-400/30 text-[13px] font-medium text-[var(--color-text-secondary)] hover:text-sky-400 transition-all active:scale-95">
-              +{ml}
-            </button>
-          ))}
-          <div className="flex items-center gap-0">
-            <input type="number" inputMode="decimal" placeholder="ml" value={waterInput}
-              onChange={e => setWaterInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter") {
-                  const v = parseInt(waterInput);
-                  if (v > 0) { addWater(v); setWaterInput(""); }
-                }
-              }}
-              className="w-[54px] min-h-[44px] px-2 text-[13px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-l-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none border-r-0" />
-            <button onClick={() => {
-              const v = parseInt(waterInput);
-              if (v > 0) { addWater(v); setWaterInput(""); }
+        {/* Slider */}
+        <div className="px-4 pt-3 pb-4 space-y-2">
+          <input type="range" min={0} max={waterTarget * 1.5} step={50}
+            value={Math.round(waterTotal)}
+            onChange={e => transferWater(Number(e.target.value))}
+            className="w-full h-2.5 rounded-full appearance-none cursor-pointer
+              bg-[var(--color-border)]/35
+              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-7 [&::-webkit-slider-thumb]:h-7
+              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-sky-400 [&::-webkit-slider-thumb]:to-blue-500
+              [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-sky-400/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20
+              [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-110
+              [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-7 [&::-moz-range-thumb]:h-7
+              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gradient-to-br [&::-moz-range-thumb]:from-sky-400 [&::-moz-range-thumb]:to-blue-500
+              [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white/20 [&::-moz-range-thumb]:shadow-lg
+              overflow-hidden
+              [&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:rounded-full
+            "
+            style={{
+              background: `linear-gradient(to right, #38bdf8 ${Math.min(100, (waterTotal / Math.max(1, waterTarget * 1.5)) * 100)}%, transparent ${Math.min(100, (waterTotal / Math.max(1, waterTarget * 1.5)) * 100)}%)`,
             }}
-              className="min-h-[44px] min-w-[36px] flex items-center justify-center rounded-r-xl border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 hover:bg-[var(--color-surface-elevated)]/30 hover:border-sky-400/30 text-[var(--color-text-muted)] hover:text-sky-400 transition-all active:scale-95">
-              <Plus size={16} />
-            </button>
+          />
+          <div className="flex justify-between text-[10px] text-[var(--color-text-muted)]">
+            <span>{waterTarget > 0 ? `${Math.round((waterTotal / waterTarget) * 100)}%` : "—"}</span>
+            <span>{waterTotal >= waterTarget ? "Goal met! 🎉" : `${waterTarget - Math.round(waterTotal)} ml left`}</span>
           </div>
         </div>
-        {/* Entries list */}
-        {waterEntries.length > 0 && (
-          <div className="divide-y divide-[var(--color-border)]/10 border-t border-[var(--color-border)]/30">
-            {waterEntries.map(entry => (
-              <div key={entry.id} className="flex items-center justify-between px-4 py-2.5 group">
-                <div className="flex items-center gap-2">
-                  <Droplets size={13} className="text-sky-400/60" />
-                  <span className="text-[13px] text-[var(--color-text-primary)]">{Math.round(entry.amount_ml)} ml</span>
-                </div>
-                <button onClick={() => deleteWater(entry.id)}
-                  className="opacity-0 group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 transition-all">
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Low protein warning */}
       {goals.calories > 0 && summary.protein < goals.protein * 0.7 && (
-        <div className="text-[12px] text-amber-400 px-4 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center gap-2 animate-[fade-up_0.4s_ease]">
+        <div className="text-[12px] text-amber-400 px-4 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center gap-2 animate-[fade-up_0.4s_ease] nutri-card-hover">
           <Zap size={14} className="shrink-0" /> Protein is low today. Try chicken, eggs, or tofu.
         </div>
       )}
       {/* ═══ Mobile: Food + Exercise Tab ═══ */}
-      <div className="md:hidden rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+      <div className="md:hidden rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
         {/* Tab bar */}
         <div className="flex border-b border-[var(--color-border)]/50">
           <button onClick={() => setLogTab("food")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-all active:scale-95 ${
               logTab === "food"
                 ? "text-orange-400 border-b-2 border-orange-400 bg-orange-500/5"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
@@ -366,7 +332,7 @@ export function DashboardTab({
             {summary.count > 0 && <span className="text-[10px] text-orange-400/70">({summary.count})</span>}
           </button>
           <button onClick={() => setLogTab("exercise")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-all active:scale-95 ${
               logTab === "exercise"
                 ? "text-green-400 border-b-2 border-green-400 bg-green-500/5"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
@@ -512,18 +478,18 @@ export function DashboardTab({
         </>)}
       </div>
 
+      {/* ═══ Food Log ══ */}
       {/* ═══ Food Log ═══ */}
-      {/* ═══ Food Log ═══ */}
-      <div className="hidden md:block rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+      <div className="hidden md:block rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
         <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between flex-wrap gap-2">
           <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Today's Food Log</span>
           <div className="flex items-center gap-2">
             <button onClick={() => copyYesterday()}
-              className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
+              className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2 transition-all active:scale-95">
               <Copy size={12} />Copy Yest
             </button>
             <button onClick={() => { setPreviewItems({foods:[], exercises:[]}); setCopyFood(true); setCopyExercise(true); setShowCopyModal(true); }}
-              className="flex items-center gap-1 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
+              className="flex items-center gap-1 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline min-h-[36px] px-2 transition-all active:scale-95">
               <Calendar size={12} />Copy From...
             </button>
             <div className="flex gap-1">

@@ -195,12 +195,12 @@ export function SearchTab({
   }
 
   return (
-    <div className="grid gap-3 max-w-[640px]">
+    <div className="grid gap-3 max-w-[640px] nutri-stagger">
 
       {/* ═══ Search ═══ */}
-      <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50">
+      <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50 nutri-card-hover">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center nutri-icon-bounce">
             <Search size={15} className="text-[var(--color-accent)]" />
           </div>
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">Search Food</h3>
@@ -209,18 +209,18 @@ export function SearchTab({
           <input value={searchQ} onChange={e => { setSearchQ(e.target.value); onSearch(e.target.value); }}
             onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             placeholder="Search food database..."
-            className="flex-1 px-4 py-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50"
+            className="flex-1 px-4 py-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow"
           />
           <button onClick={() => onSearch(searchQ)}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all">
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all nutri-press">
             {searching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
           </button>
         </div>
         {showDropdown && searchResults.length > 0 && (
-          <div className="mt-2 border border-[var(--color-border)] rounded-xl max-h-[220px] overflow-y-auto bg-[var(--color-surface)] shadow-lg">
+          <div className="mt-2 border border-[var(--color-border)] rounded-xl max-h-[220px] overflow-y-auto bg-[var(--color-surface)] shadow-lg nutri-dropdown-enter">
             {searchResults.map((f, i) => (
               <button key={i} onClick={() => selectFood(f)}
-                className="w-full text-left px-4 py-3 text-[14px] hover:bg-[var(--color-accent)]/8 border-b border-[var(--color-border)]/10 last:border-none flex items-center justify-between gap-2">
+                className="w-full text-left px-4 py-3 text-[14px] hover:bg-[var(--color-accent)]/8 border-b border-[var(--color-border)]/10 last:border-none flex items-center justify-between gap-2 transition-colors active:scale-[0.99]">
                 <span className="truncate">{f.display_name}</span>
                 <span className="text-[11px] text-[var(--color-text-muted)] shrink-0 tabular-nums">{f.calories_per_100g} kcal</span>
               </button>
@@ -230,9 +230,9 @@ export function SearchTab({
       </div>
 
       {/* ═══ Barcode ═══ */}
-      <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50">
+      <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50 nutri-card-hover">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center nutri-icon-bounce">
             <ScanLine size={15} className="text-indigo-400" />
           </div>
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">Barcode</h3>
@@ -242,22 +242,22 @@ export function SearchTab({
           <input value={barcodeCode} onChange={e => setBarcodeCode(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && lookupBarcode()}
             placeholder="Enter barcode number..."
-            className="flex-1 px-4 py-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none tabular-nums"
+            className="flex-1 px-4 py-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none tabular-nums focus:border-indigo-400/50 transition-colors nutri-input-glow"
           />
           <button onClick={lookupBarcode} disabled={barcodeLoading || !barcodeCode}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/25 active:scale-95 transition-all disabled:opacity-30">
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/25 active:scale-95 transition-all disabled:opacity-30 nutri-press">
             {barcodeLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
           </button>
           <button onClick={() => setShowScanner(true)}
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-indigo-500 text-white hover:opacity-90 active:scale-95 transition-all">
+            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-indigo-500 text-white hover:opacity-90 active:scale-95 transition-all nutri-press">
             <Camera size={16} />
           </button>
         </div>
         {barcodeError && (
-          <div className="mt-2 text-[13px] text-red-400 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10">{barcodeError}</div>
+          <div className="mt-2 text-[13px] text-red-400 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10 animate-[fade-up_0.3s_ease]">{barcodeError}</div>
         )}
         {barcodeResult && (
-          <div className="mt-3 p-3 rounded-xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/10">
+          <div className="mt-3 p-3 rounded-xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/10 animate-[fade-up_0.3s_ease] nutri-card-hover">
             <div className="flex items-start gap-3">
               {barcodeResult.image && (
                 <img src={barcodeResult.image} alt="" className="w-14 h-14 rounded-xl object-cover border border-[var(--color-border)] shrink-0" />
@@ -272,7 +272,7 @@ export function SearchTab({
                   <span className="text-red-400 tabular-nums">F:{barcodeResult.nutrition.fat_per_100g}g</span>
                 </div>
                 <button onClick={useBarcodeData}
-                  className="mt-2 px-3 py-1.5 text-[12px] font-semibold rounded-lg bg-[var(--color-accent)]/15 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25 active:scale-95 transition-all">
+                  className="mt-2 px-3 py-1.5 text-[12px] font-semibold rounded-lg bg-[var(--color-accent)]/15 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25 active:scale-95 transition-all nutri-press">
                   Use This Food ↓
                 </button>
               </div>
@@ -293,9 +293,9 @@ export function SearchTab({
         const estC = ((Number(addTarget.carbs_per_100g) || 0) * grams / 100).toFixed(1);
         const estF = ((Number(addTarget.fat_per_100g) || 0) * grams / 100).toFixed(1);
         return (
-        <div className="bg-[var(--color-accent)]/5 rounded-2xl p-4 border border-[var(--color-accent)]/10">
+        <div className="bg-[var(--color-accent)]/5 rounded-2xl p-4 border border-[var(--color-accent)]/10 animate-[fade-up_0.3s_ease] nutri-card-hover">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center nutri-icon-bounce">
               <UtensilsCrossed size={15} className="text-[var(--color-accent)]" />
             </div>
             <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)] truncate">
@@ -306,14 +306,14 @@ export function SearchTab({
             {/* Amount stepper — step/min depend on unit type */}
             <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
               <button onClick={() => setAddWeight(w => Math.max(minAmt, Math.round(((w || (isWeightUnit ? 100 : 1)) - step) * 10) / 10))}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors nutri-press">
                 <Minus size={18} />
               </button>
               <NumberField value={addWeight} onCommit={v => setAddWeight(v ?? minAmt)}
                   min={minAmt} max={isWeightUnit ? 2000 : 50} step={step}
                   className="w-16 text-center font-bold tabular-nums" />
               <button onClick={() => setAddWeight(w => Math.min(isWeightUnit ? 2000 : 50, Math.round(((w || (isWeightUnit ? 100 : 1)) + step) * 10) / 10))}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors nutri-press">
                 <Plus size={18} />
               </button>
             </div>
@@ -325,18 +325,18 @@ export function SearchTab({
               // Reset amount when switching between weight ↔ serving units
               if (wasWeight !== nowWeight) setAddWeight(nowWeight ? 100 : 1);
             }}
-              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors">
               {["g","ml","份","碗","杯","罐","瓶","個","包","碟","匙","片","塊"].map(u => <option key={u} value={u}>{u}</option>)}
             </select>
             <select value={addMeal} onChange={e => setAddMeal(e.target.value)}
-              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+              className="min-h-[44px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors">
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
               <option value="dinner">Dinner</option>
               <option value="snack">Snack</option>
             </select>
             <button onClick={addFood} disabled={adding}
-              className="min-h-[44px] px-5 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all ml-auto">
+              className="min-h-[44px] px-5 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all ml-auto nutri-press">
               {adding ? "Adding..." : "Add"}
             </button>
           </div>
@@ -354,9 +354,9 @@ export function SearchTab({
       })()}
 
       {/* ═══ Custom Foods ═══ */}
-      <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50">
+      <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50 nutri-card-hover">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center nutri-icon-bounce">
             <Star size={15} className="text-amber-400" />
           </div>
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">Custom Foods</h3>
@@ -370,31 +370,31 @@ export function SearchTab({
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Name</label>
               <input value={customName} onChange={e => setCustomName(e.target.value)}
                 placeholder="e.g. Protein shake"
-                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]" />
+                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
             </div>
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Calories</label>
               <input value={customCal} onChange={e => setCustomCal(e.target.value)}
                 placeholder="kcal / 100g"
-                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]" />
+                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
             </div>
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Protein (g)</label>
               <input value={customProtein} onChange={e => setCustomProtein(e.target.value)}
                 placeholder="g / 100g"
-                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-blue-400" />
+                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-blue-400 focus:border-blue-400/50 transition-colors nutri-input-glow" />
             </div>
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Carbs (g)</label>
               <input value={customCarbs} onChange={e => setCustomCarbs(e.target.value)}
                 placeholder="g / 100g"
-                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-amber-400" />
+                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-amber-400 focus:border-amber-400/50 transition-colors nutri-input-glow" />
             </div>
             <div className="max-md:col-span-1">
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Fat (g)</label>
               <input value={customFat} onChange={e => setCustomFat(e.target.value)}
                 placeholder="g / 100g"
-                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-red-400" />
+                className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-red-400 focus:border-red-400/50 transition-colors nutri-input-glow" />
             </div>
           </div>
         </div>
@@ -402,7 +402,7 @@ export function SearchTab({
         {/* Actions row */}
         <div className="flex items-center flex-wrap gap-2">
           <select value={customMeal} onChange={e => setCustomMeal(e.target.value)}
-            className="min-h-[40px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]">
+            className="min-h-[40px] px-3 text-[13px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors">
             <option value="breakfast">Breakfast</option>
             <option value="lunch">Lunch</option>
             <option value="dinner">Dinner</option>
@@ -410,24 +410,24 @@ export function SearchTab({
           </select>
           <input list="custom-serving-units" value={customServingUnit} onChange={e => setCustomServingUnit(e.target.value)}
             placeholder="unit"
-            className="w-[76px] min-h-[40px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)]" />
+            className="w-[76px] min-h-[40px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
           <datalist id="custom-serving-units">
             <option value="g" /><option value="ml" />
             <option value="份" /><option value="碗" /><option value="杯" /><option value="罐" />
             <option value="瓶" /><option value="個" /><option value="包" /><option value="碟" />
-            <option value="匙" /><option value="片" /><option value="塊" />
+            <option value="匙" /><option value="片" /><option value="" />
           </datalist>
           <button onClick={addCustomFood}
-            className="min-h-[40px] px-5 text-[13px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all ml-auto">
+            className="min-h-[40px] px-5 text-[13px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all ml-auto nutri-press">
             Add to Log
           </button>
         </div>
 
         {/* Pin to dashboard */}
-        <label className="flex items-center gap-2 mt-3 cursor-pointer">
+        <label className="flex items-center gap-2 mt-3 cursor-pointer group">
           <input type="checkbox" checked={customFavorite} onChange={e => setCustomFavorite(e.target.checked)}
-            className="w-4 h-4 rounded accent-[var(--color-accent)]" />
-          <Star size={14} className={customFavorite ? "text-yellow-400 fill-yellow-400" : "text-[var(--color-text-muted)]"} />
+            className="w-4 h-4 rounded accent-[var(--color-accent)] transition-transform group-hover:scale-110" />
+          <Star size={14} className={customFavorite ? "text-yellow-400 fill-yellow-400 transition-transform group-hover:scale-110" : "text-[var(--color-text-muted)] transition-transform group-hover:scale-110"} />
           <span className="text-[12px] text-[var(--color-text-muted)]">Pin to Dashboard</span>
         </label>
       </div>
