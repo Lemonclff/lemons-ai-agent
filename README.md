@@ -910,7 +910,8 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **NumberField Component** | Shared `NumberField` defers commit until blur/Enter — prevents iOS keyboard cursor-jump on Profile tab (age/height/weight/body fat) |
 | **Custom Foods** | Add custom foods with per-100g nutrition; "Pin to Dashboard" checkbox |
 | **Copy From** | 📋 Copy food + exercise records from any past date to current view; modal with per-item checkboxes, preview counts, and Food/Exercise type toggle |
-| **Water Tracking** | 💧 Log daily water intake with quick-add buttons (+250/+500/+750ml) or manual input; progress bar against calculated daily target |
+| **Water Tracking** | 💧 Log daily water intake with quick-add buttons (+250/+500/+750ml) or manual input with + button; progress bar against calculated daily target |
+| **Water History** | 📊 History tab shows avg water/day stat card, daily water bar chart with target line, and blue dots on calendar for water-logged days |
 | **Calculated Water Target** | Auto-calculated from body weight × activity multiplier (30-40ml/kg); shown in Profile tab next to macro targets |
 | **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
 | **Logged-in User Display** | Navbar shows username + avatar (colored circle) + Admin badge |

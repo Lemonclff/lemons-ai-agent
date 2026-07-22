@@ -79,6 +79,7 @@ export function DashboardTab({
   const [selectedFoods, setSelectedFoods] = useState<Set<string>>(new Set());
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [waterInput, setWaterInput] = useState("");
 
   /* ── Preview items when modal opens ── */
   useEffect(() => {
@@ -307,14 +308,24 @@ export function DashboardTab({
               +{ml}
             </button>
           ))}
-          <input type="number" inputMode="decimal" placeholder="ml"
-            onKeyDown={e => {
-              if (e.key === "Enter") {
-                const v = parseInt((e.target as HTMLInputElement).value);
-                if (v > 0) { addWater(v); (e.target as HTMLInputElement).value = ""; }
-              }
+          <div className="flex items-center gap-0">
+            <input type="number" inputMode="decimal" placeholder="ml" value={waterInput}
+              onChange={e => setWaterInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  const v = parseInt(waterInput);
+                  if (v > 0) { addWater(v); setWaterInput(""); }
+                }
+              }}
+              className="w-[54px] min-h-[44px] px-2 text-[13px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-l-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none border-r-0" />
+            <button onClick={() => {
+              const v = parseInt(waterInput);
+              if (v > 0) { addWater(v); setWaterInput(""); }
             }}
-            className="w-[60px] min-h-[44px] px-2 text-[13px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+              className="min-h-[44px] min-w-[36px] flex items-center justify-center rounded-r-xl border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 hover:bg-[var(--color-surface-elevated)]/30 hover:border-sky-400/30 text-[var(--color-text-muted)] hover:text-sky-400 transition-all active:scale-95">
+              <Plus size={16} />
+            </button>
+          </div>
         </div>
         {/* Entries list */}
         {waterEntries.length > 0 && (
