@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     daily_protein_target INTEGER DEFAULT 100,
     daily_carbs_target   INTEGER DEFAULT 250,
     daily_fat_target     INTEGER DEFAULT 65,
+    daily_water_target_ml INTEGER DEFAULT 2000,
     updated_at           TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -85,3 +86,15 @@ CREATE TABLE IF NOT EXISTS exercise_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_exercise_user_date ON exercise_logs (user_id, log_date DESC);
+
+-- 6. Water Logs
+--    Records daily water intake entries
+CREATE TABLE IF NOT EXISTS water_logs (
+    id            SERIAL PRIMARY KEY,
+    user_id       INTEGER NOT NULL REFERENCES users(id),
+    log_date      DATE NOT NULL,
+    amount_ml     DECIMAL(8,1) NOT NULL DEFAULT 250,
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_water_user_date ON water_logs (user_id, log_date DESC);

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Loader2, Utensils, Minus, Plus, X, Copy, Star,
-  Flame, Zap, Dumbbell,
+  Flame, Zap, Dumbbell, Calendar, Check, Droplets,
 } from "lucide-react";
 import { Ring, CalorieHero, MacroBars } from "./Ring";
 import { NumberField } from "./NumberField";
@@ -41,6 +41,11 @@ export function DashboardTab({
   addToFavorites, removeFavorite,
   servingUnits,
   userWeight,
+  showCopyModal, setShowCopyModal,
+  copySourceDate, setCopySourceDate,
+  copyFromDate,
+  waterEntries, waterTotal, waterTarget,
+  addWater, deleteWater,
 }: {
   summary: DaySummary; goals: {calories:number,protein:number,carbs:number,fat:number};
   loading: boolean; mealFilter: string; setMealFilter: (v:string) => void;
@@ -55,9 +60,60 @@ export function DashboardTab({
   removeFavorite: (type: 'in'|'out', id: number) => void;
   servingUnits?: string[];
   userWeight?: number;
+  showCopyModal: boolean; setShowCopyModal: (v:boolean) => void;
+  copySourceDate: string; setCopySourceDate: (v:string) => void;
+  copyFromDate: (sourceDate: string, copyFood: boolean, copyExercise: boolean,
+    foodNames?: string[], exerciseNames?: string[]) => Promise<void>;
+  waterEntries: {id:number;amount_ml:number}[];
+  waterTotal: number; waterTarget: number;
+  addWater: (ml: number) => void;
+  deleteWater: (id: number) => void;
 }) {
   const [logTab, setLogTab] = useState<'food'|'exercise'>('food');
   const [favTab, setFavTab] = useState<'in'|'out'>('in');
+  const [copyFood, setCopyFood] = useState(true);
+  const [copyExercise, setCopyExercise] = useState(true);
+  const [copying, setCopying] = useState(false);
+  interface CopyItem { food_name?: string; exercise_name?: string; meal_type?: string; calories: number; duration_min?: number; calories_burned?: number; }
+  const [previewItems, setPreviewItems] = useState<{foods: CopyItem[]; exercises: CopyItem[]}>({foods: [], exercises: []});
+  const [selectedFoods, setSelectedFoods] = useState<Set<string>>(new Set());
+  const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
+  const [previewLoaded, setPreviewLoaded] = useState(false);
+
+  /* ── Preview items when modal opens ── */
+  useEffect(() => {
+    if (!showCopyModal) { setPreviewItems({foods: [], exercises: []}); setPreviewLoaded(false); return; }
+    const fetchPreview = async () => {
+      setPreviewLoaded(false);
+      try {
+        const r = await fetch("/api/nutrition/copy-yesterday", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            log_date: copySourceDate,
+            source_date: copySourceDate,
+            copy_food: copyFood,
+            copy_exercise: copyExercise,
+            preview: true,
+          }),
+        });
+        const json = await r.json();
+        if (json.error) {
+          setPreviewItems({foods: [], exercises: []});
+        } else {
+          const foods: CopyItem[] = json.available_foods || [];
+          const exercises: CopyItem[] = json.available_exercises || [];
+          setPreviewItems({ foods, exercises });
+          setSelectedFoods(new Set(foods.map((f: CopyItem) => f.food_name!)));
+          setSelectedExercises(new Set(exercises.map((e: CopyItem) => e.exercise_name!)));
+        }
+      } catch {
+        setPreviewItems({foods: [], exercises: []});
+      }
+      setPreviewLoaded(true);
+    };
+    fetchPreview();
+  }, [showCopyModal, copySourceDate, copyFood, copyExercise]);
 
   const renderFavChips = (
     items: FavoriteItem[],
@@ -215,6 +271,70 @@ export function DashboardTab({
         </div>
       </div>
 
+      {/* ═══ Water Tracker ═══ */}
+      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+        <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-sky-500/15 flex items-center justify-center">
+              <Droplets size={14} className="text-sky-400" />
+            </div>
+            <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Water</span>
+          </div>
+          <span className="text-[12px] tabular-nums text-[var(--color-text-muted)]">
+            <span className="font-bold text-sky-400">{Math.round(waterTotal)}</span>
+            {" / "}
+            <span>{waterTarget}</span> ml
+          </span>
+        </div>
+        {/* Progress bar */}
+        <div className="px-4 pt-3 pb-1">
+          <div className="h-2.5 rounded-full bg-[var(--color-border)]/35 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
+              style={{ width: `${Math.min(100, waterTarget > 0 ? (waterTotal / waterTarget) * 100 : 0)}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-[var(--color-text-muted)]">
+            <span>{waterTarget > 0 ? `${Math.round((waterTotal / waterTarget) * 100)}%` : "—"}</span>
+            <span>{waterTarget > 0 ? `${Math.round(waterTarget - waterTotal)} ml left` : ""}</span>
+          </div>
+        </div>
+        {/* Quick-add chips */}
+        <div className="px-4 py-2 flex gap-2">
+          {[250, 500, 750].map(ml => (
+            <button key={ml} onClick={() => addWater(ml)}
+              className="flex-1 min-h-[44px] rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 hover:bg-[var(--color-surface-elevated)]/30 hover:border-sky-400/30 text-[13px] font-medium text-[var(--color-text-secondary)] hover:text-sky-400 transition-all active:scale-95">
+              +{ml}
+            </button>
+          ))}
+          <input type="number" inputMode="decimal" placeholder="ml"
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                const v = parseInt((e.target as HTMLInputElement).value);
+                if (v > 0) { addWater(v); (e.target as HTMLInputElement).value = ""; }
+              }
+            }}
+            className="w-[60px] min-h-[44px] px-2 text-[13px] text-center bg-[var(--color-surface)]/30 border border-[var(--color-border)]/40 rounded-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-sky-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+        </div>
+        {/* Entries list */}
+        {waterEntries.length > 0 && (
+          <div className="divide-y divide-[var(--color-border)]/10 border-t border-[var(--color-border)]/30">
+            {waterEntries.map(entry => (
+              <div key={entry.id} className="flex items-center justify-between px-4 py-2.5 group">
+                <div className="flex items-center gap-2">
+                  <Droplets size={13} className="text-sky-400/60" />
+                  <span className="text-[13px] text-[var(--color-text-primary)]">{Math.round(entry.amount_ml)} ml</span>
+                </div>
+                <button onClick={() => deleteWater(entry.id)}
+                  className="opacity-0 group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400 transition-all">
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Low protein warning */}
       {goals.calories > 0 && summary.protein < goals.protein * 0.7 && (
         <div className="text-[12px] text-amber-400 px-4 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center gap-2 animate-[fade-up_0.4s_ease]">
@@ -248,9 +368,13 @@ export function DashboardTab({
         {/* === Food tab content === */}
         {logTab === "food" && (<>
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-border)]/10">
-            <button onClick={copyYesterday}
+            <button onClick={() => copyYesterday()}
               className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
-              <Copy size={12} />Copy Yesterday
+              <Copy size={12} />Copy Yest
+            </button>
+            <button onClick={() => { setPreviewItems({foods:[], exercises:[]}); setCopyFood(true); setCopyExercise(true); setShowCopyModal(true); }}
+              className="flex items-center gap-1 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
+              <Calendar size={12} />Copy From...
             </button>
             <div className="flex gap-1 ml-auto">
               {MEALS.map(m => (
@@ -383,9 +507,13 @@ export function DashboardTab({
         <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between flex-wrap gap-2">
           <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Today's Food Log</span>
           <div className="flex items-center gap-2">
-            <button onClick={copyYesterday}
+            <button onClick={() => copyYesterday()}
               className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
-              <Copy size={12} />Copy Yesterday
+              <Copy size={12} />Copy Yest
+            </button>
+            <button onClick={() => { setPreviewItems({foods:[], exercises:[]}); setCopyFood(true); setCopyExercise(true); setShowCopyModal(true); }}
+              className="flex items-center gap-1 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
+              <Calendar size={12} />Copy From...
             </button>
             <div className="flex gap-1">
               {MEALS.map(m => (
@@ -602,6 +730,212 @@ export function DashboardTab({
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Copy Modal ═══ */}
+      {showCopyModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 modal-sheet" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-[fadeIn_150ms_ease]" onClick={() => setShowCopyModal(false)} aria-hidden="true" />
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] shadow-xl animate-[scale-in_220ms_var(--ease-out-expo)] overflow-hidden modal-sheet-content">
+            {/* Drag handle */}
+            <div className="sm:hidden flex justify-center pt-3 pb-1" aria-hidden="true">
+              <span className="w-10 h-1 rounded-full bg-[var(--color-border-strong)]" />
+            </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-0">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] tracking-tight flex items-center gap-2">
+                <Calendar size={18} className="text-[var(--color-accent)]" />
+                Copy From...
+              </h2>
+              <button onClick={() => setShowCopyModal(false)}
+                className="p-2.5 -mr-1 -mt-1 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] transition-colors touch-target">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-5 py-5 space-y-5">
+              {/* Date Picker */}
+              <div>
+                <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-2">From Date</label>
+                <input type="date" value={copySourceDate}
+                  onChange={e => { setCopySourceDate(e.target.value); }}
+                  className="w-full min-h-[44px] px-3 py-2 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/30 transition-all" />
+              </div>
+
+              {/* Type Toggles */}
+              <div>
+                <label className="block text-[13px] font-medium text-[var(--color-text-secondary)] mb-2">Copy What</label>
+                <div className="flex gap-3">
+                  <label className={cn(
+                    "flex-1 flex items-center gap-2.5 px-3.5 py-3 rounded-xl border cursor-pointer transition-all min-h-[44px] select-none",
+                    copyFood
+                      ? "border-[var(--color-accent)]/40 bg-[var(--color-accent)]/8 text-[var(--color-accent)]"
+                      : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]"
+                  )}>
+                    <div className={cn(
+                      "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0",
+                      copyFood ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white" : "border-[var(--color-border-strong)]"
+                    )}>
+                      {copyFood && <Check size={13} strokeWidth={3} />}
+                    </div>
+                    <input type="checkbox" checked={copyFood} onChange={() => setCopyFood(!copyFood)} className="sr-only" />
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-medium">Food</span>
+                      <span className="text-[11px] opacity-60">Calories In</span>
+                    </div>
+                  </label>
+                  <label className={cn(
+                    "flex-1 flex items-center gap-2.5 px-3.5 py-3 rounded-xl border cursor-pointer transition-all min-h-[44px] select-none",
+                    copyExercise
+                      ? "border-green-400/40 bg-green-400/8 text-green-400"
+                      : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]"
+                  )}>
+                    <div className={cn(
+                      "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0",
+                      copyExercise ? "border-green-400 bg-green-400 text-white" : "border-[var(--color-border-strong)]"
+                    )}>
+                      {copyExercise && <Check size={13} strokeWidth={3} />}
+                    </div>
+                    <input type="checkbox" checked={copyExercise} onChange={() => setCopyExercise(!copyExercise)} className="sr-only" />
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-medium">Exercise</span>
+                      <span className="text-[11px] opacity-60">Calories Out</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Item List */}
+              {!previewLoaded ? (
+                <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]/50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-[13px] text-[var(--color-text-muted)]">
+                    <Loader2 size={14} className="animate-spin" />
+                    Checking available records...
+                  </div>
+                </div>
+              ) : previewItems.foods.length === 0 && previewItems.exercises.length === 0 ? (
+                <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]/50 px-4 py-3">
+                  <div className="text-center py-2 text-[13px] text-[var(--color-text-muted)]">
+                    No items to copy from this date
+                  </div>
+                </div>
+              ) : (
+                <div className="max-h-[260px] overflow-y-auto space-y-2 -mx-1 px-1">
+                  {/* Food items */}
+                  {copyFood && previewItems.foods.length > 0 && (
+                    <div>
+                      <div className="text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5 px-1">
+                        Food ({selectedFoods.size}/{previewItems.foods.length})
+                      </div>
+                      {previewItems.foods.map((item) => {
+                        const key = item.food_name!;
+                        const checked = selectedFoods.has(key);
+                        return (
+                          <label key={key}
+                            className={cn(
+                              "flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-all min-h-[40px] select-none mb-1",
+                              checked
+                                ? "border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5 text-[var(--color-text-primary)]"
+                                : "border-[var(--color-border)]/30 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]"
+                            )}>
+                            <div className={cn(
+                              "w-4.5 h-4.5 rounded border-2 flex items-center justify-center transition-all shrink-0",
+                              checked ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white" : "border-[var(--color-border-strong)]"
+                            )}>
+                              {checked && <Check size={11} strokeWidth={3} />}
+                            </div>
+                            <input type="checkbox" checked={checked}
+                              onChange={() => {
+                                const next = new Set(selectedFoods);
+                                checked ? next.delete(key) : next.add(key);
+                                setSelectedFoods(next);
+                              }} className="sr-only" />
+                            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="text-[13px] font-medium truncate block">{item.food_name}</span>
+                                <span className="text-[10px] text-[var(--color-text-muted)] capitalize">{item.meal_type}</span>
+                              </div>
+                              <span className="text-[12px] font-semibold tabular-nums text-orange-400 shrink-0">
+                                {Math.round(item.calories)} kcal
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Exercise items */}
+                  {copyExercise && previewItems.exercises.length > 0 && (
+                    <div>
+                      <div className="text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5 px-1">
+                        Exercise ({selectedExercises.size}/{previewItems.exercises.length})
+                      </div>
+                      {previewItems.exercises.map((item) => {
+                        const key = item.exercise_name!;
+                        const checked = selectedExercises.has(key);
+                        return (
+                          <label key={key}
+                            className={cn(
+                              "flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-all min-h-[40px] select-none mb-1",
+                              checked
+                                ? "border-green-400/30 bg-green-400/5 text-[var(--color-text-primary)]"
+                                : "border-[var(--color-border)]/30 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]"
+                            )}>
+                            <div className={cn(
+                              "w-4.5 h-4.5 rounded border-2 flex items-center justify-center transition-all shrink-0",
+                              checked ? "border-green-400 bg-green-400 text-white" : "border-[var(--color-border-strong)]"
+                            )}>
+                              {checked && <Check size={11} strokeWidth={3} />}
+                            </div>
+                            <input type="checkbox" checked={checked}
+                              onChange={() => {
+                                const next = new Set(selectedExercises);
+                                checked ? next.delete(key) : next.add(key);
+                                setSelectedExercises(next);
+                              }} className="sr-only" />
+                            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="text-[13px] font-medium truncate block">{item.exercise_name}</span>
+                                <span className="text-[10px] text-[var(--color-text-muted)]">{item.duration_min} min</span>
+                              </div>
+                              <span className="text-[12px] font-semibold tabular-nums text-green-400 shrink-0">
+                                {Math.round(item.calories_burned || 0)} kcal
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setShowCopyModal(false)}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-elevated)] transition-colors min-h-[44px]">
+                  Cancel
+                </button>
+                <button onClick={async () => {
+                  setCopying(true);
+                  await copyFromDate(
+                    copySourceDate, copyFood, copyExercise,
+                    selectedFoods.size > 0 ? Array.from(selectedFoods) : undefined,
+                    selectedExercises.size > 0 ? Array.from(selectedExercises) : undefined,
+                  );
+                  setCopying(false);
+                }}
+                  disabled={copying || (selectedFoods.size === 0 && selectedExercises.size === 0)}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl text-white bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-40 transition-all min-h-[44px] shadow-glow-sm flex items-center justify-center gap-2">
+                  {copying ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
+                  {copying
+                    ? "Copying..."
+                    : `Copy (${selectedFoods.size + selectedExercises.size})`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

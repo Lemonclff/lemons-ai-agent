@@ -53,7 +53,7 @@ Lemon's AI Agent is a **local-first, privacy-respecting dashboard** that runs en
 | 📊 **FRED** | US Treasury yields, mortgage rates, corporate bonds, CPI inflation, macro risk scoring |
 | 🤖 **AI** | LLM-powered stock analysis (zh-TW), AI OCR receipt parsing, 7-sector macro impact |
 | 💰 **Finance** | Bank statement OCR → structured transactions → dashboard with 4 chart types |
-| 🍎 **Nutrition** | Food logging + exercise tracking + AI photo analysis + dual-ring calorie budget |
+| 🍎 **Nutrition** | Food logging + exercise tracking + AI photo analysis + dual-ring calorie budget + water intake tracking |
 | 🎤 **Voice** | Cantonese-optimized speech-to-text with speaker diarization |
 | 📅 **Macro** | Economic calendar with auto BEAT/MISS detection, Telegram push |
 | 🔐 **Auth** | bcrypt login, HMAC-SHA256 tokens, httpOnly cookies, admin role |
@@ -909,7 +909,9 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Inline Editing** | Editable Amount (onBlur, no auto-zoom), Cal/P/C/F + serving unit; Amount changes don't recalculate macros |
 | **NumberField Component** | Shared `NumberField` defers commit until blur/Enter — prevents iOS keyboard cursor-jump on Profile tab (age/height/weight/body fat) |
 | **Custom Foods** | Add custom foods with per-100g nutrition; "Pin to Dashboard" checkbox |
-| **Copy Yesterday** | One-click copy of yesterday's food log |
+| **Copy From** | 📋 Copy food + exercise records from any past date to current view; modal with per-item checkboxes, preview counts, and Food/Exercise type toggle |
+| **Water Tracking** | 💧 Log daily water intake with quick-add buttons (+250/+500/+750ml) or manual input; progress bar against calculated daily target |
+| **Calculated Water Target** | Auto-calculated from body weight × activity multiplier (30-40ml/kg); shown in Profile tab next to macro targets |
 | **Swipe Gestures** | Left/right swipe to switch between tabs on mobile |
 | **Logged-in User Display** | Navbar shows username + avatar (colored circle) + Admin badge |
 
@@ -946,7 +948,8 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | `POST /api/nutrition/analyze-image` | POST | Multi-provider photo analysis (Agnes/Gemini/OpenAI/OpenRouter/MiMo/NVIDIA-qwen/Local) |
 | `POST /api/nutrition/confirm-analysis` | POST | Confirm AI dishes → insert (prefers AI nutrition over DB cache) |
 | `GET /api/nutrition/stats/weekly?date=` | GET | 7-day aggregated calorie/protein/carbs/fat |
-| `POST /api/nutrition/copy-yesterday` | POST | Copy yesterday's food log entries to today |
+| `POST /api/nutrition/copy-yesterday` | POST | Copy food + exercise records from any past date to today; accepts `source_date`, `copy_food`, `copy_exercise`, `food_names[]`, `exercise_names[]`; `preview=true` returns available items without copying |
+| `GET|POST|DELETE /api/nutrition/water` | CRUD | Water intake tracking: GET `?date=` returns entries + total_ml + target_ml; POST `{amount_ml, log_date}` adds entry; DELETE `?id=` removes entry |
 | `GET|POST|DELETE /api/nutrition/weight` | CRUD | Weight tracking: `weight_logs` table with UNIQUE(user_id, log_date); auto-updates profile weight |
 | `GET /api/nutrition/barcode?code=` | GET | Open Food Facts barcode lookup with `_prepared_100g` fallback |
 

@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
     await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS body_fat_pct DECIMAL(4,1)`).catch(() => {});
     await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_bmr INTEGER`).catch(() => {});
     await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_tdee INTEGER`).catch(() => {});
+    await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_water_target_ml INTEGER DEFAULT 2000`).catch(() => {});
 
     const r = await query(`SELECT * FROM user_profiles WHERE user_id = $1`, [uid]);
     return NextResponse.json({ profile: r.rows[0] || null });
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
     await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS body_fat_pct DECIMAL(4,1)`).catch(() => {});
     await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_bmr INTEGER`).catch(() => {});
     await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_tdee INTEGER`).catch(() => {});
+    await query(`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_water_target_ml INTEGER DEFAULT 2000`).catch(() => {});
 
     const body = await req.json();
     const {
@@ -152,22 +154,29 @@ export async function POST(req: NextRequest) {
     // ─── Macros ───
     const macros = calculateMacro(weight_kg, target, goal);
 
+    // ─── Water target ───
+    const activityWaterMultipliers: Record<string, number> = {
+      sedentary: 30, light: 33, moderate: 35, active: 37, very_active: 40,
+    };
+    const waterMlPerKg = activityWaterMultipliers[activity_level] || 35;
+    const dailyWater = Math.round(Math.round(weight_kg * waterMlPerKg) / 50) * 50;
+
     await query(
       `INSERT INTO user_profiles (user_id, gender, age, height_cm, weight_kg, body_fat_pct, activity_level, goal,
          daily_calorie_target, daily_protein_target, daily_carbs_target, daily_fat_target,
-         daily_bmr, daily_tdee, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,CURRENT_TIMESTAMP)
+         daily_bmr, daily_tdee, daily_water_target_ml, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,CURRENT_TIMESTAMP)
        ON CONFLICT (user_id) DO UPDATE SET
          gender=$2, age=$3, height_cm=$4, weight_kg=$5, body_fat_pct=$6,
          activity_level=$7, goal=$8,
          daily_calorie_target=$9, daily_protein_target=$10, daily_carbs_target=$11, daily_fat_target=$12,
-         daily_bmr=$13, daily_tdee=$14, updated_at=CURRENT_TIMESTAMP
+         daily_bmr=$13, daily_tdee=$14, daily_water_target_ml=$15, updated_at=CURRENT_TIMESTAMP
        RETURNING *`,
       [
         uid, gender, age, height_cm, weight_kg, body_fat_pct ?? null,
         activity_level, goal,
         target, macros.protein, macros.carbs, macros.fat,
-        bmr, tdee,
+        bmr, tdee, dailyWater,
       ]
     );
 
@@ -183,6 +192,7 @@ export async function POST(req: NextRequest) {
         target,
         macros: { protein: `${macros.protein}g`, carbs: `${macros.carbs}g`, fat: `${macros.fat}g` },
         macroSplit: `P:${macros.proteinPct}% C:${macros.carbsPct}% F:${macros.fatPct}%`,
+        waterTarget: `${dailyWater}ml`,
       },
     });
   } catch (e) {

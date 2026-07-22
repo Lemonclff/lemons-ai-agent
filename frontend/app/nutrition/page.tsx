@@ -128,11 +128,22 @@ export default function NutritionPage() {
   const [favorites, setFavorites] = useState<{ in: any[]; out: any[] }>({ in: [], out: [] });
   const [suggested, setSuggested] = useState<{ in: any[]; out: any[] }>({ in: [], out: [] });
 
+  // Copy From
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const getYesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  const [copySourceDate, setCopySourceDate] = useState(getYesterday());
+
+  // Water
+  const [waterEntries, setWaterEntries] = useState<{id:number;amount_ml:number}[]>([]);
+  const [waterTotal, setWaterTotal] = useState(0);
+  const [waterTarget, setWaterTarget] = useState(2000);
+
   // Profile
   const [profile, setProfile] = useState<UserProfile>({
     gender: "male", age: 30, height_cm: 170, weight_kg: 70,
     activity_level: "moderate", goal: "maintain",
     daily_calorie_target: 2000, daily_protein_target: 100, daily_carbs_target: 250, daily_fat_target: 65,
+    daily_water_target_ml: 2000,
   });
   const [profileChecked, setProfileChecked] = useState(false);
   const [hasProfile, setHasProfile] = useState(true); // optimistic, set false if API returns null
@@ -202,6 +213,7 @@ export default function NutritionPage() {
           carbs: json.profile.daily_carbs_target || 250,
           fat: json.profile.daily_fat_target || 65,
         });
+        if (json.profile.daily_water_target_ml) setWaterTarget(Number(json.profile.daily_water_target_ml));
       } else {
         setHasProfile(false);
       }
@@ -209,7 +221,7 @@ export default function NutritionPage() {
     setProfileChecked(true);
   }, []);
 
-  useEffect(() => { fetchLogs(currentDate); fetchExercises(); fetchFavorites(); }, [currentDate, fetchLogs]);
+  useEffect(() => { fetchLogs(currentDate); fetchExercises(); fetchFavorites(); fetchWater(); }, [currentDate, fetchLogs]);
   useEffect(() => { fetchGoals(); fetchExList(); }, [fetchGoals]);
   useEffect(() => {
     fetch("/api/nutrition/logs?action=units").then(r => r.json()).then(d => {
@@ -275,6 +287,34 @@ export default function NutritionPage() {
       if (json.error) { showToast(`Copy failed: ${json.error}`); return; }
       fetchLogs(currentDate);
       showToast(json.copied > 0 ? `Copied ${json.copied} meals from yesterday` : "Nothing new to copy");
+    } catch { showToast("Copy failed"); }
+  };
+
+  const copyFromDate = async (sourceDate: string, copyFood: boolean, copyExercise: boolean,
+    foodNames?: string[], exerciseNames?: string[]) => {
+    try {
+      const r = await fetch("/api/nutrition/copy-yesterday", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          log_date: currentDate,
+          source_date: sourceDate,
+          copy_food: copyFood,
+          copy_exercise: copyExercise,
+          food_names: foodNames,
+          exercise_names: exerciseNames,
+        }),
+      });
+      const json = await r.json();
+      if (json.error) { showToast(`Copy failed: ${json.error}`); return; }
+      setShowCopyModal(false);
+      fetchLogs(currentDate);
+      const parts = [];
+      if (json.food_copied > 0) parts.push(`${json.food_copied} foods`);
+      if (json.exercise_copied > 0) parts.push(`${json.exercise_copied} exercises`);
+      showToast(parts.length > 0
+        ? `Copied ${parts.join(" & ")} from ${sourceDate}`
+        : "Nothing new to copy");
     } catch { showToast("Copy failed"); }
   };
 
@@ -470,6 +510,40 @@ export default function NutritionPage() {
     } catch {}
   };
 
+  /* ---- Water ---- */
+  const fetchWater = async () => {
+    try {
+      const r = await fetch(`/api/nutrition/water?date=${currentDate}`);
+      const json = await r.json();
+      if (!json.error) {
+        setWaterEntries(json.entries || []);
+        setWaterTotal(json.total_ml || 0);
+        setWaterTarget(json.target_ml || 2000);
+      }
+    } catch {}
+  };
+  const addWater = async (amountMl: number) => {
+    try {
+      const r = await fetch("/api/nutrition/water", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_ml: amountMl, log_date: currentDate }),
+      });
+      const json = await r.json();
+      if (json.entry) {
+        setWaterEntries(prev => [json.entry, ...prev]);
+        setWaterTotal(prev => prev + amountMl);
+      }
+    } catch {}
+  };
+  const deleteWater = async (id: number) => {
+    setWaterEntries(prev => prev.filter(e => e.id !== id));
+    try {
+      await fetch(`/api/nutrition/water?id=${id}`, { method: "DELETE" });
+      fetchWater();
+    } catch {}
+  };
+
   const quickAddIn = async (f: any) => {
     try {
       const unit = f.default_serving_unit || f.default_unit || 'g';
@@ -540,7 +614,7 @@ export default function NutritionPage() {
     try {
       const r = await fetch("/api/nutrition/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profile) });
       const json = await r.json();
-      if (json.profile) { setProfile(json.profile); setHasProfile(true); setGoals({ calories: json.profile.daily_calorie_target||2000, protein: json.profile.daily_protein_target||100, carbs: json.profile.daily_carbs_target||250, fat: json.profile.daily_fat_target||65 }); showToast("Profile saved"); }
+      if (json.profile) { setProfile(json.profile); setHasProfile(true); setGoals({ calories: json.profile.daily_calorie_target||2000, protein: json.profile.daily_protein_target||100, carbs: json.profile.daily_carbs_target||250, fat: json.profile.daily_fat_target||65 }); if (json.profile.daily_water_target_ml) setWaterTarget(Number(json.profile.daily_water_target_ml)); showToast("Profile saved"); }
     } catch { showToast("Save failed"); }
   };
 
@@ -847,7 +921,12 @@ export default function NutritionPage() {
           filteredLogs={filteredLogs} updateWeight={updateWeight} updateLog={updateLog} deleteLog={deleteLog} copyYesterday={copyYesterday}
           exercises={exercises} deleteExercise={deleteExercise} updateExercise={updateExercise}
           favorites={favorites} suggested={suggested} quickAddIn={quickAddIn} quickAddOut={quickAddOut}
-          addToFavorites={addToFavorites} removeFavorite={removeFavorite} servingUnits={servingUnits} userWeight={profile.weight_kg} />;
+          addToFavorites={addToFavorites} removeFavorite={removeFavorite} servingUnits={servingUnits} userWeight={profile.weight_kg}
+          showCopyModal={showCopyModal} setShowCopyModal={setShowCopyModal}
+          copySourceDate={copySourceDate} setCopySourceDate={setCopySourceDate}
+          copyFromDate={copyFromDate}
+          waterEntries={waterEntries} waterTotal={waterTotal} waterTarget={waterTarget}
+          addWater={addWater} deleteWater={deleteWater} />
       case "search":
         return <SearchTab searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults} searching={searching}
           showDropdown={showDropdown} setShowDropdown={setShowDropdown} onSearch={onSearch} selectFood={selectFood}

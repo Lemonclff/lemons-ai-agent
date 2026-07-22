@@ -83,3 +83,16 @@ docker-compose.override.yml
 # ---- OS ----
 .DS_Store
 Thumbs.db
+# Added by code-review-graph
+.code-review-graph/
+.claude/
+.codebuddy/
+.cursorrules
+.windsurfrules
+.gemini/
+.kiro/
+.qoder/
+.mcp.json
+opencode.jsonc
+CODEBUDDY.md
+QODER.md

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingDown, TrendingUp, Trash2, Plus, Scale, Calendar, Flame, Target } from "lucide-react";
+import { TrendingDown, TrendingUp, Trash2, Plus, Scale, Calendar, Flame, Target, Droplets } from "lucide-react";
 import { NumberField } from "./NumberField";
 
 interface WeightEntry {
@@ -13,6 +13,7 @@ interface UserProfile {
   body_fat_pct?: number;
   activity_level: string; goal: string;
   daily_calorie_target: number; daily_protein_target: number; daily_carbs_target: number; daily_fat_target: number;
+  daily_water_target_ml?: number;
   daily_bmr?: number; daily_tdee?: number;
 }
 
@@ -231,6 +232,15 @@ export function ProfileTab({
             <MacroBadge label="Protein" value={goals.protein} unit="g" color="text-green-400" />
             <MacroBadge label="Carbs" value={goals.carbs} unit="g" color="text-amber-400" />
             <MacroBadge label="Fat" value={goals.fat} unit="g" color="text-rose-400" />
+          </div>
+        )}
+        {profile.daily_water_target_ml && (
+          <div className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/8 border border-sky-500/20">
+            <Droplets size={16} className="text-sky-400 shrink-0" />
+            <span className="text-[13px] text-[var(--color-text-secondary)]">
+              Water target: <strong className="text-sky-400">{profile.daily_water_target_ml} ml</strong>
+              <span className="text-[11px] text-[var(--color-text-muted)] ml-1">(based on weight & activity)</span>
+            </span>
           </div>
         )}
       </div>
