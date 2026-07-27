@@ -206,8 +206,9 @@ export function SearchTab({
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">Search Food</h3>
         </div>
         <div className="flex gap-2">
-          <input value={searchQ} onChange={e => { setSearchQ(e.target.value); onSearch(e.target.value); }}
+          <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
             onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+            onKeyDown={e => e.key === 'Enter' && onSearch(searchQ)}
             placeholder="Search food database..."
             className="flex-1 px-4 py-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow"
           />
