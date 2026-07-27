@@ -764,7 +764,7 @@ export default function NutritionPage() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-accent)]/15 flex items-center justify-center ring-1 ring-[var(--color-accent)]/20">
             <UserCircle size={32} className="text-[var(--color-accent)]" />
           </div>
-          <h2 className="text-[18px] font-bold text-[var(--color-text-primary)] mb-2">Welcome to NutriSnap</h2>
+          <h2 className="text-[18px] font-bold text-[var(--color-text-primary)] mb-2 gradient-text">Welcome to NutriSnap</h2>
           <p className="text-[13px] text-[var(--color-text-muted)] mb-4">Please set up your profile before using the nutrition tracker. This helps calculate your daily calorie and macro targets.</p>
           <button onClick={() => setPage("profile")} className="px-5 py-2.5 text-[14px] font-semibold rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity">
             Set Up Profile
@@ -784,11 +784,12 @@ export default function NutritionPage() {
       <div className="sticky top-safe z-30 -mx-4 px-4 glass-strong border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
         <div className="flex items-center justify-between py-2 md:py-0 md:mt-2 md:mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.35)]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.35)] transition-transform duration-300 active:scale-90"
+              style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
               <Apple size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="text-[17px] font-bold text-[var(--color-text-primary)] leading-tight">NutriSnap</h1>
+              <h1 className="text-[17px] font-bold text-[var(--color-text-primary)] leading-tight gradient-text">NutriSnap</h1>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -850,7 +851,7 @@ export default function NutritionPage() {
                 <Flame size={20} className="text-white" />
               </div>
               <div>
-                <span className="text-[17px] font-bold text-[var(--color-text-primary)]">NutriSnap</span>
+                <span className="text-[17px] font-bold text-[var(--color-text-primary)] gradient-text">NutriSnap</span>
                 <p className="text-[11px] text-[var(--color-text-muted)]">{dateDisplay()}</p>
               </div>
             </div>

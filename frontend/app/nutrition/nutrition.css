@@ -1,7 +1,8 @@
 /* ================================================================
-   NutriSnap — exclusive visual language
+   NutriSnap — Premium Visual Language v2
    Warm health palette: orange in · green out · emerald net
-   Enhanced with micro-interactions, glassmorphism & animations
+   Enhanced with spring physics, refined glassmorphism,
+   ambient mesh glows, and cinematic micro-interactions
    ================================================================ */
 
 .nutrition-root {
@@ -17,17 +18,23 @@
   --nutri-net-good: #34d399;
   --nutri-net-over: #f87171;
   --nutri-net-under: #60a5fa;
+
+  /* Premium spring easings */
+  --nutri-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --nutri-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --nutri-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --nutri-in-out-back: cubic-bezier(0.68, -0.6, 0.32, 1.6);
 }
 
-/* ── Tab content enter ── */
+/* ── Tab content enter — refined with spring overshoot ── */
 .nutri-tab-enter {
-  animation: nutri-tab-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: nutri-tab-in 0.42s var(--nutri-out-expo) both;
 }
 
 @keyframes nutri-tab-in {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.992);
+    transform: translateY(14px) scale(0.99);
   }
   to {
     opacity: 1;
@@ -35,23 +42,25 @@
   }
 }
 
-/* ── Stagger sections ── */
+/* ── Stagger sections — cascading entrance ── */
 .nutri-stagger > * {
-  animation: nutri-fade-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: nutri-fade-up 0.5s var(--nutri-out-expo) both;
 }
 .nutri-stagger > *:nth-child(1) { animation-delay: 0ms; }
-.nutri-stagger > *:nth-child(2) { animation-delay: 55ms; }
-.nutri-stagger > *:nth-child(3) { animation-delay: 110ms; }
-.nutri-stagger > *:nth-child(4) { animation-delay: 165ms; }
-.nutri-stagger > *:nth-child(5) { animation-delay: 220ms; }
-.nutri-stagger > *:nth-child(6) { animation-delay: 275ms; }
-.nutri-stagger > *:nth-child(7) { animation-delay: 330ms; }
-.nutri-stagger > *:nth-child(8) { animation-delay: 385ms; }
+.nutri-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.nutri-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.nutri-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.nutri-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.nutri-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.nutri-stagger > *:nth-child(7) { animation-delay: 360ms; }
+.nutri-stagger > *:nth-child(8) { animation-delay: 420ms; }
+.nutri-stagger > *:nth-child(9) { animation-delay: 480ms; }
+.nutri-stagger > *:nth-child(10) { animation-delay: 540ms; }
 
 @keyframes nutri-fade-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(18px);
   }
   to {
     opacity: 1;
@@ -59,24 +68,34 @@
   }
 }
 
-/* ── Card hover lift ── */
+/* ── Card hover lift — refined with spring ── */
 .nutri-card-hover {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  transition: transform 0.35s var(--nutri-spring),
+              box-shadow 0.35s var(--nutri-out-expo),
+              border-color 0.3s ease;
+  will-change: transform;
 }
 .nutri-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12),
+             0 0 0 1px var(--color-border);
+}
+@media (hover: none) {
+  .nutri-card-hover:hover {
+    transform: none;
+    box-shadow: none;
+  }
 }
 
-/* ── Ring stroke draw ── */
+/* ── Ring stroke draw — spring-based ── */
 .nutri-ring-progress {
-  transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: stroke-dashoffset 1.1s var(--nutri-out-expo);
   filter: drop-shadow(0 0 6px currentColor);
 }
 
-/* ── Progress bar fill ── */
+/* ── Progress bar fill — refined shimmer ── */
 .nutri-bar-fill {
-  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 1s var(--nutri-out-expo);
   position: relative;
   overflow: hidden;
 }
@@ -90,7 +109,7 @@
     rgba(255, 255, 255, 0.25) 50%,
     transparent 100%
   );
-  animation: nutri-bar-shine 2.4s ease-in-out infinite;
+  animation: nutri-bar-shine 2.8s ease-in-out infinite;
 }
 
 @keyframes nutri-bar-shine {
@@ -98,7 +117,7 @@
   60%, 100% { transform: translateX(100%); }
 }
 
-/* ── Hero ambient ── */
+/* ── Hero ambient — multi-layer glow ── */
 .nutri-hero {
   position: relative;
   overflow: hidden;
@@ -107,40 +126,68 @@
 .nutri-hero::before {
   content: "";
   position: absolute;
-  width: 220px;
-  height: 220px;
+  width: 260px;
+  height: 260px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle, var(--nutri-in-glow), transparent 70%);
-  opacity: 0.35;
-  animation: nutri-breathe 4s ease-in-out infinite;
+  opacity: 0.3;
+  animation: nutri-breathe 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.nutri-hero::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  top: 30%;
+  right: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--nutri-out-glow), transparent 70%);
+  opacity: 0.15;
+  animation: nutri-breathe 6s ease-in-out infinite 1.5s;
   pointer-events: none;
   z-index: 0;
 }
 
 @keyframes nutri-breathe {
-  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.45; transform: translate(-50%, -50%) scale(1.12); }
+  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.15); }
 }
 
-/* ── Cal cards ── */
+/* ── Cal cards — premium gradient borders ── */
 .nutri-card-in {
-  background: linear-gradient(145deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.02));
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.12), rgba(249, 115, 22, 0.02));
   border: 1px solid rgba(249, 115, 22, 0.22);
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.04), 0 8px 28px rgba(249, 115, 22, 0.06);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.04),
+              0 8px 32px rgba(249, 115, 22, 0.08);
+  transition: all 0.3s var(--nutri-out-expo);
+}
+.nutri-card-in:hover {
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.08),
+              0 12px 36px rgba(249, 115, 22, 0.12);
 }
 .nutri-card-out {
-  background: linear-gradient(145deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.02));
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.02));
   border: 1px solid rgba(34, 197, 94, 0.22);
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.04), 0 8px 28px rgba(34, 197, 94, 0.06);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.04),
+              0 8px 32px rgba(34, 197, 94, 0.08);
+  transition: all 0.3s var(--nutri-out-expo);
+}
+.nutri-card-out:hover {
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08),
+              0 12px 36px rgba(34, 197, 94, 0.12);
 }
 
-/* ── Chart bars grow ── */
+/* ── Chart bars grow — spring entrance ── */
 .nutri-chart-bar {
   transform-origin: bottom;
-  animation: nutri-bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: nutri-bar-grow 0.8s var(--nutri-spring) both;
   border-radius: 8px 8px 4px 4px;
   transition: filter 0.2s, opacity 0.2s, transform 0.2s;
 }
@@ -150,7 +197,7 @@
 }
 
 @keyframes nutri-bar-grow {
-  from { transform: scaleY(0); opacity: 0.4; }
+  from { transform: scaleY(0); opacity: 0.3; }
   to { transform: scaleY(1); opacity: 1; }
 }
 
@@ -160,12 +207,13 @@
   letter-spacing: -0.02em;
 }
 
-/* ── Bottom nav glass (nutrition fullscreen) ── */
+/* ── Bottom nav glass — premium frosted ── */
 .nutri-bottom-nav {
   background: var(--glass-bg-strong);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
   border-top: 1px solid var(--color-border);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Calendar day pulse ── */
@@ -192,19 +240,20 @@
   border: 1px solid var(--color-border);
 }
 
-/* ── Button press effect ── */
+/* ── Button press effect — spring ── */
 .nutri-press {
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+  transition: transform 0.18s var(--nutri-spring), box-shadow 0.15s ease;
+  will-change: transform;
 }
 .nutri-press:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
-/* ── Glass card effect ── */
+/* ── Glass card effect — refined ── */
 .nutri-glass {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -225,7 +274,7 @@
   border-radius: 50%;
   background: var(--nutri-in);
   opacity: 0.3;
-  animation: nutri-float 6s ease-in-out infinite;
+  animation: nutri-float 7s ease-in-out infinite;
 }
 .nutri-particles::before {
   top: 20%;
@@ -236,7 +285,7 @@
   top: 60%;
   right: 15%;
   background: var(--nutri-out);
-  animation-delay: 3s;
+  animation-delay: 3.5s;
 }
 
 @keyframes nutri-float {
@@ -263,15 +312,15 @@
   100% { background-position: -200% 0; }
 }
 
-/* ── Toast slide in ── */
+/* ── Toast slide in — spring entrance ── */
 .nutri-toast {
-  animation: nutri-toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: nutri-toast-in 0.35s var(--nutri-spring) both;
 }
 
 @keyframes nutri-toast-in {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(24px) scale(0.92);
   }
   to {
     opacity: 1;
@@ -279,9 +328,9 @@
   }
 }
 
-/* ── Icon bounce on hover ── */
+/* ── Icon bounce on hover — refined ── */
 .nutri-icon-bounce {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s var(--nutri-spring);
 }
 .nutri-icon-bounce:hover {
   transform: scale(1.15) rotate(-5deg);
@@ -311,9 +360,9 @@
   opacity: 0.5;
 }
 
-/* ── Input focus glow ── */
+/* ── Input focus glow — refined ring ── */
 .nutri-input-glow:focus {
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
   border-color: rgba(249, 115, 22, 0.4);
 }
 
@@ -321,11 +370,51 @@
 .nutri-reveal {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.5s var(--nutri-out-expo), transform 0.5s var(--nutri-out-expo);
 }
 .nutri-reveal.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* ── Dropdown enter — slide + fade ── */
+.nutri-dropdown-enter {
+  animation: nutri-dropdown-in 0.28s var(--nutri-out-expo) both;
+  transform-origin: top center;
+}
+@keyframes nutri-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+/* ── Number count animation ── */
+.nutri-count {
+  animation: nutri-count-up 0.6s var(--nutri-out-expo) both;
+}
+@keyframes nutri-count-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Favorite chip hover lift ── */
+.nutri-chip {
+  transition: all 0.25s var(--nutri-spring);
+  will-change: transform;
+}
+.nutri-chip:hover {
+  transform: translateY(-2px);
 }
 
 /* ── Reduced motion ── */
@@ -334,12 +423,15 @@
   .nutri-stagger > *,
   .nutri-chart-bar,
   .nutri-hero::before,
+  .nutri-hero::after,
   .nutri-bar-fill::after,
   .nutri-day-dot,
   .nutri-particles::before,
   .nutri-particles::after,
   .nutri-skeleton,
-  .nutri-toast {
+  .nutri-toast,
+  .nutri-dropdown-enter,
+  .nutri-count {
     animation: none !important;
   }
   .nutri-ring-progress,

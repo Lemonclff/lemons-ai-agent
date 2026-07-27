@@ -1,7 +1,39 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
+
+/* ================================================================
+   AnimatedNumber — count-up animation using requestAnimationFrame
+   ================================================================ */
+function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [display, setDisplay] = useState(0);
+  const rafRef = useRef<number>(0);
+  const fromRef = useRef(0);
+
+  useEffect(() => {
+    const from = fromRef.current;
+    const to = value;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      // ease-out-expo
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      setDisplay(from + (to - from) * eased);
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = to;
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, duration]);
+
+  return <>{Math.round(display)}</>;
+}
 
 /* ================================================================
    Progress Ring — animated SVG with gradient stroke + glow
@@ -144,7 +176,7 @@ export function Ring({
               dims.font
             )}
           >
-            {Math.round(Math.min(rawPct, 9.99) * 100)}%
+            {mounted ? <AnimatedNumber value={Math.min(rawPct, 9.99) * 100} /> : 0}%
           </span>
         </div>
       </div>
@@ -156,7 +188,7 @@ export function Ring({
           dims.val
         )}
       >
-        {Math.round(value)}
+        {mounted ? <AnimatedNumber value={Math.round(value)} /> : 0}
         {overGoal && (
           <span className="text-[10px] text-red-400 font-semibold ml-0.5">↑</span>
         )}
@@ -176,6 +208,7 @@ export function Ring({
 
 /* ================================================================
    CalorieHero — large dual-ring centerpiece (In / Goal)
+   Enhanced with ambient mesh glow + animated numbers
    ================================================================ */
 
 export function CalorieHero({
@@ -208,6 +241,10 @@ export function CalorieHero({
 
   return (
     <div className="nutri-hero rounded-3xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/25 p-5 sm:p-6">
+      {/* Ambient mesh blobs */}
+      <div className="absolute top-0 left-0 w-32 h-32 rounded-full bg-orange-500/8 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-28 h-28 rounded-full bg-green-500/8 blur-3xl pointer-events-none" />
+
       <div className="relative z-[1] flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
         {/* Dual ring */}
         <div className="relative w-[148px] h-[148px] shrink-0">
@@ -251,7 +288,7 @@ export function CalorieHero({
                 netStatus === "good" && "text-emerald-400"
               )}
             >
-              {Math.round(net)}
+              {mounted ? <AnimatedNumber value={Math.round(net)} /> : 0}
             </span>
             <span className="text-[10px] text-[var(--color-text-muted)]">kcal</span>
           </div>
@@ -274,7 +311,7 @@ export function CalorieHero({
                 In
               </div>
               <div className="text-[20px] font-bold text-orange-400 nutri-num leading-tight">
-                {Math.round(caloriesIn)}
+                {mounted ? <AnimatedNumber value={Math.round(caloriesIn)} /> : 0}
               </div>
               <div className="text-[10px] text-[var(--color-text-muted)]">
                 of {goal} goal
@@ -285,7 +322,7 @@ export function CalorieHero({
                 Out
               </div>
               <div className="text-[20px] font-bold text-green-400 nutri-num leading-tight">
-                {Math.round(caloriesOut)}
+                {mounted ? <AnimatedNumber value={Math.round(caloriesOut)} /> : 0}
               </div>
               <div className="text-[10px] text-[var(--color-text-muted)]">
                 {caloriesIn > 0
@@ -306,8 +343,8 @@ export function CalorieHero({
             <div className="h-2 rounded-full bg-[var(--color-border)]/40 overflow-hidden">
               <div
                 className={cn(
-                  "h-full rounded-full nutri-bar-fill",
-                  caloriesIn > goal ? "bg-red-400" : "bg-gradient-to-r from-orange-400 to-amber-400"
+                  "h-full rounded-full nutri-bar-fill bg-gradient-to-r",
+                  caloriesIn > goal ? "bg-red-400" : "from-orange-400 to-amber-400"
                 )}
                 style={{ width: `${Math.min(100, goal > 0 ? (caloriesIn / goal) * 100 : 0)}%` }}
               />
@@ -321,6 +358,7 @@ export function CalorieHero({
 
 /* ================================================================
    MacroBars — horizontal animated macro progress
+   Enhanced with gradient fills + refined shimmer
    ================================================================ */
 
 export function MacroBars({

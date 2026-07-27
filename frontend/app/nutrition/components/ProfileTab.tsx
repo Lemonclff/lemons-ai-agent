@@ -129,7 +129,7 @@ export function ProfileTab({
   const previewTdee = bmr && selectedActivity ? Math.round(bmr * selectedActivity.mult) : null;
 
   return (
-    <div className="space-y-3 max-w-[560px] nutri-stagger">
+    <div className="space-y-4 max-w-[560px] nutri-stagger">
 
       {/* ═══ TDEE Calculator ═══ */}
       <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/20 p-4 nutri-card-hover">

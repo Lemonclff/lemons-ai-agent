@@ -118,7 +118,7 @@ export function HistoryTab({
   }, [entries]);
 
   return (
-    <div className="nutri-stagger grid gap-3 max-w-[700px]">
+    <div className="nutri-stagger grid gap-4 max-w-[700px]">
       {/* Weekly stats */}
       {!stats ? (
         <div className="text-center py-14 text-[13px] text-[var(--color-text-muted)] rounded-2xl border border-dashed border-[var(--color-border)]/50">

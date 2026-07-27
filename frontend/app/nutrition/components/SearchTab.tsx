@@ -224,7 +224,7 @@ export function SearchTab({
   }
 
   return (
-    <div className="grid gap-3 max-w-[640px] nutri-stagger">
+    <div className="grid gap-4 max-w-[640px] nutri-stagger">
 
       {/* ═══ Search ═══ */}
       <div className="bg-[var(--color-surface-elevated)]/40 rounded-2xl p-4 border border-[var(--color-border)]/50 nutri-card-hover">

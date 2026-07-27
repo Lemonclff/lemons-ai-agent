@@ -129,7 +129,7 @@ export function DashboardTab({
               onClick={() => onQuickAdd(f)}
               title={f.name}
               className={cn(
-                "px-3 py-1.5 text-[12px] rounded-full border transition-all flex items-center gap-1.5 min-h-[32px] active:scale-95",
+                "nutri-chip px-3 py-1.5 text-[12px] rounded-full border transition-all flex items-center gap-1.5 min-h-[32px] active:scale-95",
                 curated
                   ? "border-[var(--color-accent)]/30 bg-[var(--color-accent)]/8 hover:bg-[var(--color-accent)]/15 hover:border-[var(--color-accent)]/60 text-[var(--color-accent)]"
                   : "border-dashed border-[var(--color-border)] bg-[var(--color-surface-elevated)]/20 hover:bg-[var(--color-surface-elevated)]/40 hover:border-[var(--color-text-muted)]/40 text-[var(--color-text-secondary)]"
@@ -170,7 +170,7 @@ export function DashboardTab({
   };
 
   return (
-    <div className="nutri-stagger space-y-3 pb-2 md:pb-0">
+    <div className="nutri-stagger space-y-4 pb-2 md:pb-0">
 
       {/* ═══ Hero energy ring ═══ */}
       <CalorieHero
@@ -184,20 +184,22 @@ export function DashboardTab({
         <div className="flex border-b border-[var(--color-border)]/50">
           <button onClick={() => setFavTab('in')}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors",
+              "flex-1 flex items-center justify-center gap-1.5 py-3.5 text-[13px] font-semibold transition-all duration-300",
               favTab === 'in'
                 ? "text-orange-400 border-b-2 border-orange-400 bg-orange-500/5"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            )}>
+            )}
+            style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
             <Utensils size={14} /> Calories In
           </button>
           <button onClick={() => setFavTab('out')}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors",
+              "flex-1 flex items-center justify-center gap-1.5 py-3.5 text-[13px] font-semibold transition-all duration-300",
               favTab === 'out'
                 ? "text-green-400 border-b-2 border-green-400 bg-green-500/5"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            )}>
+            )}
+            style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
             <Dumbbell size={14} /> Calories Out
           </button>
         </div>
