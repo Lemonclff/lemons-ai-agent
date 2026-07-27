@@ -777,11 +777,19 @@ export default function NutritionPage() {
   return (
     <>
     {/* ═══ Normal View (always rendered, never changes with fullscreen) ═══ */}
-    <div className="nutrition-root w-full max-w-[960px] mx-auto pb-[calc(80px+max(16px,env(safe-area-inset-bottom,0px)))] md:pb-0"
+    <div className="nutrition-root w-full max-w-[960px] mx-auto pb-[calc(72px+max(12px,env(safe-area-inset-bottom,0px)))] md:pb-0"
       onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
+      {/* ── Ambient blob 3 (cyan) ── */}
+      <div className="nutri-ambient-cyan fixed top-[45%] left-[50%] w-[240px] h-[240px] rounded-full pointer-events-none z-[-1]"
+        style={{
+          background: "radial-gradient(circle, var(--nutri-ambient-cyan, rgba(100,210,255,0.06)), transparent 70%)",
+          filter: "blur(100px)",
+          transform: "translate(-50%, -50%)",
+        }} />
+
       {/* Sticky Header */}
-      <div className="sticky top-safe z-30 -mx-4 px-4 glass-strong border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
+      <div className="sticky top-safe z-30 -mx-4 px-4 nutri-glass border-b border-[var(--color-border)]/50 md:static md:bg-transparent md:backdrop-blur-none md:border-none md:px-0">
         <div className="flex items-center justify-between py-2 md:py-0 md:mt-2 md:mb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.35)] transition-transform duration-300 active:scale-90"
@@ -823,9 +831,9 @@ export default function NutritionPage() {
         <RenderPage />
       </div>
 
-      {/* Bottom bar (mobile) */}
-      <div className="md:hidden shrink-0 nutri-bottom-nav px-2"
-        style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}>
+      {/* Bottom bar (mobile) — floating island */}
+      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 nutri-bottom-nav"
+        style={{ paddingBottom: "max(4px, env(safe-area-inset-bottom, 0px))" }}>
         <div className="flex items-center justify-around py-1.5">
           {PAGES.map(p => (
             <button key={p.key} onClick={() => setPage(p.key)}
@@ -897,9 +905,9 @@ export default function NutritionPage() {
       </div>
     )}
 
-    {/* Toast */}
+    {/* Toast — top glass slide-in */}
     {toast && (
-      <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[70] px-4 py-3 glass-strong border border-[var(--color-border)] rounded-2xl shadow-lg text-[13px] text-[var(--color-text-primary)]">
+      <div className="nutri-toast fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-[70] px-4 py-3 nutri-glass rounded-2xl shadow-lg text-[13px] text-[var(--color-text-primary)]">
         {toast}
       </div>
     )}

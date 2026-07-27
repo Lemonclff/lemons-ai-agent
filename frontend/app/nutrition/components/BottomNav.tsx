@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 export function BottomNav({ page, setPage }: { page: string; setPage: (p: string) => void }) {
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 nutri-bottom-nav"
+      className="md:hidden fixed bottom-3 left-3 right-3 z-50 nutri-bottom-nav"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-stretch justify-around h-[64px] max-w-[480px] mx-auto px-1">

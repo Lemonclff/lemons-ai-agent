@@ -180,7 +180,7 @@ export function DashboardTab({
       />
 
       {/* ═══ Quick Add Favorites ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
+      <div className={`nutri-glass ${favTab === 'in' ? 'nutri-glass-in' : 'nutri-glass-out'} rounded-2xl overflow-hidden nutri-card-hover`}>
         <div className="flex border-b border-[var(--color-border)]/50">
           <button onClick={() => setFavTab('in')}
             className={cn(
@@ -273,7 +273,7 @@ export function DashboardTab({
       </div>
 
       {/* ═══ Water Tracker — Slider ═══ */}
-      <div className="rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
+      <div className="nutri-glass nutri-glass-water rounded-2xl overflow-hidden nutri-card-hover">
         <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-sky-500/15 flex items-center justify-center nutri-icon-bounce">
@@ -298,6 +298,7 @@ export function DashboardTab({
               [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-sky-400 [&::-webkit-slider-thumb]:to-blue-500
               [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-sky-400/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20
               [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-110
+              [&::-webkit-slider-thumb]:[animation:nutri-thumb-pulse_2.5s_ease-in-out_infinite]
               [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-7 [&::-moz-range-thumb]:h-7
               [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gradient-to-br [&::-moz-range-thumb]:from-sky-400 [&::-moz-range-thumb]:to-blue-500
               [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white/20 [&::-moz-range-thumb]:shadow-lg
@@ -349,7 +350,7 @@ export function DashboardTab({
         </div>
       )}
       {/* ═══ Mobile: Food + Exercise Tab ═══ */}
-      <div className="md:hidden rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
+      <div className="md:hidden nutri-glass rounded-2xl overflow-hidden nutri-card-hover">
         {/* Tab bar */}
         <div className="flex border-b border-[var(--color-border)]/50">
           <button onClick={() => setLogTab("food")}
@@ -386,14 +387,18 @@ export function DashboardTab({
             <div className="flex gap-1 ml-auto">
               {MEALS.map(m => (
                 <button key={m.key} onClick={() => setMealFilter(m.key)}
-                  className={cn("min-h-[32px] px-2.5 text-[12px] rounded-full font-medium transition-all active:scale-95",
+                    className={cn("min-h-[32px] px-2.5 text-[12px] rounded-full font-medium nutri-filter-chip",
                     mealFilter === m.key ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")}
                 >{m.label}</button>
               ))}
             </div>
           </div>
           {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 size={22} className="animate-spin text-[var(--color-text-muted)]" /></div>
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="nutri-skeleton-card h-[72px] rounded-xl" />
+              ))}
+            </div>
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-12 text-[13px] text-[var(--color-text-muted)]">
               <Utensils size={32} className="mx-auto mb-2 opacity-20" />
@@ -402,7 +407,7 @@ export function DashboardTab({
           ) : (
             <div className="divide-y divide-[var(--color-border)]/10">
               {filteredLogs.map(entry => (
-                <div key={entry.id} className="px-4 py-3 space-y-2.5">{/* Food name + actions */}
+                <div key={entry.id} className={`nutri-log-row nutri-meal-accent nutri-meal-${entry.meal_type} px-4 py-3 space-y-2.5`}>{/* Food name + actions */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[14px] font-semibold text-[var(--color-text-primary)] truncate">{entry.food_name}</span>
@@ -422,13 +427,13 @@ export function DashboardTab({
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]/50">
                       <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl nutri-inc-btn">
                         <Minus size={16} />
                       </button>
                       <NumberField value={entry.amount} onCommit={v => { if (v && v !== entry.amount) updateWeight(entry.id, v); }}
                         className="w-[48px] text-center py-2 font-semibold bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateWeight(entry.id, entry.amount + 10)}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl nutri-inc-btn">
                         <Plus size={16} />
                       </button>
                     </div>
@@ -441,13 +446,13 @@ export function DashboardTab({
                   <div className="flex items-center gap-2 text-[13px] tabular-nums flex-wrap">
                     <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]/50">
                       <button onClick={() => updateLog(entry.id, { calories: Math.max(1, Math.round(entry.calories) - 10) })}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl nutri-inc-btn">
                         <Minus size={14} />
                       </button>
                       <NumberField value={Math.round(entry.calories)} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { calories: v }); }}
                         className="w-[48px] text-center py-1.5 font-bold tabular-nums text-orange-400 bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl nutri-inc-btn">
                         <Plus size={14} />
                       </button>
                     </div>
@@ -510,7 +515,7 @@ export function DashboardTab({
 
       {/* ═══ Food Log ══ */}
       {/* ═══ Food Log ═══ */}
-      <div className="hidden md:block rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20 nutri-card-hover">
+      <div className="hidden md:block nutri-glass rounded-2xl overflow-hidden nutri-card-hover">
         <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between flex-wrap gap-2">
           <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">Today's Food Log</span>
           <div className="flex items-center gap-2">
@@ -525,7 +530,7 @@ export function DashboardTab({
             <div className="flex gap-1">
               {MEALS.map(m => (
                 <button key={m.key} onClick={() => setMealFilter(m.key)}
-                  className={cn("min-h-[32px] px-3 text-[12px] rounded-full font-medium transition-all active:scale-95",
+                      className={cn("min-h-[32px] px-3 text-[12px] rounded-full font-medium nutri-filter-chip",
                     mealFilter === m.key ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")}
                 >{m.label}</button>
               ))}
@@ -534,7 +539,11 @@ export function DashboardTab({
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 size={22} className="animate-spin text-[var(--color-text-muted)]" /></div>
+          <div className="p-4 space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="nutri-skeleton-card h-[72px] rounded-xl" />
+            ))}
+          </div>
         ) : filteredLogs.length === 0 ? (
           <div className="text-center py-12 text-[13px] text-[var(--color-text-muted)]">
             <Utensils size={32} className="mx-auto mb-2 opacity-20" />
@@ -623,7 +632,7 @@ export function DashboardTab({
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-[var(--color-border)]/10">
               {filteredLogs.map(entry => (
-                <div key={entry.id} className="px-4 py-3 space-y-2.5">
+                <div key={entry.id} className={`nutri-log-row nutri-meal-accent nutri-meal-${entry.meal_type} px-4 py-3 space-y-2.5`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[14px] font-semibold text-[var(--color-text-primary)] truncate">{entry.food_name}</span>
@@ -644,13 +653,13 @@ export function DashboardTab({
                     {/* Amount stepper */}
                     <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]/50">
                       <button onClick={() => updateWeight(entry.id, Math.max(1, entry.amount - 10))}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl nutri-inc-btn">
                         <Minus size={16} />
                       </button>
                       <NumberField value={entry.amount} onCommit={v => { if (v && v !== entry.amount) updateWeight(entry.id, v); }}
                         className="w-[48px] text-center py-2 font-semibold bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateWeight(entry.id, entry.amount + 10)}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl nutri-inc-btn">
                         <Plus size={16} />
                       </button>
                     </div>
@@ -664,13 +673,13 @@ export function DashboardTab({
                   <div className="flex items-center gap-2 text-[13px] tabular-nums flex-wrap">
                     <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]/50">
                       <button onClick={() => updateLog(entry.id, { calories: Math.max(1, Math.round(entry.calories) - 10) })}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl transition-colors">
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-l-xl nutri-inc-btn">
                         <Minus size={14} />
                       </button>
                       <NumberField value={Math.round(entry.calories)} onCommit={v => { if (v !== null && v >= 0) updateLog(entry.id, { calories: v }); }}
                         className="w-[48px] text-center py-1.5 font-bold tabular-nums text-orange-400 bg-transparent border-0 rounded-none min-h-[32px] px-0" />
                       <button onClick={() => updateLog(entry.id, { calories: Math.round(entry.calories) + 10 })}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl transition-colors">
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center text-[var(--color-text-muted)] active:bg-[var(--color-surface-elevated)] rounded-r-xl nutri-inc-btn">
                         <Plus size={14} />
                       </button>
                     </div>
@@ -694,7 +703,7 @@ export function DashboardTab({
 
       {/* ═══ Exercise Section (Desktop) ═══ */}
       {exercises.length > 0 && (
-        <div className="hidden md:block rounded-2xl border border-[var(--color-border)]/50 overflow-hidden bg-[var(--color-surface-elevated)]/20">
+        <div className="hidden md:block nutri-glass rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--color-border)]/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-green-500/15 flex items-center justify-center">

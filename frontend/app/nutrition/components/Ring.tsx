@@ -19,8 +19,10 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
     const tick = (now: number) => {
       const elapsed = now - start;
       const t = Math.min(elapsed / duration, 1);
-      // ease-out-expo
-      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      // Spring with overshoot: elastic-out easing
+      const c4 = (2 * Math.PI) / 3;
+      const eased = t === 0 ? 0 : t === 1 ? 1 :
+        Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
       setDisplay(from + (to - from) * eased);
       if (t < 1) {
         rafRef.current = requestAnimationFrame(tick);
@@ -78,14 +80,14 @@ export function Ring({
   const offset = mounted ? circ * (1 - Math.min(pct, 1)) : circ;
   const overGoal = rawPct > 1;
 
-  // Status-aware color when not explicitly using fixed palette
+  // Status-aware color with clear thresholds
   const strokeColor = overGoal
-    ? "#ef4444"
-    : rawPct >= 0.85
-      ? "#22c55e"
-      : rawPct >= 0.5
-        ? color
-        : color;
+    ? "#ef4444"                    // Over goal: danger red
+    : rawPct >= 0.75
+      ? "#22c55e"                  // Near goal (75%+): success green
+      : rawPct >= 0.35
+        ? color                    // Moderate progress: full brand color
+        : `${color}80`;            // Low progress: dimmed with 50% opacity
 
   const view = dims.box + 8;
   const c = view / 2;
@@ -94,9 +96,9 @@ export function Ring({
     <div
       className={cn(
         "flex flex-col items-center p-3 rounded-2xl",
-        "bg-[var(--color-surface-elevated)]/40 border border-[var(--color-border)]/40",
-        "hover:border-[var(--color-border-strong)] transition-all duration-300",
+        "nutri-glass",
         "nutri-card-hover cursor-pointer",
+        rawPct >= 1 && "nutri-goal-celebrate",
         className
       )}
       onMouseEnter={() => setHovered(true)}
@@ -222,10 +224,27 @@ export function CalorieHero({
 }) {
   const uid = useId().replace(/:/g, "");
   const [mounted, setMounted] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(t);
+    return () => { cancelAnimationFrame(t); cancelAnimationFrame(rafRef.current); };
   }, [caloriesIn, caloriesOut, goal]);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!heroRef.current) return;
+    // Throttle to ~30fps for spotlight — mobile-safe
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0;
+      if (!heroRef.current) return;
+      const rect = heroRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      heroRef.current.style.setProperty("--mouse-x", `${x}%`);
+      heroRef.current.style.setProperty("--mouse-y", `${y}%`);
+    });
+  };
 
   const net = caloriesIn - caloriesOut;
   const rOuter = 58;
@@ -240,10 +259,10 @@ export function CalorieHero({
     net > goal ? "over" : net < goal * 0.7 && caloriesIn > 0 ? "under" : "good";
 
   return (
-    <div className="nutri-hero rounded-3xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/25 p-5 sm:p-6">
+    <div ref={heroRef} onMouseMove={handleMouseMove} className="nutri-hero nutri-glass nutri-spotlight nutri-hero-border rounded-3xl p-5 sm:p-6">
       {/* Ambient mesh blobs */}
-      <div className="absolute top-0 left-0 w-32 h-32 rounded-full bg-orange-500/8 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-28 h-28 rounded-full bg-green-500/8 blur-3xl pointer-events-none" />
+      <div className="nutri-ambient-blob absolute top-0 left-0 w-32 h-32 rounded-full bg-orange-500/8 blur-3xl" />
+      <div className="nutri-ambient-blob absolute bottom-0 right-0 w-28 h-28 rounded-full bg-green-500/8 blur-3xl animate-delay-[2s]" />
 
       <div className="relative z-[1] flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
         {/* Dual ring */}
@@ -379,7 +398,7 @@ export function MacroBars({
   ];
 
   return (
-    <div className="rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface-elevated)]/25 p-4 space-y-3.5">
+    <div className="nutri-glass rounded-2xl p-4 space-y-3.5">
       <div className="flex items-center justify-between">
         <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">
           Macro Balance

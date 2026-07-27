@@ -24,6 +24,52 @@
   --nutri-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --nutri-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --nutri-in-out-back: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+
+  /* Glass system (dark mode default) */
+  --nutri-glass-bg:       rgba(22, 22, 37, 0.68);
+  --nutri-glass-border:   rgba(255, 255, 255, 0.09);
+  --nutri-glass-highlight: rgba(255, 255, 255, 0.1);
+  --nutri-glass-shadow:   0 8px 32px rgba(0, 0, 0, 0.3);
+  --nutri-glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+  /* Tinted glass — dark */
+  --nutri-glass-in-border:   rgba(249, 115, 22, 0.18);
+  --nutri-glass-in-highlight: rgba(249, 115, 22, 0.12);
+  --nutri-glass-in-shadow:   0 8px 32px rgba(249, 115, 22, 0.08);
+  --nutri-glass-out-border:   rgba(34, 197, 94, 0.18);
+  --nutri-glass-out-highlight: rgba(34, 197, 94, 0.12);
+  --nutri-glass-out-shadow:   0 8px 32px rgba(34, 197, 94, 0.08);
+  --nutri-glass-water-border:   rgba(56, 189, 248, 0.18);
+  --nutri-glass-water-highlight: rgba(56, 189, 248, 0.12);
+  --nutri-glass-water-shadow:   0 8px 32px rgba(56, 189, 248, 0.08);
+
+  /* Ambient blobs — dark */
+  --nutri-ambient-orange: rgba(255, 159, 10, 0.035);
+  --nutri-ambient-purple: rgba(191, 90, 242, 0.03);
+  --nutri-ambient-cyan:   rgba(100, 210, 255, 0.06);
+}
+
+/* ── Light mode glass overrides ── */
+.light .nutrition-root {
+  --nutri-glass-bg:       rgba(255, 255, 255, 0.72);
+  --nutri-glass-border:   rgba(15, 18, 33, 0.1);
+  --nutri-glass-highlight: rgba(255, 255, 255, 0.6);
+  --nutri-glass-shadow:   0 4px 20px rgba(15, 18, 33, 0.06);
+  --nutri-glass-shadow-hover: 0 8px 32px rgba(15, 18, 33, 0.1);
+
+  --nutri-glass-in-border:   rgba(249, 115, 22, 0.25);
+  --nutri-glass-in-highlight: rgba(249, 115, 22, 0.08);
+  --nutri-glass-in-shadow:   0 4px 20px rgba(249, 115, 22, 0.06);
+  --nutri-glass-out-border:   rgba(34, 197, 94, 0.25);
+  --nutri-glass-out-highlight: rgba(34, 197, 94, 0.08);
+  --nutri-glass-out-shadow:   0 4px 20px rgba(34, 197, 94, 0.06);
+  --nutri-glass-water-border:   rgba(56, 189, 248, 0.25);
+  --nutri-glass-water-highlight: rgba(56, 189, 248, 0.08);
+  --nutri-glass-water-shadow:   0 4px 20px rgba(56, 189, 248, 0.06);
+
+  --nutri-ambient-orange: rgba(255, 159, 10, 0.04);
+  --nutri-ambient-purple: rgba(191, 90, 242, 0.035);
+  --nutri-ambient-cyan:   rgba(100, 210, 255, 0.07);
 }
 
 /* ── Tab content enter — refined with spring overshoot ── */
@@ -117,45 +163,23 @@
   60%, 100% { transform: translateX(100%); }
 }
 
-/* ── Hero ambient — multi-layer glow ── */
+/* ── Hero ambient — structural container ── */
 .nutri-hero {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
-.nutri-hero::before {
-  content: "";
-  position: absolute;
-  width: 260px;
-  height: 260px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--nutri-in-glow), transparent 70%);
-  opacity: 0.3;
-  animation: nutri-breathe 5s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-.nutri-hero::after {
-  content: "";
-  position: absolute;
-  width: 180px;
-  height: 180px;
-  top: 30%;
-  right: 10%;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--nutri-out-glow), transparent 70%);
-  opacity: 0.15;
-  animation: nutri-breathe 6s ease-in-out infinite 1.5s;
-  pointer-events: none;
-  z-index: 0;
+
+/* Ambient blobs use inline child divs with nutri-breathe animation */
+@keyframes nutri-breathe {
+  0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.35; transform: translate(-50%, -50%) scale(1.15); }
 }
 
-@keyframes nutri-breathe {
-  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.15); }
+/* Reusable ambient blob class */
+.nutri-ambient-blob {
+  animation: nutri-breathe 5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* ── Cal cards — premium gradient borders ── */
@@ -207,13 +231,25 @@
   letter-spacing: -0.02em;
 }
 
-/* ── Bottom nav glass — premium frosted ── */
+/* ── Bottom nav glass — floating island pill ── */
 .nutri-bottom-nav {
-  background: var(--glass-bg-strong);
+  background: var(--glass-bg-strong, rgba(22, 22, 37, 0.75));
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
-  border-top: 1px solid var(--color-border);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.35s var(--nutri-spring),
+              box-shadow 0.35s var(--nutri-out-expo);
+}
+.nutri-bottom-nav:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Calendar day pulse ── */
@@ -249,15 +285,241 @@
   transform: scale(0.95);
 }
 
-/* ── Glass card effect — refined ── */
-.nutri-glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px) saturate(1.3);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+/* ── Magnetic chip hover — lift + glow ── */
+.nutri-chip-magnetic {
+  transition: transform 0.3s var(--nutri-spring),
+              box-shadow 0.3s var(--nutri-out-expo),
+              border-color 0.25s ease;
+  will-change: transform;
+}
+.nutri-chip-magnetic:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.06);
 }
 
-/* ── Floating particles (decorative) ── */
+/* ── Spring filter chip — active state with bounce ── */
+.nutri-filter-chip {
+  transition: all 0.35s var(--nutri-spring);
+  will-change: transform;
+}
+.nutri-filter-chip:active {
+  transform: scale(0.93);
+}
+
+/* ── Increment/decrement button — refined press ── */
+.nutri-inc-btn {
+  transition: transform 0.15s var(--nutri-spring),
+              background 0.2s ease;
+  will-change: transform;
+}
+.nutri-inc-btn:active {
+  transform: scale(0.88);
+}
+
+/* ── Glass card effect — enhanced glassmorphism with refraction ── */
+.nutri-glass {
+  background: var(--nutri-glass-bg);
+  backdrop-filter: blur(24px) saturate(1.8) contrast(1.05);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) contrast(1.05);
+  border: 1px solid var(--nutri-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--nutri-glass-highlight),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+    var(--nutri-glass-shadow);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.nutri-glass:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    var(--nutri-glass-shadow-hover);
+}
+
+/* ── Double-Bezel Glass Card — nested outer shell + inner core ── */
+.nutri-glass-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  /* Outer shell: subtle background + hairline border */
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1.25rem;
+  padding: 1.5px;
+  transition: border-color 0.35s var(--nutri-out-expo),
+              box-shadow 0.35s var(--nutri-out-expo);
+  will-change: transform;
+}
+.nutri-glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+}
+
+/* Inner core: glass surface with refraction highlight */
+.nutri-glass-card-inner {
+  background: rgba(22, 22, 37, 0.55);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-radius: calc(1.25rem - 1.5px);
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+  transition: box-shadow 0.35s var(--nutri-out-expo);
+}
+.nutri-glass-card:hover .nutri-glass-card-inner {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ── Spotlight border — card border illuminates under cursor ── */
+.nutri-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.nutri-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.06),
+    transparent 40%
+  );
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.nutri-spotlight:hover::before {
+  opacity: 1;
+}
+
+/* ── Color-tinted glass variants — semantic accents ── */
+.nutri-glass-in {
+  border-color: var(--nutri-glass-in-border);
+  box-shadow:
+    inset 0 1px 0 var(--nutri-glass-in-highlight),
+    inset 0 -1px 0 rgba(249, 115, 22, 0.03),
+    var(--nutri-glass-in-shadow);
+}
+.nutri-glass-in:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(249, 115, 22, 0.18),
+    0 12px 40px rgba(249, 115, 22, 0.12);
+}
+
+.nutri-glass-out {
+  border-color: var(--nutri-glass-out-border);
+  box-shadow:
+    inset 0 1px 0 var(--nutri-glass-out-highlight),
+    inset 0 -1px 0 rgba(34, 197, 94, 0.03),
+    var(--nutri-glass-out-shadow);
+}
+.nutri-glass-out:hover {
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(34, 197, 94, 0.18),
+    0 12px 40px rgba(34, 197, 94, 0.12);
+}
+
+.nutri-glass-water {
+  border-color: var(--nutri-glass-water-border);
+  box-shadow:
+    inset 0 1px 0 var(--nutri-glass-water-highlight),
+    inset 0 -1px 0 rgba(56, 189, 248, 0.03),
+    var(--nutri-glass-water-shadow);
+}
+.nutri-glass-water:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(56, 189, 248, 0.18),
+    0 12px 40px rgba(56, 189, 248, 0.12);
+}
+
+/* ── Hero animated chroma border — Apple rainbow flow ── */
+.nutri-hero-border {
+  position: relative;
+  overflow: hidden;
+}
+.nutri-hero-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    #FF9F0A, #BF5AF2, #64D2FF, #30D158, #FF9F0A
+  );
+  background-size: 400% 400%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: nutri-chroma 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  transition: opacity 0.4s ease;
+}
+.apple-glass .nutri-hero-border:hover::after { opacity: 0.8; }
+@keyframes nutri-chroma {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+/* ── Meal-type color left accents ── */
+.nutri-meal-accent {
+  position: relative;
+}
+.nutri-meal-accent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+.nutri-meal-breakfast::before { background: #fbbf24; }
+.nutri-meal-lunch::before     { background: #f97316; }
+.nutri-meal-dinner::before    { background: #a855f7; }
+.nutri-meal-snack::before     { background: #22c55e; }
+
+/* ── Page ambient background — Apple 3-Blob system ── */
+.nutrition-root {
+  position: relative;
+}
+.nutrition-root::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background: radial-gradient(ellipse 60% 50% at 15% 10%, var(--nutri-ambient-orange), transparent 55%);
+  animation: nutri-blob-1 20s ease-in-out infinite;
+}
+.nutrition-root::after {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background: radial-gradient(ellipse 50% 40% at 80% 65%, var(--nutri-ambient-purple), transparent 55%);
+  animation: nutri-blob-2 25s ease-in-out infinite 5s;
+}
+@keyframes nutri-blob-1 {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  33% { opacity: 0.85; transform: scale(1.12); }
+  66% { opacity: 0.6; transform: scale(0.95); }
+}
+@keyframes nutri-blob-2 {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.1); }
+}
+
+/* ── Ambient blob 3 (cyan) class ── */
+.nutri-ambient-cyan {
+  animation: nutri-blob-1 22s ease-in-out infinite 10s;
+}
 .nutri-particles {
   position: absolute;
   inset: 0;
@@ -312,15 +574,15 @@
   100% { background-position: -200% 0; }
 }
 
-/* ── Toast slide in — spring entrance ── */
+/* ── Toast slide in — spring entrance from top ── */
 .nutri-toast {
-  animation: nutri-toast-in 0.35s var(--nutri-spring) both;
+  animation: nutri-toast-in 0.4s var(--nutri-spring) both;
 }
 
 @keyframes nutri-toast-in {
   from {
     opacity: 0;
-    transform: translateY(24px) scale(0.92);
+    transform: translateY(-16px) scale(0.94);
   }
   to {
     opacity: 1;
@@ -366,6 +628,12 @@
   border-color: rgba(249, 115, 22, 0.4);
 }
 
+/* ── Water slider thumb breath pulse ── */
+@keyframes nutri-thumb-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
 /* ── Scroll reveal ── */
 .nutri-reveal {
   opacity: 0;
@@ -393,7 +661,30 @@
   }
 }
 
-/* ── Number count animation ── */
+/* ── Goal celebration bounce — fires when a macro hits 100% ── */
+.nutri-goal-celebrate {
+  animation: nutri-goal-pop 0.6s var(--nutri-spring) both;
+}
+@keyframes nutri-goal-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.12); }
+  60% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+/* ── Glass skeleton shimmer — matches card layout ── */
+.nutri-skeleton-card {
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.02) 30%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.02) 70%
+  );
+  background-size: 200% 100%;
+  animation: nutri-skeleton-shimmer 1.8s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+}
 .nutri-count {
   animation: nutri-count-up 0.6s var(--nutri-out-expo) both;
 }
@@ -408,13 +699,41 @@
   }
 }
 
+/* ── Food log row stagger entrance ── */
+.nutri-log-row {
+  animation: nutri-row-in 0.45s var(--nutri-out-expo) both;
+}
+.nutri-log-row:nth-child(1) { animation-delay: 0ms; }
+.nutri-log-row:nth-child(2) { animation-delay: 50ms; }
+.nutri-log-row:nth-child(3) { animation-delay: 100ms; }
+.nutri-log-row:nth-child(4) { animation-delay: 150ms; }
+.nutri-log-row:nth-child(5) { animation-delay: 200ms; }
+.nutri-log-row:nth-child(6) { animation-delay: 250ms; }
+.nutri-log-row:nth-child(7) { animation-delay: 300ms; }
+.nutri-log-row:nth-child(8) { animation-delay: 350ms; }
+.nutri-log-row:nth-child(9) { animation-delay: 400ms; }
+.nutri-log-row:nth-child(10) { animation-delay: 450ms; }
+.nutri-log-row:nth-child(n+11) { animation-delay: 500ms; }
+
+@keyframes nutri-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ── Favorite chip hover lift ── */
 .nutri-chip {
-  transition: all 0.25s var(--nutri-spring);
+  transition: all 0.3s var(--nutri-spring);
   will-change: transform;
 }
 .nutri-chip:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.06);
 }
 
 /* ── Reduced motion ── */
@@ -431,7 +750,14 @@
   .nutri-skeleton,
   .nutri-toast,
   .nutri-dropdown-enter,
-  .nutri-count {
+  .nutri-count,
+  .nutri-log-row,
+  .nutri-goal-celebrate {
+    animation: none !important;
+  }
+  .nutrition-root::before,
+  .nutrition-root::after,
+  .nutri-ambient-cyan {
     animation: none !important;
   }
   .nutri-ring-progress,
@@ -440,5 +766,40 @@
   }
   .nutri-card-hover:hover {
     transform: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    animation: none !important;
+  }
+}
+
+/* ── Reduced transparency — solid fallback for glass effects ── */
+@media (prefers-reduced-transparency: reduce) {
+  .nutri-glass,
+  .nutri-glass-card,
+  .nutri-glass-card-inner,
+  .nutri-bottom-nav {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .nutri-glass {
+    background: var(--nutri-glass-bg);
+    background: rgba(22, 22, 37, 0.92); /* fallback */
+  }
+  .nutri-glass-card {
+    background: rgba(22, 22, 37, 0.88);
+  }
+  .nutri-glass-card-inner {
+    background: rgba(22, 22, 37, 0.7);
+  }
+  .nutri-bottom-nav {
+    background: rgba(22, 22, 37, 0.94);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .light .nutrition-root .nutri-glass {
+    background: rgba(255, 255, 255, 0.94);
+  }
+  .light .nutrition-root .nutri-bottom-nav {
+    background: rgba(255, 255, 255, 0.92);
   }
 }
