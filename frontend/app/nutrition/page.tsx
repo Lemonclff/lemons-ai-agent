@@ -162,7 +162,7 @@ export default function NutritionPage() {
   const [photoMealType, setPhotoMealType] = useState("lunch");
   const [photoConfirming, setPhotoConfirming] = useState(false);
   const [photoDragOver, setPhotoDragOver] = useState(false);
-  const [photoProvider, setPhotoProvider] = useState("agnes");
+  const [photoProvider, setPhotoProvider] = useState("mimo");
   const [photoNutrition, setPhotoNutrition] = useState<Record<string, any>>({});
   const [photoEditedWeights, setPhotoEditedWeights] = useState<Record<number, number>>({});
   const [photoUnits, setPhotoUnits] = useState<Record<number, string>>({});

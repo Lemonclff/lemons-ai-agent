@@ -10,8 +10,11 @@ import fs from "fs";
 // Detect project root: go up from frontend/ to repo root
 export const PROJECT_ROOT = path.resolve(process.cwd(), "..");
 
-// Python venv
-export const PYTHON_BIN = path.join(PROJECT_ROOT, "venv", "bin", "python3");
+// Python venv — auto-detect platform
+const IS_WIN = process.platform === "win32";
+const VENV_BIN = IS_WIN ? "Scripts" : "bin";
+const PYTHON_EXE = IS_WIN ? "python.exe" : "python3";
+export const PYTHON_BIN = path.join(PROJECT_ROOT, "venv", VENV_BIN, PYTHON_EXE);
 export const SCRIPTS_DIR = path.join(PROJECT_ROOT, "scripts");
 
 // Hermes CLI (for cron job control)
@@ -20,7 +23,7 @@ export const HERMES_DIR = path.join(
   ".hermes",
   "hermes-agent"
 );
-export const HERMES_PYTHON = path.join(HERMES_DIR, "venv", "bin", "python3");
+export const HERMES_PYTHON = path.join(HERMES_DIR, "venv", VENV_BIN, PYTHON_EXE);
 export const HERMES_CLI = path.join(HERMES_DIR, "hermes_cli", "main.py");
 
 // Next.js frontend
@@ -44,7 +47,7 @@ export function spawnPythonEnv(): NodeJS.ProcessEnv {
     LMSTUDIO_BASE_URL: process.env.LMSTUDIO_BASE_URL || "",
     LMSTUDIO_MODEL: process.env.LMSTUDIO_MODEL || "",
     HF_TOKEN: process.env.HF_TOKEN || "",
-    WHISPER_PYTHON: process.env.WHISPER_PYTHON || `${process.env.HOME}/.whisper-venv/bin/python3`,
+    WHISPER_PYTHON: process.env.WHISPER_PYTHON || path.join(process.env.HOME || "", ".whisper-venv", VENV_BIN, PYTHON_EXE),
     PYTHONPATH: SCRIPTS_DIR,
   };
 }
