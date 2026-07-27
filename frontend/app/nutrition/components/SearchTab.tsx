@@ -172,6 +172,35 @@ export function SearchTab({
   const [barcodeError, setBarcodeError] = useState("");
   const [showScanner, setShowScanner] = useState(false);
 
+  // Draft state for search input (deferred on mobile)
+  const [dSearch, setDSearch] = useState(searchQ);
+  const extSearch = useRef(searchQ);
+  useEffect(() => {
+    if (searchQ !== extSearch.current) { setDSearch(searchQ); extSearch.current = searchQ; }
+  }, [searchQ]);
+
+  // Draft states for custom food inputs (deferred commit on blur/Enter — mobile keyboard fix)
+  const [dName, setDName] = useState(customName);
+  const [dCal, setDCal] = useState(customCal);
+  const [dPro, setDPro] = useState(customProtein);
+  const [dCarbs, setDCarbs] = useState(customCarbs);
+  const [dFat, setDFat] = useState(customFat);
+  const [dUnit, setDUnit] = useState(customServingUnit);
+  const extName = useRef(customName);
+  const extCal = useRef(customCal);
+  const extPro = useRef(customProtein);
+  const extCarbs = useRef(customCarbs);
+  const extFat = useRef(customFat);
+  const extUnit = useRef(customServingUnit);
+  useEffect(() => {
+    if (customName !== extName.current) { setDName(customName); extName.current = customName; }
+    if (customCal !== extCal.current) { setDCal(customCal); extCal.current = customCal; }
+    if (customProtein !== extPro.current) { setDPro(customProtein); extPro.current = customProtein; }
+    if (customCarbs !== extCarbs.current) { setDCarbs(customCarbs); extCarbs.current = customCarbs; }
+    if (customFat !== extFat.current) { setDFat(customFat); extFat.current = customFat; }
+    if (customServingUnit !== extUnit.current) { setDUnit(customServingUnit); extUnit.current = customServingUnit; }
+  }, [customName, customCal, customProtein, customCarbs, customFat, customServingUnit]);
+
   async function lookupBarcode() {
     if (!barcodeCode) return;
     setBarcodeLoading(true); setBarcodeError(""); setBarcodeResult(null);
@@ -206,13 +235,13 @@ export function SearchTab({
           <h3 className="text-[14px] font-semibold text-[var(--color-text-primary)]">Search Food</h3>
         </div>
         <div className="flex gap-2">
-          <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-            onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-            onKeyDown={e => e.key === 'Enter' && onSearch(searchQ)}
+          <input value={dSearch} onChange={e => setDSearch(e.target.value)}
+            onFocus={() => setShowDropdown(true)} onBlur={() => { setTimeout(() => setShowDropdown(false), 200); setSearchQ(dSearch); extSearch.current = dSearch; }}
+            onKeyDown={e => e.key === 'Enter' && onSearch(dSearch)}
             placeholder="Search food database..."
             className="flex-1 px-4 py-3 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow"
           />
-          <button onClick={() => onSearch(searchQ)}
+          <button onClick={() => onSearch(dSearch)}
             className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-95 transition-all nutri-press">
             {searching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
           </button>
@@ -369,31 +398,41 @@ export function SearchTab({
           <div className="grid grid-cols-2 gap-2.5 max-md:grid-cols-1">
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Name</label>
-              <input value={customName} onChange={e => setCustomName(e.target.value)}
+              <input value={dName} onChange={e => setDName(e.target.value)}
+                onBlur={() => { setCustomName(dName); extName.current = dName; }}
+                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="e.g. Protein shake"
                 className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
             </div>
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Calories</label>
-              <input value={customCal} onChange={e => setCustomCal(e.target.value)}
+              <input value={dCal} onChange={e => setDCal(e.target.value)}
+                onBlur={() => { setCustomCal(dCal); extCal.current = dCal; }}
+                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="kcal / 100g"
                 className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
             </div>
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Protein (g)</label>
-              <input value={customProtein} onChange={e => setCustomProtein(e.target.value)}
+              <input value={dPro} onChange={e => setDPro(e.target.value)}
+                onBlur={() => { setCustomProtein(dPro); extPro.current = dPro; }}
+                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="g / 100g"
                 className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-blue-400 focus:border-blue-400/50 transition-colors nutri-input-glow" />
             </div>
             <div>
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Carbs (g)</label>
-              <input value={customCarbs} onChange={e => setCustomCarbs(e.target.value)}
+              <input value={dCarbs} onChange={e => setDCarbs(e.target.value)}
+                onBlur={() => { setCustomCarbs(dCarbs); extCarbs.current = dCarbs; }}
+                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="g / 100g"
                 className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-amber-400 focus:border-amber-400/50 transition-colors nutri-input-glow" />
             </div>
             <div className="max-md:col-span-1">
               <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">Fat (g)</label>
-              <input value={customFat} onChange={e => setCustomFat(e.target.value)}
+              <input value={dFat} onChange={e => setDFat(e.target.value)}
+                onBlur={() => { setCustomFat(dFat); extFat.current = dFat; }}
+                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="g / 100g"
                 className="w-full px-3 py-2.5 text-[16px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-red-400 focus:border-red-400/50 transition-colors nutri-input-glow" />
             </div>
@@ -409,7 +448,9 @@ export function SearchTab({
             <option value="dinner">Dinner</option>
             <option value="snack">Snack</option>
           </select>
-          <input list="custom-serving-units" value={customServingUnit} onChange={e => setCustomServingUnit(e.target.value)}
+          <input list="custom-serving-units" value={dUnit} onChange={e => setDUnit(e.target.value)}
+            onBlur={() => { setCustomServingUnit(dUnit); extUnit.current = dUnit; }}
+            onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
             placeholder="unit"
             className="w-[76px] min-h-[40px] px-3 text-[14px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl outline-none text-[var(--color-text-primary)] focus:border-[var(--color-accent)]/50 transition-colors nutri-input-glow" />
           <datalist id="custom-serving-units">
