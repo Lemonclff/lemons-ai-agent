@@ -883,7 +883,7 @@ Real-time US macro data dashboard pulling from the Federal Reserve Economic Data
 
 > **Page**: `/nutrition` &nbsp;|&nbsp; **API**: `GET|POST /api/nutrition/*` &nbsp;|&nbsp; **DB**: `db/nutrition_schema.sql`
 
-Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, barcode scanning, weight tracking, and calorie budget visualization. **Auto-fullscreen on mobile** with a bold flat-design bottom tab bar. **PWA support** for iOS/Android standalone mode with safe-area handling.
+Comprehensive calorie tracking dashboard with food logging, exercise tracking, AI photo analysis, barcode scanning, weight tracking, and calorie budget visualization. **Auto-fullscreen on mobile** with an **iOS Liquid Glass floating bottom tab bar** featuring spring-animated active states and Double-Bezel nested icon architecture. **PWA support** for iOS/Android standalone mode with safe-area handling.
 
 #### Features
 
@@ -896,7 +896,7 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 | **Profile Gate** | ⚠️ Blocks all nutrition tabs until user sets up body profile (age/weight/height/goal) |
 | **User Data Isolation** | Every API filters by authenticated `userId` — no data leakage between users |
 | **TDEE Calculator** | Mifflin-St Jeor or Katch-McArdle (if body fat % provided), 5 goal tiers, goal-aware macros |
-| **Auto-Fullscreen (Mobile)** | Opens directly in immersive fullscreen mode on phones (<768px) with bottom tab bar |
+|| **Auto-Fullscreen (Mobile)** | Opens directly in immersive fullscreen mode on phones (<768px) with iOS Liquid Glass floating bottom tab bar |
 | **Dual Calories Cards** | Orange In card + Green Out card with progress bars + Net Calories pill |
 | **Quick Add Favorites** | Unified table merging `user_custom_foods` + `user_exercise_favorites`; name-only chips |
 | **Serving Units** | Dynamic from DB; `serving_calories/protein/carbs/fat` stored per favorite for accurate quick-add |
@@ -920,11 +920,11 @@ Comprehensive calorie tracking dashboard with food logging, exercise tracking, A
 
 | Tab | Icon | Function |
 |-----|------|----------|
-| Home | LayoutDashboard | Dual calories cards, Quick Add Favorites (In/Out), macro rings, food log with inline editing, exercise |
+| Home | Flame | Dual calories cards, Quick Add Favorites (In/Out), macro rings, food log with inline editing, exercise |
 | Calories In | UtensilsCrossed | Food search, barcode scanner, custom foods with Pin-to-Dashboard |
 | Calories Out | Dumbbell | Exercise form: name + duration + calories |
-| AI Photo | Camera | Multi-provider food photo analysis → confirm & log |
-| History | History | 7-day stats + mini calendar + day detail |
+| AI Photo | Sparkles | Multi-provider food photo analysis → confirm & log |
+| History | TrendingUp | 7-day stats + mini calendar + day detail |
 | Profile | UserCircle | TDEE calculator, macro targets, weight tracking with chart |
 
 #### API Endpoints

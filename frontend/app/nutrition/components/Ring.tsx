@@ -263,6 +263,7 @@ export function CalorieHero({
       {/* Ambient mesh blobs */}
       <div className="nutri-ambient-blob absolute top-0 left-0 w-32 h-32 rounded-full bg-orange-500/8 blur-3xl" />
       <div className="nutri-ambient-blob absolute bottom-0 right-0 w-28 h-28 rounded-full bg-green-500/8 blur-3xl animate-delay-[2s]" />
+      <div className="nutri-particles" />
 
       <div className="relative z-[1] flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
         {/* Dual ring */}

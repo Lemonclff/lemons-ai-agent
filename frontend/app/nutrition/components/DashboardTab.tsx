@@ -26,11 +26,11 @@ interface FavoritesData { in: FavoriteItem[]; out: FavoriteItem[]; }
 interface SuggestedData { in: FavoriteItem[]; out: FavoriteItem[]; }
 
 const MEALS = [
-  { key: "", label: "All" },
-  { key: "breakfast", label: "Breakfast" },
-  { key: "lunch", label: "Lunch" },
-  { key: "dinner", label: "Dinner" },
-  { key: "snack", label: "Snack" },
+  { key: "", label: "📋 All" },
+  { key: "breakfast", label: "☀️ Breakfast" },
+  { key: "lunch", label: "🌤 Lunch" },
+  { key: "dinner", label: "🌙 Dinner" },
+  { key: "snack", label: "🍿 Snack" },
 ];
 
 export function DashboardTab({
@@ -378,16 +378,17 @@ export function DashboardTab({
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-border)]/10">
             <button onClick={() => copyYesterday()}
               className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
-              <Copy size={12} />Copy Yest
+              <Copy size={12} className="nutri-icon-bounce" />Copy Yest
             </button>
             <button onClick={() => { setPreviewItems({foods:[], exercises:[]}); setCopyFood(true); setCopyExercise(true); setShowCopyModal(true); }}
               className="flex items-center gap-1 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline min-h-[36px] px-2">
-              <Calendar size={12} />Copy From...
+              <Calendar size={12} className="nutri-icon-bounce" />Copy From...
             </button>
-            <div className="flex gap-1 ml-auto">
+            {/* Meal filter chips — scrollable on mobile */}
+            <div className="flex gap-1 ml-auto overflow-x-auto scrollbar-none">
               {MEALS.map(m => (
                 <button key={m.key} onClick={() => setMealFilter(m.key)}
-                    className={cn("min-h-[32px] px-2.5 text-[12px] rounded-full font-medium nutri-filter-chip",
+                    className={cn("min-h-[32px] px-2.5 text-[12px] rounded-full font-medium nutri-filter-chip flex-shrink-0",
                     mealFilter === m.key ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]")}
                 >{m.label}</button>
               ))}
@@ -521,11 +522,11 @@ export function DashboardTab({
           <div className="flex items-center gap-2">
             <button onClick={() => copyYesterday()}
               className="flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline min-h-[36px] px-2 transition-all active:scale-95">
-              <Copy size={12} />Copy Yest
+              <Copy size={12} className="nutri-icon-bounce" />Copy Yest
             </button>
             <button onClick={() => { setPreviewItems({foods:[], exercises:[]}); setCopyFood(true); setCopyExercise(true); setShowCopyModal(true); }}
               className="flex items-center gap-1 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline min-h-[36px] px-2 transition-all active:scale-95">
-              <Calendar size={12} />Copy From...
+              <Calendar size={12} className="nutri-icon-bounce" />Copy From...
             </button>
             <div className="flex gap-1">
               {MEALS.map(m => (

@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Search, Plus, Minus, X, Camera, Apple, Loader2,
+  Search, Plus, Minus, X, Apple, Loader2,
   ChevronLeft, ChevronRight, Utensils, TrendingUp,
-  Settings, History, PieChart, UtensilsCrossed, Copy,
-  Maximize2, Minimize2, LayoutDashboard, Dumbbell, UserCircle,
-  Flame, Zap,
+  Settings, PieChart, UtensilsCrossed, Copy,
+  Dumbbell, UserCircle,
+  Flame, Zap, Sparkles, Sun, Moon,
 } from "lucide-react";
 
 
+import { BottomNav } from "./components/BottomNav";
 import { DashboardTab } from "./components/DashboardTab";
 import { SearchTab } from "./components/SearchTab";
 import { PhotoTab } from "./components/PhotoTab";
@@ -18,6 +19,7 @@ import { HistoryTab } from "./components/HistoryTab";
 import { CaloriesOutTab } from "./components/CaloriesOutTab";
 import { Tabs } from "@/components/ui/components";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ThemeProvider";
 import "./nutrition.css";
 
 /* ================================================================
@@ -45,11 +47,11 @@ interface UserProfile {
 interface CustomFood { id: number; food_name: string; calories_per_100g: number; protein_per_100g: number; carbs_per_100g: number; fat_per_100g: number; }
 
 const PAGES = [
-  { key: "dashboard", label: "Home", shortLabel: "Home", icon: LayoutDashboard, color: "text-sky-400" },
-  { key: "search", label: "Calories In", shortLabel: "In", icon: UtensilsCrossed, color: "text-orange-400" },
+  { key: "dashboard", label: "Home", shortLabel: "Home", icon: Flame, color: "text-orange-400" },
+  { key: "search", label: "Calories In", shortLabel: "In", icon: UtensilsCrossed, color: "text-amber-400" },
   { key: "calories-out", label: "Calories Out", shortLabel: "Out", icon: Dumbbell, color: "text-green-400" },
-  { key: "photo", label: "AI Photo", shortLabel: "Photo", icon: Camera, color: "text-purple-400" },
-  { key: "history", label: "History", shortLabel: "Hist", icon: History, color: "text-amber-400" },
+  { key: "photo", label: "AI Photo", shortLabel: "Photo", icon: Sparkles, color: "text-purple-400" },
+  { key: "history", label: "History", shortLabel: "Hist", icon: TrendingUp, color: "text-sky-400" },
   { key: "profile", label: "Profile", shortLabel: "Me", icon: UserCircle, color: "text-indigo-400" },
 ];
 
@@ -61,6 +63,7 @@ const PAGE_ORDER = PAGES.map(p => p.key);
 
 export default function NutritionPage() {
   const [page, setPage] = useState("dashboard");
+  const { theme, toggleTheme } = useTheme();
   const touchStartX = useRef(0);
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -73,7 +76,10 @@ export default function NutritionPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
-    if (window.innerWidth < 768) setFullscreen(true);
+    const updateFullscreen = () => setFullscreen(window.innerWidth < 768);
+    updateFullscreen();
+    window.addEventListener("resize", updateFullscreen);
+    return () => window.removeEventListener("resize", updateFullscreen);
   }, []);
   const showFullscreen = mounted && fullscreen;
   const [currentDate, setCurrentDate] = useState(() => {
@@ -776,8 +782,8 @@ export default function NutritionPage() {
 
   return (
     <>
-    {/* ═══ Normal View (always rendered, never changes with fullscreen) ═══ */}
-    <div className="nutrition-root w-full max-w-[960px] mx-auto pb-[calc(72px+max(12px,env(safe-area-inset-bottom,0px)))] md:pb-0"
+    {/* ═══ Normal View ═══ */}
+    <div className={`nutrition-root w-full max-w-[960px] mx-auto pb-[calc(84px+env(safe-area-inset-bottom,8px))] md:pb-0 ${showFullscreen ? "hidden" : ""}`}
       onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
       {/* ── Ambient blob 3 (cyan) ── */}
@@ -804,52 +810,25 @@ export default function NutritionPage() {
             <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] active:scale-95 transition-all"><ChevronLeft size={18} /></button>
             <span className="text-[13px] font-semibold text-[var(--color-text-primary)] min-w-[90px] text-center tabular-nums">{dateDisplay()}</span>
             <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] active:scale-95 transition-all disabled:opacity-20"><ChevronRight size={18} /></button>
-            <button onClick={() => setFullscreen(true)} className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 text-[var(--color-accent)] active:scale-95 transition-all"><Maximize2 size={16} /></button>
+            <button onClick={toggleTheme} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[var(--color-surface-elevated)]/50 border border-[var(--color-border)]/30 text-[var(--color-text-muted)] active:scale-95 transition-all" aria-label="Toggle theme">
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
         </div>
-        <div className="md:hidden flex items-center gap-0 pb-1.5 overflow-x-auto scrollbar-none">
-          {PAGES.map(p => (
-            <button key={p.key} onClick={() => setPage(p.key)}
-              className={cn("flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-[52px] px-1 rounded-xl transition-all flex-shrink-0",
-                page === p.key ? "text-[var(--color-accent)] bg-[var(--color-accent)]/8" : "text-[var(--color-text-muted)]")}>
-              <p.icon size={20} strokeWidth={page === p.key ? 2.5 : 1.75} />
-              <span className="text-[10px] font-semibold leading-none">{p.shortLabel}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Page dots (mobile) */}
-      <div className="md:hidden flex items-center justify-center gap-1.5 py-2">
-        {PAGES.map((_, i) => (
-          <span key={i} className={cn("rounded-full transition-all", i === currentPageIdx ? "w-4 h-1.5 bg-[var(--color-accent)]" : "w-1.5 h-1.5 bg-[var(--color-border)]")} />
-        ))}
-      </div>
-
-      {/* Tab Content */}
+        {/* Tab Content */}
       <div key={page} className="nutri-tab-enter">
         <RenderPage />
       </div>
 
-      {/* Bottom bar (mobile) — floating island */}
-      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 nutri-bottom-nav"
-        style={{ paddingBottom: "max(4px, env(safe-area-inset-bottom, 0px))" }}>
-        <div className="flex items-center justify-around py-1.5">
-          {PAGES.map(p => (
-            <button key={p.key} onClick={() => setPage(p.key)}
-              className={cn("flex flex-col items-center justify-center gap-1 flex-1 py-1.5 rounded-2xl transition-all active:scale-[0.96]",
-                page === p.key ? p.color : "text-[var(--color-text-muted)]")}>
-              <p.icon size={22} strokeWidth={page === p.key ? 2.5 : 1.75} />
-              <span className="text-[11px] leading-none font-semibold">{p.shortLabel}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Bottom bar (mobile) — iOS Liquid Glass floating island */}
+      <BottomNav page={page} setPage={setPage} items={PAGES} />
     </div>
 
     {/* ═══ Fullscreen Overlay (separate fixed layer) ═══ */}
     {showFullscreen && (
-      <div className="nutrition-root fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col">
+      <div className="nutrition-root fixed inset-0 z-[60] bg-[var(--color-surface)] flex flex-col overscroll-none">
         {/* Header */}
         <div className="shrink-0 px-4 pb-3 bg-gradient-to-b from-orange-500/12 via-[var(--color-accent)]/5 to-transparent"
           style={{ paddingTop: "max(16px, env(safe-area-inset-top, 0px))" }}>
@@ -866,7 +845,9 @@ export default function NutritionPage() {
             <div className="flex items-center gap-2">
               <button onClick={() => changeDate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] active:scale-[0.97] transition-all"><ChevronLeft size={20} /></button>
               <button onClick={() => changeDate(1)} disabled={currentDate >= todayStr} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] active:scale-[0.97] transition-all disabled:opacity-20"><ChevronRight size={20} /></button>
-              <button onClick={() => setFullscreen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 active:scale-[0.97] transition-all"><Minimize2 size={20} /></button>
+              <button onClick={toggleTheme} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 text-[var(--color-text-secondary)] active:scale-[0.97] transition-all" aria-label="Toggle theme">
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
             </div>
           </div>
           <div className="flex items-center gap-3 px-1">
@@ -884,24 +865,12 @@ export default function NutritionPage() {
         </div>
 
         {/* Tab Content (scrollable) */}
-        <div key={page} className="flex-1 overflow-y-auto px-4 pb-4 nutri-tab-enter">
+        <div key={page} className="flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(84px+env(safe-area-inset-bottom,8px))] h-0" style={{ minHeight: 0 }}>
           <RenderPage />
         </div>
 
         {/* Bottom Tab Bar */}
-        <div className="shrink-0 nutri-bottom-nav px-2"
-          style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}>
-          <div className="flex items-center justify-around py-1.5">
-            {PAGES.map(p => (
-              <button key={p.key} onClick={() => setPage(p.key)}
-                className={cn("flex flex-col items-center justify-center gap-1 flex-1 py-1.5 rounded-2xl transition-all active:scale-[0.96]",
-                  page === p.key ? p.color : "text-[var(--color-text-muted)]")}>
-                <p.icon size={22} strokeWidth={page === p.key ? 2.5 : 1.75} />
-                <span className="text-[11px] leading-none font-semibold">{p.shortLabel}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <BottomNav page={page} setPage={setPage} items={PAGES} />
       </div>
     )}
 
